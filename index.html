@@ -1,0 +1,1346 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Oracle 翻译工作台</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg-deep:#0f0f1a;--bg-surface:#1a1a2e;--bg-card:#16213e;--bg-elevated:#1e2a4a;
+  --border:rgba(255,255,255,.08);--border-hover:rgba(255,255,255,.15);
+  --text:#e2e8f0;--text-secondary:#94a3b8;--text-muted:#64748b;
+  --oracle-red:#c74634;--oracle-red-hover:#e05544;--oracle-red-glow:rgba(199,70,52,.25);
+  --accent-green:#22c55e;--accent-amber:#f59e0b;--accent-blue:#3b82f6;
+  --radius:10px;--radius-sm:6px;--radius-lg:14px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);--shadow-lg:0 20px 60px rgba(0,0,0,.5);
+  --font-body:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-code:"JetBrains Mono","Cascadia Code","SF Mono",Consolas,monospace;
+  --glow-red:0 0 20px rgba(199,70,52,.3),0 0 60px rgba(199,70,52,.1);
+  --glow-green:0 0 12px rgba(34,197,94,.2);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{width:100%;scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);color:var(--text);
+  background:var(--bg-deep);min-height:100vh;
+  -webkit-font-smoothing:antialiased;font-size:14px;line-height:1.5;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 600px 400px at 10% 10%,rgba(199,70,52,.08),transparent),
+    radial-gradient(ellipse 500px 500px at 90% 80%,rgba(59,130,246,.06),transparent),
+    radial-gradient(ellipse 400px 300px at 50% 50%,rgba(199,70,52,.04),transparent);
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.03;
+  background-image:
+    linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+.app{
+  position:relative;z-index:1;
+  width:min(1680px,100%);margin:0 auto;
+  min-height:100vh;
+  background:rgba(15,15,26,.6);
+  backdrop-filter:blur(20px);
+  border-left:1px solid var(--border);border-right:1px solid var(--border);
+}
+.header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 28px;gap:16px;flex-wrap:wrap;
+  border-bottom:1px solid var(--border);
+  background:rgba(22,33,62,.5);
+  position:sticky;top:0;z-index:10;
+}
+.header-left{display:flex;align-items:center;gap:14px;min-width:0}
+.logo-mark{
+  width:38px;height:38px;border-radius:8px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--oracle-red),#e05544);
+  display:grid;place-items:center;
+  font-family:var(--font-code);font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;
+  box-shadow:var(--glow-red);
+}
+.title{
+  font-size:22px;font-weight:700;letter-spacing:-.3px;
+  background:linear-gradient(135deg,#fff 0%,#c7d2fe 50%,#e2e8f0 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.subtitle{color:var(--text-secondary);font-size:13px;margin-top:2px}
+.version-box{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.version{
+  padding:4px 12px;border:1px solid var(--oracle-red);border-radius:999px;
+  color:var(--oracle-red);background:rgba(199,70,52,.1);
+  font-family:var(--font-code);font-size:11px;font-weight:600;
+}
+.build{color:var(--text-muted);font-size:11px;font-family:var(--font-code)}
+.toolbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 28px;gap:12px;flex-wrap:wrap;
+  border-bottom:1px solid var(--border);
+  background:rgba(22,33,62,.3);
+}
+.mode-area{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.mode-label{color:var(--text-secondary);font-size:13px;font-weight:500;margin-right:8px}
+.mode-btn{
+  border:1px solid var(--border);background:rgba(255,255,255,.04);
+  color:var(--text-secondary);border-radius:var(--radius-sm);
+  padding:6px 14px;font-size:13px;font-weight:500;cursor:pointer;
+  font-family:var(--font-body);transition:all .2s;
+}
+.mode-btn:hover{background:rgba(255,255,255,.08);color:var(--text);border-color:var(--border-hover)}
+.mode-btn.active{
+  background:linear-gradient(135deg,var(--oracle-red),#e05544);
+  color:#fff;border-color:transparent;
+  box-shadow:0 2px 12px rgba(199,70,52,.3);
+}
+.switch-area{
+  display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:13px;
+  margin-left:8px;padding-left:14px;border-left:1px solid var(--border);
+}
+.switch-area label{cursor:pointer;user-select:none;white-space:nowrap}
+.toggle{
+  appearance:none;-webkit-appearance:none;width:36px;height:20px;border-radius:10px;
+  background:rgba(255,255,255,.15);border:none;cursor:pointer;position:relative;transition:all .2s;flex-shrink:0;
+}
+.toggle::after{
+  content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+  background:#fff;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.3);
+}
+.toggle:checked{background:var(--oracle-red);box-shadow:0 0 12px rgba(199,70,52,.3)}
+.toggle:checked::after{left:18px}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.btn{
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:6px 16px;font-family:var(--font-body);font-size:13px;font-weight:500;
+  cursor:pointer;color:var(--text-secondary);background:rgba(255,255,255,.04);
+  transition:all .2s;white-space:nowrap;
+}
+.btn:hover{background:rgba(255,255,255,.08);color:var(--text);border-color:var(--border-hover)}
+.btn.primary{
+  background:linear-gradient(135deg,var(--oracle-red),#e05544);
+  color:#fff;border-color:transparent;font-weight:600;
+  box-shadow:0 2px 12px rgba(199,70,52,.3);
+}
+.btn.primary:hover{
+  background:linear-gradient(135deg,#e05544,#f06555);
+  box-shadow:0 4px 20px rgba(199,70,52,.4);
+}
+.workspace{display:grid;grid-template-columns:1fr 1fr}
+.panel{
+  display:flex;flex-direction:column;
+  border-right:1px solid var(--border);
+}
+.panel:last-child{border-right:none}
+.panel-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 18px;gap:8px;
+  border-bottom:1px solid var(--border);
+  background:rgba(22,33,62,.4);
+}
+.panel-title{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.terminal-dots{display:flex;gap:6px;margin-right:4px}
+.terminal-dots span{width:10px;height:10px;border-radius:50%;display:block}
+.dot-red{background:#ff5f57;box-shadow:0 0 6px rgba(255,95,87,.3)}
+.dot-yellow{background:#febc2e;box-shadow:0 0 6px rgba(254,188,46,.3)}
+.dot-green{background:#28c840;box-shadow:0 0 6px rgba(40,200,64,.3)}
+.panel-meta{font-family:var(--font-code);font-size:11px;color:var(--text-muted)}
+.panel-desc{color:var(--text-muted);font-size:12px;padding:6px 18px;border-bottom:1px solid var(--border);min-height:0}
+textarea{
+  width:100%;border:none;
+  background:var(--bg-deep);color:#e2e8f0;
+  padding:14px 18px;resize:vertical;
+  font-family:var(--font-code);font-size:12.5px;line-height:1.7;
+  min-height:420px;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent;
+}
+textarea::-webkit-scrollbar{width:8px}
+textarea::-webkit-scrollbar-track{background:transparent}
+textarea::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+textarea::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}
+textarea:focus{outline:none;background:rgba(15,15,26,.9)}
+textarea.output-area{background:rgba(15,15,26,.8)}
+textarea.output-area:focus{outline:2px solid rgba(199,70,52,.4);outline-offset:-2px}
+textarea::placeholder{color:var(--text-muted)}
+.edit-hint{font-size:11px;color:var(--text-muted);margin-left:auto;font-style:italic}
+.foot{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 28px;gap:12px;flex-wrap:wrap;
+  border-top:1px solid var(--border);background:rgba(22,33,62,.4);
+}
+.metrics{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.metric{font-size:12px;color:var(--text-muted);font-family:var(--font-code);white-space:nowrap}
+.metric strong{color:var(--text-secondary);font-weight:600}
+.state{font-family:var(--font-code);font-size:12px;font-weight:500;color:var(--accent-green);min-height:16px;text-align:right}
+.state::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent-green);margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@media(max-width:1180px){
+  .header{flex-direction:column;align-items:flex-start}
+  .toolbar{flex-direction:column;align-items:flex-start}
+  .actions{width:100%;justify-content:flex-start}
+  .workspace{grid-template-columns:1fr}
+  .panel{border-right:none;border-bottom:1px solid var(--border)}
+  textarea{min-height:260px}
+  .foot{flex-direction:column;align-items:flex-start}
+  .state{text-align:left}
+}
+@media(max-width:640px){
+  .header{padding:12px 16px}
+  .toolbar{padding:8px 16px}
+  .panel-head{padding:8px 14px}
+  .panel-desc{padding:4px 14px}
+  textarea{padding:10px 14px;min-height:200px;font-size:11.5px}
+  .foot{padding:8px 16px}
+  .mode-btn{padding:5px 10px;font-size:12px}
+  .btn{padding:5px 12px;font-size:12px}
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.app{animation:fadeIn .4s ease}
+.fb-trigger{
+  position:fixed;bottom:24px;right:24px;z-index:1000;
+  width:48px;height:48px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,var(--oracle-red),#e05544);
+  color:#fff;cursor:pointer;
+  box-shadow:var(--glow-red);display:flex;align-items:center;justify-content:center;
+  font-size:20px;transition:transform .2s,box-shadow .2s;
+}
+.fb-trigger:hover{transform:scale(1.1);box-shadow:0 0 30px rgba(199,70,52,.4)}
+.fb-panel{
+  position:fixed;bottom:84px;right:24px;z-index:1001;
+  width:360px;max-height:500px;background:var(--bg-card);
+  border:1px solid var(--border);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);display:none;flex-direction:column;
+  overflow:hidden;animation:fbSlideUp .25s ease;
+}
+.fb-panel.open{display:flex}
+@keyframes fbSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fb-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  background:rgba(22,33,62,.6);font-weight:600;font-size:14px;color:var(--text);
+}
+.fb-header button{background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:16px;transition:color .15s}
+.fb-header button:hover{color:var(--text)}
+.fb-tabs{display:flex;border-bottom:1px solid var(--border)}
+.fb-tab{
+  flex:1;padding:8px 0;text-align:center;font-size:12px;
+  background:none;border:none;cursor:pointer;color:var(--text-muted);
+  border-bottom:2px solid transparent;transition:all .15s;
+}
+.fb-tab.active{color:var(--oracle-red);border-bottom-color:var(--oracle-red);font-weight:600}
+.fb-body{flex:1;overflow-y:auto;padding:14px 18px}
+.fb-body textarea{
+  width:100%;height:100px;resize:vertical;border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px 12px;font-family:var(--font-body);
+  font-size:13px;background:var(--bg-deep);color:var(--text);min-height:100px;
+}
+.fb-body textarea:focus{outline:2px solid rgba(199,70,52,.4);outline-offset:-2px;border-color:transparent}
+.fb-body input{
+  width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:8px 12px;font-family:var(--font-body);font-size:13px;margin-bottom:10px;
+  background:var(--bg-deep);color:var(--text);
+}
+.fb-body input:focus{outline:2px solid rgba(199,70,52,.4);outline-offset:-2px;border-color:transparent}
+.fb-body input::placeholder,.fb-body textarea::placeholder{color:var(--text-muted)}
+.fb-submit{
+  margin:10px 18px 14px;padding:9px;border:none;border-radius:var(--radius-sm);
+  background:linear-gradient(135deg,var(--oracle-red),#e05544);
+  color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;
+}
+.fb-submit:hover{box-shadow:0 2px 12px rgba(199,70,52,.3)}
+.fb-item{
+  padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:rgba(255,255,255,.03);font-size:13px;
+}
+.fb-item-meta{font-size:11px;color:var(--text-muted);margin-bottom:4px;display:flex;justify-content:space-between}
+.fb-item-content{color:var(--text-secondary);line-height:1.5;word-break:break-all}
+.fb-empty{text-align:center;color:var(--text-muted);padding:24px 0;font-size:13px}
+.fb-count{
+  position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;
+  border-radius:9px;background:var(--accent-amber);color:#000;font-size:10px;
+  display:flex;align-items:center;justify-content:center;padding:0 4px;font-weight:700;
+}
+.fb-clear{
+  background:none;border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:4px 10px;font-size:11px;color:var(--text-muted);cursor:pointer;margin-left:8px;transition:all .15s;
+}
+.fb-clear:hover{border-color:var(--oracle-red);color:var(--oracle-red)}
+@media(max-width:480px){
+  .fb-panel{right:12px;left:12px;width:auto;bottom:76px}
+  .fb-trigger{bottom:16px;right:16px;width:44px;height:44px}
+}
+.scroll-top{
+  position:fixed;bottom:84px;right:24px;z-index:999;
+  width:40px;height:40px;border-radius:50%;border:1px solid var(--border);
+  background:rgba(22,33,62,.8);backdrop-filter:blur(8px);
+  color:var(--text-secondary);cursor:pointer;display:none;align-items:center;justify-content:center;
+  font-size:18px;transition:all .2s;
+}
+.scroll-top:hover{background:rgba(199,70,52,.3);color:#fff;border-color:var(--oracle-red)}
+.scroll-top.visible{display:flex}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="app">
+    <section class="header">
+      <div class="header-left">
+        <div class="logo-mark">O2J</div>
+        <div>
+          <h1 class="title">Oracle 翻译工作台</h1>
+          <p class="subtitle">存储过程 / 函数 / 包 — 三模式转换，生成 Spring Boot + JdbcTemplate 业务代码</p>
+        </div>
+      </div>
+      <div class="version-box">
+        <span class="version">v4.0.0</span>
+        <span class="build">Build 2026-03-24 · Vue 3</span>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="mode-area">
+        <span class="mode-label">翻译模式</span>
+        <button v-for="m in modes" :key="m.key" class="mode-btn" :class="{active:currentMode===m.key}" @click="switchMode(m.key)">{{m.label}}</button>
+        <div class="switch-area">
+          <input type="checkbox" id="bodyMode" class="toggle" v-model="bodyMode"/>
+          <label for="bodyMode">过程体 SQL 优先翻译</label>
+        </div>
+        <div class="switch-area">
+          <input type="checkbox" id="logicMode" class="toggle" v-model="logicMode"/>
+          <label for="logicMode">业务逻辑展开为 Java</label>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" @click="loadSample">加载示例</button>
+        <button class="btn" @click="clearAll">清空</button>
+        <button class="btn" @click="copyOutput">复制输出</button>
+        <button class="btn" @click="saveOutput">保存输出</button>
+        <button class="btn primary" @click="convert">开始翻译</button>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <article class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">
+            <span class="terminal-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></span>
+            Oracle 输入
+          </h2>
+          <span class="panel-meta">{{inputLineCount}} 行</span>
+        </div>
+        <p class="panel-desc">{{modeHint}}</p>
+        <textarea v-model="oracleInput" spellcheck="false" placeholder="在此粘贴 Oracle 存储过程 / 函数 / 包代码..."></textarea>
+      </article>
+      <article class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">
+            <span class="terminal-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></span>
+            Java 输出
+          </h2>
+          <span class="edit-hint">可直接编辑</span>
+          <span class="panel-meta">{{outputMeta}}</span>
+        </div>
+        <p class="panel-desc">输出 Spring Boot 风格 Java 代码，包含完整的 JdbcTemplate 调用、日志记录和异常处理</p>
+        <textarea v-model="javaOutput" class="output-area" spellcheck="false" placeholder="点击「开始翻译」后输出结果"></textarea>
+      </article>
+    </section>
+
+    <section class="foot">
+      <div class="metrics">
+        <span class="metric">模式: <strong>{{modeLabel}}</strong></span>
+        <span class="metric">转换器: <strong>Oracle2Java</strong></span>
+        <span class="metric">引擎: <strong>Vue3 + JS Regex v4.0</strong></span>
+      </div>
+      <div class="state">{{statusText}}</div>
+    </section>
+  </div>
+
+  <!-- Feedback Widget -->
+  <button class="fb-trigger" @click="fbToggle" title="提交建议">
+    <span v-if="fbList.length" class="fb-count">{{fbList.length}}</span>
+    &#9993;
+  </button>
+  <div class="fb-panel" :class="{open:fbOpen}">
+    <div class="fb-header">
+      <span>建议反馈</span>
+      <div style="display:flex;align-items:center">
+        <button class="fb-clear" @click="fbClearAll" title="清空所有建议">清空</button>
+        <button @click="fbOpen=false" title="关闭">&times;</button>
+      </div>
+    </div>
+    <div class="fb-tabs">
+      <button class="fb-tab" :class="{active:fbTab==='write'}" @click="fbTab='write'">提交建议</button>
+      <button class="fb-tab" :class="{active:fbTab==='list'}" @click="fbTab='list'">查看建议 ({{fbList.length}})</button>
+    </div>
+    <div v-if="fbTab==='write'" class="fb-body">
+      <input v-model="fbName" type="text" placeholder="您的称呼（选填）" maxlength="30"/>
+      <textarea v-model="fbText" placeholder="请输入您的建议或反馈..." maxlength="500"></textarea>
+    </div>
+    <div v-else class="fb-body">
+      <div v-if="!fbList.length" class="fb-empty">暂无建议</div>
+      <div v-for="(item,idx) in fbListReversed" :key="idx" class="fb-item">
+        <div class="fb-item-meta">
+          <span>{{item.name||'匿名用户'}} · {{item.time}}</span>
+          <button @click="fbDelete(fbList.length-1-idx)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px" title="删除">&#10005;</button>
+        </div>
+        <div class="fb-item-content">{{item.text}}</div>
+      </div>
+    </div>
+    <button v-if="fbTab==='write'" class="fb-submit" @click="fbSubmit">提交建议</button>
+  </div>
+
+  <!-- Scroll to top -->
+  <button class="scroll-top" :class="{visible:showScrollTop}" @click="scrollToTop" title="回到顶部">&#8593;</button>
+</div>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+/* ── CONSTANTS & SAMPLES ── */
+const SAMPLES={
+procedure:`CREATE OR REPLACE PROCEDURE SP_DAILY_CLIENT_DATA_SYNC IS
+  v_step       VARCHAR2(200);
+  v_cnt        NUMBER := 0;
+  v_start_time TIMESTAMP := SYSTIMESTAMP;
+  v_err_msg    VARCHAR2(4000);
+BEGIN
+  -- 第一步：清空临时表
+  v_step := '步骤1-清空临时表 TMP_CLIENT_SYNC';
+  DBMS_OUTPUT.PUT_LINE(v_step || ' 开始执行');
+  EXECUTE IMMEDIATE 'TRUNCATE TABLE TMP_CLIENT_SYNC';
+  DBMS_OUTPUT.PUT_LINE(v_step || ' 执行完成');
+
+  -- 第二步：从源表抽取有效客户数据
+  v_step := '步骤2-抽取有效客户数据';
+  DBMS_OUTPUT.PUT_LINE(v_step || ' 开始执行');
+  INSERT INTO TMP_CLIENT_SYNC (CLIENT_NO, CLIENT_NAME, CERT_TYPE, CERT_NO, CLIENT_STATUS, UPDATE_DATE)
+    SELECT C.CLIENT_NO, C.CH_CLIENT_NAME, C.CERT_TYPE, C.CERT_NO, C.CLIENT_STATUS, SYSDATE
+    FROM FM_CLIENT C
+    INNER JOIN FM_CLIENT_ACCOUNT A ON C.CLIENT_NO = A.CLIENT_NO
+    WHERE C.CLIENT_TYPE IN ('200','300','400')
+      AND C.CLIENT_STATUS <> '99'
+      AND A.ACCT_STATUS = '1'
+      AND A.BALANCE > 0;
+  v_cnt := SQL%ROWCOUNT;
+  DBMS_OUTPUT.PUT_LINE(v_step || ' 完成, 插入记录数: ' || v_cnt);
+
+  -- 第三步：更新客户姓名去空格
+  v_step := '步骤3-清洗客户姓名';
+  DBMS_OUTPUT.PUT_LINE(v_step || ' 开始执行');
+  UPDATE TMP_CLIENT_SYNC SET CLIENT_NAME = TRIM(CLIENT_NAME) WHERE CLIENT_NAME <> TRIM(CLIENT_NAME);
+  v_cnt := SQL%ROWCOUNT;
+  DBMS_OUTPUT.PUT_LINE(v_step || ' 完成, 更新记录数: ' || v_cnt);
+
+  -- 第四步：删除证件号码为空的脏数据
+  v_step := '步骤4-删除无证件号码的脏数据';
+  DBMS_OUTPUT.PUT_LINE(v_step || ' 开始执行');
+  DELETE FROM TMP_CLIENT_SYNC WHERE CERT_NO IS NULL OR TRIM(CERT_NO) = '';
+  v_cnt := SQL%ROWCOUNT;
+  DBMS_OUTPUT.PUT_LINE(v_step || ' 完成, 删除记录数: ' || v_cnt);
+
+  -- 第五步：合并到目标正式表
+  v_step := '步骤5-MERGE到正式客户表';
+  DBMS_OUTPUT.PUT_LINE(v_step || ' 开始执行');
+  MERGE INTO CL_CLIENT_INFO T
+  USING TMP_CLIENT_SYNC S ON (T.CLIENT_NO = S.CLIENT_NO)
+  WHEN MATCHED THEN
+    UPDATE SET T.CLIENT_NAME = S.CLIENT_NAME, T.CERT_TYPE = S.CERT_TYPE,
+               T.CERT_NO = S.CERT_NO, T.UPDATE_DATE = SYSDATE
+  WHEN NOT MATCHED THEN
+    INSERT (CLIENT_NO, CLIENT_NAME, CERT_TYPE, CERT_NO, CLIENT_STATUS, CREATE_DATE, UPDATE_DATE)
+    VALUES (S.CLIENT_NO, S.CLIENT_NAME, S.CERT_TYPE, S.CERT_NO, S.CLIENT_STATUS, SYSDATE, SYSDATE);
+  v_cnt := SQL%ROWCOUNT;
+  DBMS_OUTPUT.PUT_LINE(v_step || ' 完成, 合并记录数: ' || v_cnt);
+
+  -- 第六步：记录执行日志
+  v_step := '步骤6-写入执行日志';
+  INSERT INTO SYS_PROC_LOG (PROC_NAME, EXEC_STATUS, EXEC_MSG, START_TIME, END_TIME)
+    VALUES ('SP_DAILY_CLIENT_DATA_SYNC', 'SUCCESS', '同步完成, 合并: ' || v_cnt || ' 条', v_start_time, SYSTIMESTAMP);
+
+  COMMIT;
+  DBMS_OUTPUT.PUT_LINE('SP_DAILY_CLIENT_DATA_SYNC 全部完成');
+EXCEPTION
+  WHEN OTHERS THEN
+    v_err_msg := SQLERRM;
+    ROLLBACK;
+    INSERT INTO SYS_PROC_LOG (PROC_NAME, EXEC_STATUS, EXEC_MSG, START_TIME, END_TIME)
+      VALUES ('SP_DAILY_CLIENT_DATA_SYNC', 'FAIL', v_step || ' 异常: ' || v_err_msg, v_start_time, SYSTIMESTAMP);
+    COMMIT;
+    RAISE;
+END SP_DAILY_CLIENT_DATA_SYNC;
+/`,
+function:`CREATE OR REPLACE FUNCTION fn_calc_client_risk_score(
+    p_client_no   IN VARCHAR2,
+    p_amount      IN NUMBER,
+    p_level       IN VARCHAR2,
+    p_overdue_cnt IN NUMBER
+) RETURN NUMBER
+IS
+  v_base_score  NUMBER := 100;
+  v_risk_factor NUMBER := 1;
+  v_result      NUMBER;
+BEGIN
+    -- 根据客户等级确定基础权重
+    IF p_level = 'VIP' THEN
+        v_risk_factor := 0.6;
+    ELSIF p_level = 'GOLD' THEN
+        v_risk_factor := 0.75;
+    ELSIF p_level = 'SILVER' THEN
+        v_risk_factor := 0.85;
+    ELSE
+        v_risk_factor := 1.0;
+    END IF;
+
+    -- 根据逾期次数扣分
+    IF p_overdue_cnt > 10 THEN
+        v_base_score := v_base_score - 40;
+    ELSIF p_overdue_cnt > 5 THEN
+        v_base_score := v_base_score - 25;
+    ELSIF p_overdue_cnt > 0 THEN
+        v_base_score := v_base_score - 10;
+    END IF;
+
+    -- 大额交易加分
+    IF p_amount > 1000000 THEN
+        v_base_score := v_base_score + 15;
+    ELSIF p_amount > 500000 THEN
+        v_base_score := v_base_score + 8;
+    END IF;
+
+    -- 最终得分 = 基础分 * 风险因子
+    v_result := v_base_score * v_risk_factor;
+
+    -- 分数限定在0到100之间
+    IF v_result > 100 THEN
+        v_result := 100;
+    ELSIF v_result < 0 THEN
+        v_result := 0;
+    END IF;
+
+    RETURN v_result;
+END fn_calc_client_risk_score;
+/`,
+package:`CREATE OR REPLACE PACKAGE ecif_sync_pkg AS
+  -- 全量同步客户数据
+  PROCEDURE sync_all_clients(p_batch_date IN DATE, p_sync_count OUT NUMBER, p_result OUT VARCHAR2);
+  -- 增量同步客户数据
+  PROCEDURE sync_incremental(p_client_no IN VARCHAR2, p_result OUT VARCHAR2);
+  -- 计算客户风险评分
+  FUNCTION calc_risk_score(p_client_no IN VARCHAR2, p_eval_date IN DATE) RETURN NUMBER;
+  -- 查询客户状态
+  FUNCTION get_client_status(p_client_no IN VARCHAR2) RETURN VARCHAR2;
+END ecif_sync_pkg;
+/
+
+CREATE OR REPLACE PACKAGE BODY ecif_sync_pkg AS
+
+  PROCEDURE sync_all_clients(p_batch_date IN DATE, p_sync_count OUT NUMBER, p_result OUT VARCHAR2) IS
+    v_step VARCHAR2(200);
+  BEGIN
+    v_step := '全量同步开始';
+    p_sync_count := 0;
+    p_result := 'INIT';
+
+    IF p_batch_date IS NULL THEN
+        p_result := 'FAIL: 批次日期不能为空';
+        RETURN;
+    END IF;
+
+    p_sync_count := 999;
+    p_result := 'OK';
+  END sync_all_clients;
+
+  PROCEDURE sync_incremental(p_client_no IN VARCHAR2, p_result OUT VARCHAR2) IS
+  BEGIN
+    IF p_client_no IS NULL THEN
+        p_result := 'FAIL: 客户号不能为空';
+        RETURN;
+    END IF;
+    p_result := 'OK';
+  END sync_incremental;
+
+  FUNCTION calc_risk_score(p_client_no IN VARCHAR2, p_eval_date IN DATE) RETURN NUMBER IS
+    v_score NUMBER := 0;
+  BEGIN
+    IF p_client_no IS NULL THEN
+        RETURN -1;
+    END IF;
+    v_score := 88;
+    RETURN v_score;
+  END calc_risk_score;
+
+  FUNCTION get_client_status(p_client_no IN VARCHAR2) RETURN VARCHAR2 IS
+    v_status VARCHAR2(20);
+  BEGIN
+    IF p_client_no IS NULL THEN
+        RETURN 'UNKNOWN';
+    END IF;
+    v_status := 'ACTIVE';
+    RETURN v_status;
+  END get_client_status;
+
+END ecif_sync_pkg;
+/`};
+
+const MODE_HINTS={
+  procedure:"适用于单个 PROCEDURE。可选「业务逻辑展开为 Java」，或在 SQL 清洗场景走过程体 SQL 翻译。",
+  function:"适用于单个 FUNCTION。可选「业务逻辑展开为 Java」，未勾选时输出 executeFunction(...) 调用模板。",
+  package:"适用于 PACKAGE / PACKAGE BODY。可选将包体内过程/函数逻辑展开为 Java 方法集合。"
+};
+const MODE_LABELS={procedure:"存储过程",function:"函数",package:"包"};
+
+/* ── UTILITIES ── */
+function toClassName(n){return(n.split(/[^a-zA-Z0-9]+/).filter(Boolean).map(p=>p[0].toUpperCase()+p.slice(1).toLowerCase()).join(""))||"OracleCall"}
+function toMethodName(n){const c=toClassName(n);return c[0].toLowerCase()+c.slice(1)}
+function splitParams(block){
+  if(!block.trim())return[];
+  const result=[];let buff=[],level=0;
+  for(const ch of block){
+    if(ch==="("){level++;buff.push(ch);continue}
+    if(ch===")"){level=Math.max(0,level-1);buff.push(ch);continue}
+    if(ch===","&&level===0){const t=buff.join("").trim();if(t)result.push(t);buff=[];continue}
+    buff.push(ch);
+  }
+  const tail=buff.join("").trim();if(tail)result.push(tail);return result;
+}
+function normalizeType(oracleType){
+  const t=oracleType.toUpperCase().trim();
+  if(t.includes("%TYPE"))return["Object","Oracle %TYPE 无法静态推断，需手工替换为具体 Java 类型"];
+  if(t.includes("REF CURSOR")||t.includes("SYS_REFCURSOR"))return["List<Map<String, Object>>",""];
+  if(/NUMBER|INTEGER|BINARY_INTEGER/.test(t))return["BigDecimal",""];
+  if(/VARCHAR2|VARCHAR|CHAR|CLOB/.test(t))return["String",""];
+  if(/DATE|TIMESTAMP/.test(t))return["LocalDateTime",""];
+  if(t.includes("BOOLEAN"))return["Boolean",""];
+  return["Object","未知 Oracle 类型，已映射为 Object，建议手工确认"];
+}
+function parseParams(block){
+  const params=[],warnings=[];
+  for(const part of splitParams(block)){
+    const clean=part.replace(/\s+/g," ").trim();
+    const m=clean.match(/^([a-zA-Z_][\w$#]*)\s*(IN\s+OUT|OUT|IN)?\s+(.+)$/i);
+    if(!m)continue;
+    const name=m[1];let direction=(m[2]||"IN").toUpperCase().replace(/\s+/g,"");
+    if(direction==="INOUT")direction="IN OUT";
+    const otype=m[3].trim();
+    const[jtype,warn]=normalizeType(otype);
+    if(warn)warnings.push(name+": "+warn+" ("+otype+")");
+    params.push({name,direction,otype,jtype});
+  }
+  return[params,warnings];
+}
+function stripSqlComments(sql){return sql.replace(/\/\*[\s\S]*?\*\//gi,"").replace(/--.*$/gm,"")}
+function parseSignature(sql){
+  const m=sql.match(/\b(PROCEDURE|FUNCTION)\s+([a-zA-Z_][\w$#]*(?:\.[a-zA-Z_][\w$#]*)?)\s*(\(([\s\S]*?)\))?\s*(RETURN\s+([\s\S]+?))?\b(IS|AS)\b/i);
+  if(!m)return null;
+  const callType=m[1].toUpperCase(),fullName=m[2],paramBlock=m[4]||"",returnType=(m[6]||"").trim();
+  const parts=fullName.split(".");
+  return{callType,packageName:parts.length===2?parts[0]:"",objectName:parts[parts.length-1],paramBlock,returnType};
+}
+function extractPlsqlBody(sql){
+  const source=stripSqlComments(sql);
+  const bm=source.match(/\bBEGIN\b/i);if(!bm)return"";
+  let tail=source.slice(bm.index+bm[0].length);
+  let depth=0;
+  const re=/\b(BEGIN|EXCEPTION|END)\b(\s+(IF|LOOP|CASE|WHILE|FOR)\b)?/gi;
+  let m;
+  while((m=re.exec(tail))){
+    const kw=m[1].toUpperCase(),suffix=(m[3]||"").toUpperCase();
+    if(kw==="BEGIN"){depth++;continue;}
+    if(kw==="EXCEPTION"&&depth===0)return tail.slice(0,m.index).trim();
+    if(kw==="END"){
+      if(suffix)continue;
+      if(depth>0){depth--;continue;}
+      return tail.slice(0,m.index).trim();
+    }
+  }
+  return tail.trim();
+}
+function splitPlsqlStatements(block){
+  if(!block.trim())return[];
+  const stmts=[];let buff=[],inQ=false,i=0;
+  while(i<block.length){
+    const ch=block[i];
+    if(ch==="'"){buff.push(ch);if(inQ&&i+1<block.length&&block[i+1]==="'"){buff.push("'");i+=2;continue}inQ=!inQ;i++;continue}
+    if(ch===";"&&!inQ){const s=buff.join("").trim();if(s)stmts.push(s);buff=[];i++;continue}
+    buff.push(ch);i++;
+  }
+  const tail=buff.join("").trim();if(tail)stmts.push(tail);return stmts;
+}
+function normalizeStmt(s){return s.replace(/\s+/g," ").trim().toUpperCase()}
+function extractDynamicSql(stmt){
+  const m=stmt.trim().match(/^EXECUTE\s+IMMEDIATE\s+'((?:''|[^'])*)'/i);
+  if(!m)return"";return m[1].replace(/''/g,"'").trim();
+}
+function toJavaTextBlock(sql,indent="                "){
+  const safe=sql.trim().replace(/"""/g,'\\"""');
+  const lines=safe.split("\n");
+  const body=lines.map(l=>indent+l.trimEnd()).join("\n");
+  return'"""\n'+body+"\n"+indent+'"""';
+}
+function javaEscape(t){return t.replace(/\\/g,"\\\\").replace(/"/g,'\\"')}
+function extractPutlineMessage(stmt){
+  const parts=stmt.match(/'((?:''|[^'])*)'/g);
+  if(!parts)return"DBMS_OUTPUT.PUT_LINE";
+  const joined=parts.map(p=>p.slice(1,-1).replace(/''/g,"'")).join("").trim();
+  return joined||"DBMS_OUTPUT.PUT_LINE";
+}
+
+/* ── LOGIC CONVERTER ── */
+function shouldUseBodyMode(callType,params,sql,preferBody){
+  if(!preferBody||callType!=="PROCEDURE"||params.length)return false;
+  const body=extractPlsqlBody(sql);if(!body)return false;
+  const stmts=splitPlsqlStatements(body);
+  let actionable=0;
+  for(const s of stmts){const n=normalizeStmt(s);
+    if(n.startsWith("EXECUTE IMMEDIATE")||/^(INSERT|UPDATE|DELETE|MERGE|TRUNCATE\s+TABLE)\b/i.test(s.trim()))actionable++;}
+  return actionable>=2;
+}
+function shouldUseLogicMode(callType,body,preferLogic){
+  if(!preferLogic)return false;
+  if(callType==="FUNCTION")return/\b(IF|CASE|ELSIF|LOOP|WHILE|FOR|RETURN)\b|:=/i.test(body);
+  if(callType!=="PROCEDURE")return false;
+  if(!body.trim())return false;
+  return/\b(IF|CASE|ELSIF|LOOP|WHILE|FOR)\b|:=/i.test(body);
+}
+function splitLogicLines(body){return body.split("\n").map(l=>l.trim()).filter(Boolean)}
+function startsWithToken(lu,token){
+  const tu=token.toUpperCase();
+  if(tu==="ELSE")return lu==="ELSE"||lu.startsWith("ELSE ");
+  if(tu==="END IF")return lu.startsWith("END IF");
+  if(tu==="ELSIF")return lu.startsWith("ELSIF ");
+  return lu.startsWith(tu);
+}
+function readUntilSemicolon(lines,idx){
+  const parts=[lines[idx].trim()];idx++;let joined=parts.join(" ");
+  while(idx<lines.length&&!joined.includes(";")){parts.push(lines[idx].trim());idx++;joined=parts.join(" ");}
+  return[joined,idx];
+}
+function readConditionalHeader(lines,idx,keyword){
+  const parts=[lines[idx].trim()];idx++;let joined=parts.join(" ");
+  while(idx<lines.length&&!/\bTHEN\b/i.test(joined)){parts.push(lines[idx].trim());idx++;joined=parts.join(" ");}
+  let normalized=joined.replace(/\s+/g," ").trim().replace(/;\s*$/,"");
+  const re=new RegExp("^"+keyword.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+"\\s+(.+?)\\s+THEN$","i");
+  const m=normalized.match(re);return m?[m[1].trim(),idx]:[normalized,idx];
+}
+function javaStringLiteral(t){return'"'+t.replace(/\\/g,"\\\\").replace(/"/g,'\\"')+'"'}
+function convertStringLiterals(expr){return expr.replace(/'((?:''|[^'])*)'/g,(_,c)=>javaStringLiteral(c.replace(/''/g,"'")))}
+function convertExpression(expr){
+  let o=expr.trim().replace(/;\s*$/,"");
+  o=convertStringLiterals(o);
+  o=o.replace(/\bNULL\b/gi,"null").replace(/\bTRUE\b/gi,"true").replace(/\bFALSE\b/gi,"false");
+  o=o.replace(/\bSYSDATE\b/gi,"LocalDateTime.now()").replace(/\bSYSTIMESTAMP\b/gi,"LocalDateTime.now()");
+  o=o.replace(/\|\|/g," + ");return o;
+}
+function invertCompareOp(op){return{">":"<","<":">",">=":"<=","<=":">=","=":"=","<>":"<>"}[op]||op}
+function buildBigDecimalCompare(v,op,num){
+  const comp=v+'.compareTo(new BigDecimal("'+num+'"))';
+  const map={">":"> 0","<":"< 0",">=":">= 0","<=":"<= 0","=":"== 0","<>":"!= 0"};
+  return"("+v+" != null && "+comp+" "+(map[op]||op+" 0")+")";
+}
+function convertCondition(expr,numVars,strVars){
+  let o=convertExpression(expr);
+  for(const v of numVars){
+    const e=v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    o=o.replace(new RegExp("\\b"+e+"\\b\\s*(>=|<=|<>|=|>|<)\\s*(-?\\d+(?:\\.\\d+)?)","gi"),(_,op,n)=>buildBigDecimalCompare(v,op,n));
+    o=o.replace(new RegExp("(-?\\d+(?:\\.\\d+)?)\\s*(>=|<=|<>|=|>|<)\\s*\\b"+e+"\\b","gi"),(_,n,op)=>buildBigDecimalCompare(v,invertCompareOp(op),n));
+  }
+  o=o.replace(/\bIS\s+NOT\s+NULL\b/gi,"!= null").replace(/\bIS\s+NULL\b/gi,"== null");
+  o=o.replace(/\bAND\b/gi,"&&").replace(/\bOR\b/gi,"||").replace(/\bNOT\b/gi,"!");
+  o=o.replace(/<>/g,"!=").replace(/(?<![<>=!:])=(?!=)/g,"==");
+  for(const v of strVars){
+    const e=v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    o=o.replace(new RegExp("\\b"+e+'\\b\\s*(==|!=)\\s*("(?:\\\\.|[^"])*")',"g"),(_,op,lit)=>op==="=="?"Objects.equals("+v+", "+lit+")":"!Objects.equals("+v+", "+lit+")");
+    o=o.replace(new RegExp('("(?:\\\\.|[^"])*")\\s*(==|!=)\\s*\\b'+e+"\\b","g"),(_,lit,op)=>op==="=="?"Objects.equals("+v+", "+lit+")":"!Objects.equals("+v+", "+lit+")");
+  }
+  return o;
+}
+/* ── convertSimpleLogicStatement + logic block parser ── */
+function convertSimpleLogicStatement(stmt){
+  const s=stmt.replace(/\s+/g," ").trim().replace(/;\s*$/,"");if(!s)return[];
+  if(s.toUpperCase()==="NULL")return["// 空操作 (Oracle NULL statement)"];
+  const ma=s.match(/^([a-zA-Z_][\w$#]*)\s*:=\s*(.+)$/i);
+  if(ma)return[ma[1]+" = "+convertExpression(ma[2])+";"];
+  const mr=s.match(/^RETURN\s+(.+)$/i);
+  if(mr)return["return "+convertExpression(mr[1])+";"];
+  if(s.toUpperCase()==="RETURN")return["return;"];
+  if(/^DBMS_OUTPUT\.PUT_LINE\s*\(/i.test(s))return["log.info(String.valueOf("+convertExpression(s.slice(s.indexOf("(")+1,s.lastIndexOf(")")))+"));"];
+  if(s.toUpperCase()==="RAISE")return['throw new RuntimeException("业务异常: RAISE");'];
+  if(/^EXECUTE\s+IMMEDIATE\b/i.test(s)){
+    const dynM=s.match(/^EXECUTE\s+IMMEDIATE\s+'((?:''|[^'])*)'/i);
+    if(dynM){
+      const dyn=dynM[1].replace(/''/g,"'").trim();
+      const tb=toJavaTextBlock(dyn,"            ");
+      if(/^(INSERT|UPDATE|DELETE|MERGE)\b/i.test(dyn))return["int affectedRows = jdbcTemplate.update("+tb+");","log.info(\"EXECUTE IMMEDIATE 影响行数: {}\", affectedRows);"];
+      return["jdbcTemplate.execute("+tb+");","log.info(\"EXECUTE IMMEDIATE 执行完成\");"];
+    }
+    const dynVarM=s.match(/^EXECUTE\s+IMMEDIATE\s+(\w+)/i);
+    if(dynVarM)return["jdbcTemplate.execute("+dynVarM[1]+");","log.info(\"动态SQL执行完成, SQL={}\", "+dynVarM[1]+");"];
+    return["jdbcTemplate.execute(\"/* 动态SQL需确认 */\");"];
+  }
+  if(/^INSERT\b/i.test(s)){const tb=toJavaTextBlock(s,"            ");return["int insertRows = jdbcTemplate.update("+tb+");","log.info(\"INSERT 影响行数: {}\", insertRows);"];}
+  if(/^UPDATE\b/i.test(s)){const tb=toJavaTextBlock(s,"            ");return["int updateRows = jdbcTemplate.update("+tb+");","log.info(\"UPDATE 影响行数: {}\", updateRows);"];}
+  if(/^DELETE\b/i.test(s)){const tb=toJavaTextBlock(s,"            ");return["int deleteRows = jdbcTemplate.update("+tb+");","log.info(\"DELETE 影响行数: {}\", deleteRows);"];}
+  if(/^MERGE\b/i.test(s)){const tb=toJavaTextBlock(s,"            ");return["int mergeRows = jdbcTemplate.update("+tb+");","log.info(\"MERGE 影响行数: {}\", mergeRows);"];}
+  if(/^TRUNCATE\b/i.test(s)){const tb=toJavaTextBlock(s,"            ");return["jdbcTemplate.execute("+tb+");","log.info(\"TRUNCATE 执行完成\");"];}
+  if(/^COMMIT\b/i.test(s))return["// COMMIT: 由 @Transactional 统一管理"];
+  if(/^ROLLBACK\b/i.test(s))return["// ROLLBACK: 由 @Transactional 异常自动回滚"];
+  if(/^PUBLIC_LOG_PKG\b/i.test(s)){
+    const msgParts=s.match(/'((?:''|[^'])*)'/g);
+    const msg=msgParts?msgParts.map(p=>p.slice(1,-1).replace(/''/g,"'")).join(""):"审计日志";
+    return['log.info("[审计日志] '+javaEscape(msg)+'");'];
+  }
+  if(/^RAISE_APPLICATION_ERROR\s*\(/i.test(s)){
+    const args=s.slice(s.indexOf("(")+1,s.lastIndexOf(")"));
+    const parts=args.split(",");
+    const code=parts[0]?parts[0].trim():"";
+    const msgExpr=parts.slice(1).join(",").trim();
+    const javaMsg=convertExpression(msgExpr);
+    return['throw new RuntimeException("Oracle Error '+code+': " + '+javaMsg+');'];
+  }
+  if(/^SELECT\b/i.test(s)){
+    const intoM=s.match(/\bINTO\s+([\w$#]+(?:\s*,\s*[\w$#]+)*)\s+FROM\b/i);
+    if(intoM){
+      const vars=intoM[1].split(",").map(v=>v.trim());
+      const fromPart=s.slice(s.search(/\bFROM\b/i));
+      const selectPart=s.slice(s.search(/\bSELECT\b/i),s.search(/\bINTO\b/i)).replace(/^SELECT\s+/i,"").trim();
+      const query="SELECT "+selectPart+" "+fromPart;
+      const tb=toJavaTextBlock(query,"            ");
+      if(vars.length===1)return["Map<String, Object> row = jdbcTemplate.queryForMap("+tb+");",vars[0]+" = row.get(\""+selectPart.split(",")[0].trim().split(/\s+/).pop()+"\");","log.info(\"SELECT INTO 完成, "+vars[0]+"={}\", "+vars[0]+");"];
+      return["Map<String, Object> row = jdbcTemplate.queryForMap("+tb+");",... vars.map((v,i)=>v+" = row.get(\"col_"+i+"\"); // 请确认实际列名"),"log.info(\"SELECT INTO 完成, 变量数: "+vars.length+"\");"];
+    }
+  }
+  const callM=s.match(/^([a-zA-Z_][\w$#]*(?:\.[a-zA-Z_][\w$#]*)*)\s*\((.*)\)$/i);
+  if(callM){
+    const callName=callM[1],callArgs=callM[2];
+    const javaName=toMethodName(callName.replace(/\./g,"_"));
+    const javaArgs=convertExpression(callArgs);
+    return[javaName+"("+javaArgs+"); // 调用 Oracle: "+callName,"log.info(\"调用 "+callName+" 完成\");"];
+  }
+  return["jdbcTemplate.execute(\""+javaEscape(s)+"\"); // 原始语句直接执行","log.info(\"执行语句完成: "+javaEscape(s.slice(0,60))+"\");"];
+}
+function indentLines(lines,prefix="    "){return lines.map(l=>prefix+l)}
+function parseLogicBlock(lines,idx,stopTokens,outSet,numVars,strVars){
+  const result=[];
+  while(idx<lines.length){
+    const line=lines[idx].trim(),lu=line.toUpperCase();
+    let stopped=false;for(const t of stopTokens)if(startsWithToken(lu,t)){stopped=true;break;}
+    if(stopped)break;
+    if(startsWithToken(lu,"IF")){
+      let[cond,ni]=readConditionalHeader(lines,idx,"IF");idx=ni;
+      const condJ=convertCondition(cond,numVars,strVars);
+      let[thenBlock,ni2]=parseLogicBlock(lines,idx,new Set(["ELSIF","ELSE","END IF"]),outSet,numVars,strVars);idx=ni2;
+      result.push("if ("+condJ+") {");result.push(...indentLines(thenBlock));result.push("}");
+      while(idx<lines.length&&startsWithToken(lines[idx].trim().toUpperCase(),"ELSIF")){
+        let[ec,ni3]=readConditionalHeader(lines,idx,"ELSIF");idx=ni3;
+        const ej=convertCondition(ec,numVars,strVars);
+        let[eb,ni4]=parseLogicBlock(lines,idx,new Set(["ELSIF","ELSE","END IF"]),outSet,numVars,strVars);idx=ni4;
+        result.push("else if ("+ej+") {");result.push(...indentLines(eb));result.push("}");
+      }
+      if(idx<lines.length&&startsWithToken(lines[idx].trim().toUpperCase(),"ELSE")){
+        idx++;let[elseB,ni5]=parseLogicBlock(lines,idx,new Set(["END IF"]),outSet,numVars,strVars);idx=ni5;
+        result.push("else {");result.push(...indentLines(elseB));result.push("}");
+      }
+      if(idx<lines.length&&startsWithToken(lines[idx].trim().toUpperCase(),"END IF"))idx++;
+      continue;
+    }
+    const[statement,ni]=readUntilSemicolon(lines,idx);idx=ni;
+    result.push(...convertSimpleLogicStatement(statement));
+  }
+  return[result,idx];
+}
+function defaultJavaValue(jtype){
+  if(jtype==="BigDecimal")return"BigDecimal.ZERO";if(jtype==="Boolean")return"false";
+  if(jtype==="String"||jtype==="LocalDateTime")return"null";
+  if(jtype.startsWith("List<"))return"null";if(jtype==="Map<String, Object>")return"new HashMap<>()";return"null";
+}
+function buildLogicMethodParts(callType,objectName,params,body,returnType,warnings){
+  const methodName=toMethodName(objectName);
+  const inP=params.filter(p=>p.direction==="IN"||p.direction==="IN OUT");
+  const outP=params.filter(p=>p.direction==="OUT"||p.direction==="IN OUT");
+  const pureOut=outP.filter(p=>p.direction==="OUT");
+  const numVars=new Set(params.filter(p=>p.jtype==="BigDecimal").map(p=>p.name));
+  const strVars=new Set([...params.filter(p=>p.jtype==="String").map(p=>p.name),...pureOut.filter(p=>p.jtype==="String").map(p=>p.name)]);
+  const outSet=new Set(pureOut.map(p=>p.name));
+  let resolvedReturn="void",returnMode="void";
+  if(callType==="FUNCTION"){const[rt,w]=normalizeType(returnType);resolvedReturn=rt;if(w)warnings.push("RETURN: "+w+" ("+returnType+")");returnMode="function";}
+  else{if(pureOut.length===1){resolvedReturn=pureOut[0].jtype;returnMode="single";}else if(pureOut.length>1){resolvedReturn="Map<String, Object>";returnMode="map";}}
+  const sig=inP.map(p=>p.jtype+" "+p.name).join(", ");
+  const[logicLines]=parseLogicBlock(splitLogicLines(body),0,new Set(),outSet,numVars,strVars);
+  const decls=pureOut.map(p=>p.jtype+" "+p.name+" = "+defaultJavaValue(p.jtype)+";");
+  const tail=[];
+  if(returnMode==="single")tail.push("return "+pureOut[0].name+";");
+  else if(returnMode==="map"){tail.push("Map<String, Object> out = new HashMap<>();");pureOut.forEach(p=>tail.push('out.put("'+p.name+'", '+p.name+");"));tail.push("return out;");}
+  else if(returnMode==="function"&&!logicLines.some(l=>l.trim().startsWith("return "))){tail.push("// 原 PL/SQL 中未显式 RETURN，补充默认返回值");tail.push("return "+defaultJavaValue(resolvedReturn)+";");}
+  const bodyLines=[...decls,...logicLines,...tail];if(!bodyLines.length)bodyLines.push("// 未提取到可转换逻辑，请手工补充");
+  const imports=new Set();
+  const allText=bodyLines.join("\n");
+  if(params.some(p=>p.jtype==="BigDecimal")||allText.includes("new BigDecimal("))imports.add("import java.math.BigDecimal;");
+  if(resolvedReturn==="Map<String, Object>"||allText.includes("new HashMap<>()"))imports.add("import java.util.HashMap;"),imports.add("import java.util.Map;");
+  if(allText.includes("LocalDateTime.now()")||params.some(p=>p.jtype==="LocalDateTime"))imports.add("import java.time.LocalDateTime;");
+  if(allText.includes("Objects.equals("))imports.add("import java.util.Objects;");
+  const methodBody=bodyLines.map(l=>"        "+l).join("\n");
+  return{methodBlock:`    public ${resolvedReturn} ${methodName}(${sig}) {\n${methodBody}\n    }`,imports,warnings,returnType:resolvedReturn};
+}
+/* ── TEMPLATE BUILDERS ── */
+function buildLogicServiceTemplate(callType,objectName,params,body,returnType,warnings){
+  const className=toClassName(objectName)+"LogicService";
+  const result=buildLogicMethodParts(callType,objectName,params,body,returnType,warnings);
+  const notes=["// ============================================================","// 逻辑展开模式：已将 PL/SQL 控制流转换为 Java 业务代码骨架","// 源对象: " + objectName + " (" + callType + ")","// 适用范围：IF/ELSIF/ELSE、赋值(:=)、RETURN、基础表达式","// 注意：SQL 类语句（INSERT/UPDATE 等）需手工迁移为 JdbcTemplate 调用","// ============================================================"];
+  if(result.warnings.length)notes.push("//",... result.warnings.slice(0,12).map(w=>"// [警告] "+w));
+  const imports=new Set(["import lombok.extern.slf4j.Slf4j;","import org.springframework.stereotype.Service;"]);
+  result.imports.forEach(i=>imports.add(i));
+  const inP=params.filter(p=>p.direction==="IN"||p.direction==="IN OUT");
+  const paramLogParts=inP.map(p=>p.name+"={}").join(", ");
+  const paramLogArgs=inP.map(p=>p.name).join(", ");
+  let logEntry;
+  if(inP.length){logEntry='        log.info("['+objectName+'] 方法进入, 参数: '+paramLogParts+'", '+paramLogArgs+');';}
+  else{logEntry='        log.info("['+objectName+'] 方法进入");';}
+  const origMethod=result.methodBlock;
+  const openBrace=origMethod.indexOf("{");
+  const closeBrace=origMethod.lastIndexOf("}");
+  const methodSig=origMethod.slice(0,openBrace+1);
+  const methodBody=origMethod.slice(openBrace+1,closeBrace);
+  const enhancedMethod=methodSig+"\n"+logEntry+"\n        long _startMs = System.currentTimeMillis();\n        try {\n    "+methodBody.replace(/\n/g,"\n    ")+"    } finally {\n            long _elapsedMs = System.currentTimeMillis() - _startMs;\n"+'            log.info("['+objectName+'] 方法退出, 耗时: {}ms", _elapsedMs);\n        }\n    }';
+  const jdocParams=inP.map(p=>"     * @param "+p.name+" 对应 Oracle 参数 "+p.name+" ("+p.direction+" "+p.otype+")").join("\n");
+  const jdocReturn=callType==="FUNCTION"?" * @return 对应 Oracle RETURN "+returnType+"\n":"";
+  const javadoc="    /**\n     * "+objectName+" 的 Java 业务逻辑实现\n     *\n     * <p>由 PL/SQL 控制流自动转换，包含 IF/ELSIF/ELSE 分支、\n     * 赋值语句、RETURN 等逻辑的 Java 等价代码。</p>\n     *\n"+(jdocParams?jdocParams+"\n":"")+jdocReturn+"     */";
+  return`${notes.join("\n")}\npackage com.example.demo.oracle;\n\n${[...imports].sort().join("\n")}\n\n/**\n * ${objectName} 逻辑展开服务\n *\n * <p>将 Oracle ${callType} 中的业务逻辑转换为纯 Java 代码，\n * 不依赖数据库存储过程调用，便于单元测试和微服务化。</p>\n */\n@Service\n@Slf4j\npublic class ${className} {\n\n${javadoc}\n${enhancedMethod}\n}\n`;
+}
+
+function buildBodyTemplate(objectName,statements){
+  const className=toClassName(objectName),methodName=toMethodName(objectName),serviceName=className+"Service";
+  const javaLines=[],skipped=[];let converted=0,stepNo=0;
+  javaLines.push("            // ====== 执行开始，初始化计时与步骤计数器 ======");
+  javaLines.push('            long procStartMs = System.currentTimeMillis();');
+  javaLines.push('            int totalAffected = 0;');
+  javaLines.push('            int stepCount = 0;');
+  javaLines.push('            log.info("[' + objectName + '] >>>>>> 过程开始执行");');
+  javaLines.push("");
+  for(const stmt of statements){
+    const norm=normalizeStmt(stmt);if(!norm)continue;
+    if(norm.startsWith("COMMIT")){javaLines.push("            // COMMIT: 由 @Transactional 统一管理，此处无需显式提交");continue;}
+    if(norm.startsWith("ROLLBACK")){javaLines.push("            // ROLLBACK: 由 @Transactional 异常自动回滚，此处无需显式回滚");continue;}
+    if(norm.startsWith("DBMS_OUTPUT.PUT_LINE")){
+      const msg=javaEscape(extractPutlineMessage(stmt));
+      javaLines.push('            log.info("[' + objectName + '] ' + msg + '");');
+      continue;
+    }
+    if(norm.startsWith("PUBLIC_LOG_PKG.DBMODULELOG")){
+      const msgParts=stmt.match(/'((?:''|[^'])*)'/g);
+      const msg=msgParts?msgParts.map(p=>p.slice(1,-1).replace(/''/g,"'")).join(""):"审计日志";
+      javaLines.push('            log.info("[审计日志] '+javaEscape(msg)+'");');
+      continue;
+    }
+    stepNo++;
+    const stepLabel = "步骤" + stepNo;
+    let sqlDesc = "";
+    if(norm.startsWith("EXECUTE IMMEDIATE")){
+      const dyn=extractDynamicSql(stmt);
+      if(!dyn){skipped.push("EXECUTE IMMEDIATE (复杂动态 SQL)");continue;}
+      const dynNorm = dyn.replace(/\s+/g," ").trim().toUpperCase();
+      if(/^TRUNCATE/.test(dynNorm)) sqlDesc = "清空表(TRUNCATE)";
+      else if(/^INSERT/.test(dynNorm)) sqlDesc = "插入数据(INSERT)";
+      else if(/^UPDATE/.test(dynNorm)) sqlDesc = "更新数据(UPDATE)";
+      else if(/^DELETE/.test(dynNorm)) sqlDesc = "删除数据(DELETE)";
+      else if(/^MERGE/.test(dynNorm)) sqlDesc = "合并数据(MERGE)";
+      else sqlDesc = "动态DDL执行";
+      const tb=toJavaTextBlock(dyn);
+      javaLines.push("            // ------ " + stepLabel + ": " + sqlDesc + " ------");
+      javaLines.push("            stepCount++;");
+      javaLines.push('            log.info("[' + objectName + '] ' + stepLabel + '-' + sqlDesc + ' 开始执行");');
+      javaLines.push("            long step" + stepNo + "Start = System.currentTimeMillis();");
+      if(/^(INSERT|UPDATE|DELETE|MERGE)\b/i.test(dyn)){
+        javaLines.push("            int rows" + stepNo + " = jdbcTemplate.update(" + tb + ");");
+        javaLines.push("            totalAffected += rows" + stepNo + ";");
+        javaLines.push('            log.info("[' + objectName + '] ' + stepLabel + '-' + sqlDesc + ' 完成, 影响行数: {} , 耗时: {}ms", rows' + stepNo + ', System.currentTimeMillis() - step' + stepNo + 'Start);');
+      } else {
+        javaLines.push("            jdbcTemplate.execute(" + tb + ");");
+        javaLines.push('            log.info("[' + objectName + '] ' + stepLabel + '-' + sqlDesc + ' 完成, 耗时: {}ms", System.currentTimeMillis() - step' + stepNo + 'Start);');
+      }
+      javaLines.push("");
+      converted++;continue;
+    }
+    if(/^(INSERT|UPDATE|DELETE|MERGE)\b/i.test(stmt.trim())){
+      const stmtNorm = stmt.replace(/\s+/g," ").trim().toUpperCase();
+      if(/^INSERT/.test(stmtNorm)) sqlDesc = "插入数据(INSERT)";
+      else if(/^UPDATE/.test(stmtNorm)) sqlDesc = "更新数据(UPDATE)";
+      else if(/^DELETE/.test(stmtNorm)) sqlDesc = "删除数据(DELETE)";
+      else if(/^MERGE/.test(stmtNorm)) sqlDesc = "合并数据(MERGE)";
+      const tb=toJavaTextBlock(stmt);
+      javaLines.push("            // ------ " + stepLabel + ": " + sqlDesc + " ------");
+      javaLines.push("            stepCount++;");
+      javaLines.push('            log.info("[' + objectName + '] ' + stepLabel + '-' + sqlDesc + ' 开始执行");');
+      javaLines.push("            long step" + stepNo + "Start = System.currentTimeMillis();");
+      javaLines.push("            int rows" + stepNo + " = jdbcTemplate.update(" + tb + ");");
+      javaLines.push("            totalAffected += rows" + stepNo + ";");
+      javaLines.push('            log.info("[' + objectName + '] ' + stepLabel + '-' + sqlDesc + ' 完成, 影响行数: {}, 耗时: {}ms", rows' + stepNo + ', System.currentTimeMillis() - step' + stepNo + 'Start);');
+      javaLines.push("");
+      converted++;continue;
+    }
+    if(/^TRUNCATE\s+TABLE\b/i.test(stmt.trim())){
+      sqlDesc = "清空表(TRUNCATE)";
+      const tb=toJavaTextBlock(stmt);
+      javaLines.push("            // ------ " + stepLabel + ": " + sqlDesc + " ------");
+      javaLines.push("            stepCount++;");
+      javaLines.push('            log.info("[' + objectName + '] ' + stepLabel + '-' + sqlDesc + ' 开始执行");');
+      javaLines.push("            long step" + stepNo + "Start = System.currentTimeMillis();");
+      javaLines.push("            jdbcTemplate.execute(" + tb + ");");
+      javaLines.push('            log.info("[' + objectName + '] ' + stepLabel + '-' + sqlDesc + ' 完成, 耗时: {}ms", System.currentTimeMillis() - step' + stepNo + 'Start);');
+      javaLines.push("");
+      converted++;continue;
+    }
+    skipped.push(stmt.replace(/\s+/g," ").trim().slice(0,80));
+  }
+  javaLines.push("            // ====== 执行完毕，输出汇总日志 ======");
+  javaLines.push('            long totalMs = System.currentTimeMillis() - procStartMs;');
+  javaLines.push('            log.info("[' + objectName + '] <<<<<< 过程执行完毕, 共 {} 步, 累计影响行数: {}, 总耗时: {}ms", stepCount, totalAffected, totalMs);');
+  const bodyBlock=javaLines.length?javaLines.join("\n"):"            // 未提取到可转换 SQL，请手工补充";
+  const notes=["// ============================================================","// 自动生成: 从 Oracle 过程体提取 SQL 转换为 Spring Boot Java 骨架","// 源过程: " + objectName,"// 已转换 SQL 语句: "+converted+" 条","// 生成特性: 每步带执行日志(步骤名/影响行数/耗时), @Transactional 统一事务","// 请逐条校验业务语义，确认 SQL 文本与实际表结构一致","// ============================================================"];
+  if(skipped.length){notes.push("//");notes.push("// [警告] 未自动转换语句: "+skipped.length+" 条");notes.push(...skipped.slice(0,8).map(s=>"//   - "+s));}
+  return`${notes.join("\n")}\npackage com.example.demo.oracle;\n\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.springframework.jdbc.core.JdbcTemplate;\nimport org.springframework.stereotype.Service;\nimport org.springframework.transaction.annotation.Transactional;\n\n/**\n * ${objectName} 过程对应的 Java Service\n *\n * <p>原 Oracle 存储过程中的每条 SQL 语句已转换为 JdbcTemplate 调用，\n * 每步均带有详细的执行日志（步骤描述、影响行数、耗时毫秒数），\n * 便于排查生产问题和监控数据同步进度。</p>\n *\n * <p>事务由 @Transactional 统一管理：\n * - 正常结束自动 COMMIT\n * - 任何异常自动 ROLLBACK</p>\n */\n@Service\n@Slf4j\n@RequiredArgsConstructor\npublic class ${className}Service {\n\n    private final JdbcTemplate jdbcTemplate;\n\n    /**\n     * 执行 ${objectName} 过程的全部业务逻辑\n     *\n     * <p>共 ${converted} 步 SQL 操作，每步记录影响行数和耗时。</p>\n     *\n     * @throws RuntimeException 任意步骤异常时抛出，事务自动回滚\n     */\n    @Transactional(rollbackFor = Exception.class)\n    public void ${methodName}() {\n        try {\n${bodyBlock}\n        } catch (Exception ex) {\n            log.error("[${objectName}] !!!!! 过程执行失败, 异常信息: {}", ex.getMessage(), ex);\n            throw new RuntimeException("${objectName} 执行失败: " + ex.getMessage(), ex);\n        }\n    }\n}\n`;
+}
+
+/* ── SPRING TEMPLATE ── */
+function javaClassForOutType(jt){
+  const map={"String":"String.class","BigDecimal":"BigDecimal.class","Boolean":"Boolean.class","LocalDateTime":"LocalDateTime.class","List<Map<String, Object>>":"List.class"};
+  return map[jt]||"Object.class";
+}
+function sqlParamType(otype,jtype){
+  const t=otype.toUpperCase();
+  if(/REF CURSOR|SYS_REFCURSOR/.test(t))return"Types.REF_CURSOR";
+  if(/VARCHAR2|VARCHAR|CHAR|CLOB/.test(t))return"Types.VARCHAR";
+  if(/NUMBER|INTEGER|BINARY_INTEGER/.test(t))return"Types.NUMERIC";
+  if(t.includes("DATE"))return"Types.DATE";if(t.includes("TIMESTAMP"))return"Types.TIMESTAMP";
+  if(jtype==="Boolean")return"Types.BOOLEAN";return"Types.JAVA_OBJECT";
+}
+function buildSpringTemplate(callType,packageName,objectName,params,returnType,warnings){
+  const opClass=toClassName(objectName),methodName=toMethodName(objectName);
+  const ifaceName=opClass+"Repository",implName=opClass+"RepositoryImpl",svcName=opClass+"Service";
+  const inP=params.filter(p=>p.direction==="IN"||p.direction==="IN OUT");
+  const outP=params.filter(p=>p.direction==="OUT"||p.direction==="IN OUT");
+  const hasCursor=outP.some(p=>p.jtype==="List<Map<String, Object>>");
+  let singleOut=null;
+  if(callType==="PROCEDURE"){const po=outP.filter(p=>p.direction==="OUT");if(po.length===1)singleOut=po[0];}
+  let funcJtype="Object";
+  if(callType==="FUNCTION"){const[ft,w]=normalizeType(returnType);funcJtype=ft;if(w)warnings.push("RETURN: "+w+" ("+returnType+")");}
+  let returnJavaType=singleOut?singleOut.jtype:(callType==="PROCEDURE"||outP.length)?"Map<String, Object>":funcJtype;
+  const sig=inP.map(p=>p.jtype+" "+p.name).join(", ");
+  const imports=new Set(["import lombok.RequiredArgsConstructor;","import lombok.extern.slf4j.Slf4j;","import org.springframework.jdbc.core.JdbcTemplate;","import org.springframework.jdbc.core.SqlInOutParameter;","import org.springframework.jdbc.core.SqlOutParameter;","import org.springframework.jdbc.core.SqlParameter;","import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;","import org.springframework.jdbc.core.simple.SimpleJdbcCall;","import org.springframework.stereotype.Repository;","import org.springframework.stereotype.Service;","import java.sql.Types;","import java.util.Map;"]);
+  if(returnJavaType.includes("List<")||hasCursor||params.some(p=>p.jtype.includes("List<")))imports.add("import java.util.List;");
+  if(params.some(p=>p.jtype==="BigDecimal")||returnJavaType==="BigDecimal")imports.add("import java.math.BigDecimal;");
+  if(params.some(p=>p.jtype==="LocalDateTime")||returnJavaType==="LocalDateTime")imports.add("import java.time.LocalDateTime;");
+  const inBind=inP.map(p=>'        in.addValue("'+p.name+'", '+p.name+");  // 绑定 IN 参数: "+p.name+" ("+p.otype+")").join("\n")||"        // 无 IN 参数";
+  const declareLines=params.map(p=>{
+    const st=sqlParamType(p.otype,p.jtype);
+    const comment=" // "+p.direction+": "+p.name+" (Oracle: "+p.otype+" -> Java: "+p.jtype+")";
+    if(p.direction==="IN")return'                new SqlParameter("'+p.name+'", '+st+"),"+comment;
+    if(p.direction==="IN OUT")return'                new SqlInOutParameter("'+p.name+'", '+st+"),"+comment;
+    return'                new SqlOutParameter("'+p.name+'", '+st+"),"+comment;
+  });
+  const declareBlock=declareLines.join("\n").replace(/,( \/\/)$/,"$1");
+  let executeBlock;
+  if(callType==="FUNCTION"&&!outP.length)executeBlock="        // 执行 Oracle FUNCTION 并获取返回值\n        return call.executeFunction("+javaClassForOutType(returnJavaType)+", in);";
+  else if(singleOut)executeBlock='        // 执行存储过程并提取单个 OUT 参数\n        Map<String, Object> out = call.execute(in);\n        return ('+singleOut.jtype+') out.get("'+singleOut.name+'");';
+  else executeBlock="        // 执行存储过程并返回全部 OUT 参数\n        return call.execute(in);";
+  const catalogLine=packageName?'\n            .withCatalogName("'+packageName+'")  // Oracle 包名':"";
+  const nameLine=callType==="FUNCTION"?'.withFunctionName("'+objectName+'")  // Oracle 函数名':'.withProcedureName("'+objectName+'")  // Oracle 过程名';
+  let warnBlock="";
+  if(warnings.length)warnBlock="// ============================================================\n// [警告] 以下类型映射需要你二次确认\n"+warnings.map(w=>"//   - "+w).join("\n")+"\n// ============================================================\n\n";
+  let callBuilder="        // 构建 SimpleJdbcCall，声明参数列表\n        SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)"+catalogLine+"\n            "+nameLine;
+  if(declareLines.length)callBuilder+="\n            .declareParameters(\n"+declareBlock+"\n            )";
+  callBuilder+=";";
+  const invokeP=inP.map(p=>p.name).join(", ");
+  const ifaceParamDoc=inP.map(p=>"     * @param "+p.name+" 对应 Oracle 参数 "+p.name+" ("+p.direction+" "+p.otype+")").join("\n");
+  const ifaceReturnDoc="     * @return "+returnJavaType+(singleOut?" (OUT 参数: "+singleOut.name+")":"");
+  const paramLogParts=inP.map(p=>p.name+"={}").join(", ");
+  const paramLogArgs=inP.map(p=>p.name).join(", ");
+  let svcLogEntry,svcLogExit;
+  if(inP.length){
+    svcLogEntry='        log.info("['+objectName+'] 调用开始, 参数: '+paramLogParts+'", '+paramLogArgs+');';
+    svcLogExit='        log.info("['+objectName+'] 调用完成, 参数: '+paramLogParts+', 结果: {}, 耗时: {}ms", '+paramLogArgs+', result, System.currentTimeMillis() - _callStart);';
+  } else {
+    svcLogEntry='        log.info("['+objectName+'] 调用开始");';
+    svcLogExit='        log.info("['+objectName+'] 调用完成, 结果: {}, 耗时: {}ms", result, System.currentTimeMillis() - _callStart);';
+  }
+  return warnBlock+"package com.example.demo.oracle;\n\n"+[...imports].sort().join("\n")+"\n\n/**\n * "+objectName+" 数据访问接口\n *\n * <p>封装对 Oracle "+callType+" "+objectName+" 的调用。</p>\n */\npublic interface "+ifaceName+" {\n\n    /**\n     * 执行 Oracle "+callType+": "+(packageName?packageName+".":"")+objectName+"\n     *\n"+(ifaceParamDoc?ifaceParamDoc+"\n":"")+ifaceReturnDoc+"\n     */\n    "+returnJavaType+" execute("+sig+");\n}\n\n/**\n * "+objectName+" 数据访问实现\n *\n * <p>通过 Spring SimpleJdbcCall 调用 Oracle "+(packageName?"包 "+packageName+" 中的 ":"")+callType+"。\n * 参数绑定和类型映射已自动生成，请核对与数据库实际类型是否匹配。</p>\n */\n@Repository\n@RequiredArgsConstructor\nclass "+implName+" implements "+ifaceName+" {\n\n    private final JdbcTemplate jdbcTemplate;\n\n    @Override\n    public "+returnJavaType+" execute("+sig+") {\n"+callBuilder+"\n\n        // 绑定输入参数\n        MapSqlParameterSource in = new MapSqlParameterSource();\n"+inBind+"\n\n"+executeBlock+"\n    }\n}\n\n/**\n * "+objectName+" 业务服务层\n *\n * <p>在此层添加业务校验、日志记录、异常处理等逻辑。\n * 每次调用记录入参、返回值和耗时，便于问题排查。</p>\n */\n@Service\n@Slf4j\n@RequiredArgsConstructor\nclass "+svcName+" {\n\n    private final "+ifaceName+" repository;\n\n    /**\n     * 调用 "+objectName+" 并记录执行日志\n     */\n    public "+returnJavaType+" "+methodName+"("+sig+") {\n"+svcLogEntry+"\n        long _callStart = System.currentTimeMillis();\n        try {\n            "+returnJavaType+" result = repository.execute("+invokeP+");\n"+svcLogExit+"\n            return result;\n        } catch (Exception ex) {\n"+'            log.error("['+objectName+'] 调用异常, 耗时: {}ms, 异常: {}", System.currentTimeMillis() - _callStart, ex.getMessage(), ex);'+"\n            throw new RuntimeException(\""+objectName+" 调用失败: \" + ex.getMessage(), ex);\n        }\n    }\n}\n";
+}
+
+/* ── PACKAGE ENGINE ── */
+function parsePackageName(sql){const m=stripSqlComments(sql).match(/\bPACKAGE(?:\s+BODY)?\s+([a-zA-Z_][\w$#]*)\b/i);return m?m[1]:"";}
+function parsePackageRoutines(sql){
+  const source=stripSqlComments(sql);const re=/\b(PROCEDURE|FUNCTION)\s+([a-zA-Z_][\w$#]*)\s*(\(([\s\S]*?)\))?\s*(RETURN\s+([\s\S]+?))?\s*(?:;|\bIS\b|\bAS\b)/gi;
+  const routines=[],seen=new Set(),warnings=[];let m;
+  while((m=re.exec(source))){
+    const ct=m[1].toUpperCase(),name=m[2],key=ct+":"+name.toLowerCase();
+    if(seen.has(key))continue;seen.add(key);
+    const pb=m[4]||"",rt=(m[6]||"").trim();
+    const[params,warns]=parseParams(pb);
+    warnings.push(...warns.map(w=>name+"."+w));
+    routines.push({callType:ct,objectName:name,params,returnType:rt});
+  }
+  return[routines,warnings];
+}
+function parsePackageBodyRoutines(sql){
+  const source=stripSqlComments(sql);const re=/\b(PROCEDURE|FUNCTION)\s+([a-zA-Z_][\w$#]*)\s*(\(([\s\S]*?)\))?\s*(RETURN\s+([\s\S]+?))?\s*(IS|AS)\b([\s\S]*?)\bEND\s+\2\s*;/gi;
+  const routines=[],warnings=[];let m;
+  while((m=re.exec(source))){
+    const ct=m[1].toUpperCase(),name=m[2],pb=m[4]||"",rt=(m[6]||"").trim();
+    const[params,warns]=parseParams(pb);
+    warnings.push(...warns.map(w=>name+"."+w));
+    const body=extractPlsqlBody(m[0]);
+    routines.push({callType:ct,objectName:name,params,returnType:rt,body});
+  }
+  return[routines,warnings];
+}
+function buildPackageLogicServiceTemplate(packageName,routines,warnings){
+  const className=toClassName(packageName||"OraclePackage")+"LogicService";
+  const imports=new Set(["import lombok.extern.slf4j.Slf4j;","import org.springframework.stereotype.Service;"]);
+  const methodBlocks=[];
+  for(const r of routines){
+    const res=buildLogicMethodParts(r.callType,r.objectName,r.params,r.body,r.returnType,[]);
+    res.imports.forEach(i=>imports.add(i));
+    const inP=r.params.filter(p=>p.direction==="IN"||p.direction==="IN OUT");
+    const paramDoc=inP.map(p=>"     * @param "+p.name+" ("+p.direction+" "+p.otype+")").join("\n");
+    const retDoc=r.callType==="FUNCTION"?"\n     * @return "+r.returnType:"";
+    const javadoc="    /**\n     * "+r.objectName+" 的 Java 逻辑实现\n     *\n"+(paramDoc?paramDoc+"\n":"")+retDoc+"\n     */";
+    const origMethod=res.methodBlock;
+    const ob=origMethod.indexOf("{");
+    const cb=origMethod.lastIndexOf("}");
+    const mSig=origMethod.slice(0,ob+1);
+    const mBody=origMethod.slice(ob+1,cb);
+    const logParts=inP.map(p=>p.name+"={}").join(", ");
+    const logArgs=inP.map(p=>p.name).join(", ");
+    const entry=inP.length?'        log.info("['+packageName+'.'+r.objectName+'] 方法进入, 参数: '+logParts+'", '+logArgs+');':'        log.info("['+packageName+'.'+r.objectName+'] 方法进入");';
+    const exit='            log.info("['+packageName+'.'+r.objectName+'] 方法退出, 耗时: {}ms", System.currentTimeMillis() - _startMs);';
+    const enhanced=javadoc+"\n"+mSig+"\n"+entry+"\n        long _startMs = System.currentTimeMillis();\n        try {\n    "+mBody.replace(/\n/g,"\n    ")+"    } finally {\n"+exit+"\n        }\n    }";
+    methodBlocks.push(enhanced);
+  }
+  const notes=["// ============================================================","// 逻辑展开模式：已将 PACKAGE BODY ("+packageName+") 内函数/过程转换为 Java 业务方法","// 每个方法带有入参日志和执行耗时日志","// 适用范围：IF/ELSIF/ELSE、赋值(:=)、RETURN、基础表达式","// ============================================================"];
+  if(warnings.length)notes.push("//",... warnings.slice(0,20).map(w=>"// [警告] "+w));
+  const methods=methodBlocks.length?methodBlocks.join("\n\n"):"    // 未提取到可转换逻辑";
+  return`${notes.join("\n")}\npackage com.example.demo.oracle;\n\n${[...imports].sort().join("\n")}\n\n/**\n * ${packageName} 包逻辑展开服务\n *\n * <p>将 Oracle Package Body 中的全部 PROCEDURE/FUNCTION 逻辑转为纯 Java 方法。\n * 每个方法自动记录进入日志和耗时，便于生产监控和排查。</p>\n */\n@Service\n@Slf4j\npublic class ${className} {\n\n${methods}\n}\n`;
+}
+function buildPackageMethod(routine,packageName){
+  const{callType:ct,objectName,params,returnType:rt}=routine;
+  const inP=params.filter(p=>p.direction==="IN"||p.direction==="IN OUT");
+  const outP=params.filter(p=>p.direction==="OUT"||p.direction==="IN OUT");
+  let singleOut=null;
+  if(ct==="PROCEDURE"){const po=outP.filter(p=>p.direction==="OUT");if(po.length===1)singleOut=po[0];}
+  let returnJT;
+  if(ct==="FUNCTION"){const[ft]=normalizeType(rt);returnJT=ft;}else returnJT=singleOut?singleOut.jtype:"Map<String, Object>";
+  if(ct==="FUNCTION"&&outP.length)returnJT="Map<String, Object>";
+  const mn=toMethodName(objectName),sig=inP.map(p=>p.jtype+" "+p.name).join(", ");
+  const declareLines=params.map(p=>{
+    const st=sqlParamType(p.otype,p.jtype);
+    if(p.direction==="IN")return'                    new SqlParameter("'+p.name+'", '+st+"),";
+    if(p.direction==="IN OUT")return'                    new SqlInOutParameter("'+p.name+'", '+st+"),";
+    return'                    new SqlOutParameter("'+p.name+'", '+st+"),";
+  });
+  const declareBlock=declareLines.join("\n").replace(/,$/,"");
+  const nameLine=ct==="FUNCTION"?'.withFunctionName("'+objectName+'")':'.withProcedureName("'+objectName+'")';
+  const bindBlock=inP.map(p=>'        in.addValue("'+p.name+'", '+p.name+");").join("\n")||"        // 无 IN 参数";
+  let callBuilder='        SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)\n            .withCatalogName("'+packageName+'")\n            '+nameLine;
+  if(declareLines.length)callBuilder+="\n            .declareParameters(\n"+declareBlock+"\n            )";
+  callBuilder+=";";
+  let executeLine;
+  if(ct==="FUNCTION"&&!outP.length)executeLine="        return call.executeFunction("+javaClassForOutType(returnJT)+", in);";
+  else if(singleOut)executeLine='        Map<String, Object> out = call.execute(in);\n        return ('+singleOut.jtype+') out.get("'+singleOut.name+'");';
+  else executeLine="        return call.execute(in);";
+  const method="    public "+returnJT+" "+mn+"("+sig+") {\n"+callBuilder+"\n        MapSqlParameterSource in = new MapSqlParameterSource();\n"+bindBlock+"\n"+executeLine+"\n    }\n";
+  const signature="    "+returnJT+" "+mn+"("+sig+");";
+  return[signature,method];
+}
+function buildPackageTemplate(packageName,routines,warnings){
+  const base=toClassName(packageName||"OraclePackage");
+  const ifaceName=base+"Gateway",implName=base+"GatewayImpl",serviceName=base+"Service";
+  const imports=new Set(["import lombok.RequiredArgsConstructor;","import lombok.extern.slf4j.Slf4j;","import org.springframework.jdbc.core.JdbcTemplate;","import org.springframework.jdbc.core.SqlInOutParameter;","import org.springframework.jdbc.core.SqlOutParameter;","import org.springframework.jdbc.core.SqlParameter;","import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;","import org.springframework.jdbc.core.simple.SimpleJdbcCall;","import org.springframework.stereotype.Repository;","import org.springframework.stereotype.Service;","import java.sql.Types;","import java.util.Map;"]);
+  for(const r of routines){
+    for(const p of r.params){if(p.jtype==="BigDecimal")imports.add("import java.math.BigDecimal;");if(p.jtype==="LocalDateTime")imports.add("import java.time.LocalDateTime;");if(p.jtype.includes("List<"))imports.add("import java.util.List;");}
+    if(r.callType==="FUNCTION"){const[ft]=normalizeType(r.returnType);if(ft==="BigDecimal")imports.add("import java.math.BigDecimal;");if(ft==="LocalDateTime")imports.add("import java.time.LocalDateTime;");if(ft.includes("List<"))imports.add("import java.util.List;");}
+  }
+  const sigs=[],methods=[],svcMethods=[];
+  for(const r of routines){
+    const[s,m]=buildPackageMethod(r,packageName);
+    const inP=r.params.filter(p=>p.direction==="IN"||p.direction==="IN OUT");
+    const paramDoc=inP.map(p=>"     * @param "+p.name+" ("+p.direction+" "+p.otype+")").join("\n");
+    const retDoc=r.callType==="FUNCTION"?"     * @return Oracle RETURN "+r.returnType:"     * @return OUT 参数结果";
+    const jd="    /**\n     * 调用 "+packageName+"."+r.objectName+" ("+r.callType+")\n     *\n"+(paramDoc?paramDoc+"\n":"")+retDoc+"\n     */";
+    sigs.push(jd+"\n"+s);
+    methods.push(m);
+    const mn=toMethodName(r.objectName);
+    const outP=r.params.filter(p=>p.direction==="OUT"||p.direction==="IN OUT");
+    let singleOut=null;if(r.callType==="PROCEDURE"){const po=outP.filter(p=>p.direction==="OUT");if(po.length===1)singleOut=po[0];}
+    let rjt;if(r.callType==="FUNCTION"){const[ft]=normalizeType(r.returnType);rjt=ft;}else rjt=singleOut?singleOut.jtype:"Map<String, Object>";
+    if(r.callType==="FUNCTION"&&outP.length)rjt="Map<String, Object>";
+    const msig=inP.map(p=>p.jtype+" "+p.name).join(", ");
+    const invokeArgs=inP.map(p=>p.name).join(", ");
+    const logParts=inP.map(p=>p.name+"={}").join(", ");
+    const logArgs=inP.map(p=>p.name).join(", ");
+    const le=inP.length?'        log.info("['+packageName+'.'+r.objectName+'] 调用开始, 参数: '+logParts+'", '+logArgs+');':'        log.info("['+packageName+'.'+r.objectName+'] 调用开始");';
+    const lx=inP.length?'        log.info("['+packageName+'.'+r.objectName+'] 调用完成, 参数: '+logParts+', 耗时: {}ms", '+logArgs+', System.currentTimeMillis() - _t);':'        log.info("['+packageName+'.'+r.objectName+'] 调用完成, 耗时: {}ms", System.currentTimeMillis() - _t);';
+    svcMethods.push("    /**\n     * 调用 "+packageName+"."+r.objectName+" 并记录日志\n     */\n    public "+rjt+" "+mn+"("+msig+") {\n"+le+"\n        long _t = System.currentTimeMillis();\n        "+rjt+" result = gateway."+mn+"("+invokeArgs+");\n"+lx+"\n        return result;\n    }");
+  }
+  let warnBlock="";if(warnings.length)warnBlock="// ============================================================\n// [警告] 以下映射需要你二次确认\n"+warnings.slice(0,20).map(w=>"//   - "+w).join("\n")+"\n// ============================================================\n\n";
+  return warnBlock+"package com.example.demo.oracle;\n\n"+[...imports].sort().join("\n")+"\n\n/**\n * "+packageName+" 包数据访问接口\n *\n * <p>封装对 Oracle Package "+packageName+" 中全部 PROCEDURE/FUNCTION 的调用声明。</p>\n */\npublic interface "+ifaceName+" {\n\n"+sigs.join("\n\n")+"\n}\n\n/**\n * "+packageName+" 包数据访问实现\n *\n * <p>通过 SimpleJdbcCall 调用 Oracle 包中的存储过程/函数。\n * 参数声明和类型映射已自动生成，请核对与实际数据库类型一致。</p>\n */\n@Repository\n@RequiredArgsConstructor\nclass "+implName+" implements "+ifaceName+" {\n\n    private final JdbcTemplate jdbcTemplate;\n\n"+methods.join("\n")+"\n}\n\n/**\n * "+packageName+" 包业务服务层\n *\n * <p>在此添加业务校验、日志和异常处理。\n * 每个方法自动记录调用入参和耗时日志。</p>\n */\n@Service\n@Slf4j\n@RequiredArgsConstructor\nclass "+serviceName+" {\n\n    private final "+ifaceName+" gateway;\n\n"+svcMethods.join("\n\n")+"\n}\n";
+}
+
+/* ── MAIN CONVERT ── */
+function convertProcedure(sql,preferBody,preferLogic){
+  const parsed=parseSignature(sql);if(!parsed)return"// 未识别到 PROCEDURE 定义，请确认输入格式";
+  const{callType,packageName,objectName,paramBlock,returnType}=parsed;
+  if(callType!=="PROCEDURE")return'// 当前选择了"存储过程"模式，但输入不是 PROCEDURE';
+  const[params,warnings]=parseParams(paramBlock);
+  const body=extractPlsqlBody(sql);
+  if(shouldUseLogicMode(callType,body,preferLogic))return buildLogicServiceTemplate(callType,objectName,params,body,returnType,warnings);
+  if(body&&/\b(IF|CASE|LOOP|WHILE|FOR)\b|:=/i.test(body))warnings.push('检测到过程体业务逻辑（如 IF/CASE/赋值），当前输出为数据库调用模板；如需展开请勾选"业务逻辑展开为 Java"');
+  if(shouldUseBodyMode(callType,params,sql,preferBody)){return buildBodyTemplate(objectName,splitPlsqlStatements(body));}
+  return buildSpringTemplate(callType,packageName,objectName,params,returnType,warnings);
+}
+function convertFunction(sql,preferLogic){
+  const parsed=parseSignature(sql);if(!parsed)return"// 未识别到 FUNCTION 定义，请确认输入格式";
+  const{callType,packageName,objectName,paramBlock,returnType}=parsed;
+  if(callType!=="FUNCTION")return'// 当前选择了"函数"模式，但输入不是 FUNCTION';
+  const[params,warnings]=parseParams(paramBlock);
+  const body=extractPlsqlBody(sql);
+  if(shouldUseLogicMode(callType,body,preferLogic))return buildLogicServiceTemplate(callType,objectName,params,body,returnType,warnings);
+  if(body&&/\b(IF|CASE|LOOP|WHILE|FOR)\b|:=/i.test(body))warnings.push('检测到函数体业务逻辑（如 IF/CASE/赋值），当前输出为数据库调用模板；如需展开请勾选"业务逻辑展开为 Java"');
+  return buildSpringTemplate(callType,packageName,objectName,params,returnType,warnings);
+}
+function convertPackage(sql,preferLogic){
+  const packageName=parsePackageName(sql);if(!packageName)return"// 未识别到 PACKAGE 名称，请确认输入包含 CREATE OR REPLACE PACKAGE ...";
+  if(preferLogic){const[bodyR,bodyW]=parsePackageBodyRoutines(sql);if(bodyR.length)return buildPackageLogicServiceTemplate(packageName,bodyR,bodyW);}
+  const[routines,warnings]=parsePackageRoutines(sql);
+  if(!routines.length)return"// 已识别包名 "+packageName+"，但未提取到 FUNCTION/PROCEDURE 声明";
+  return buildPackageTemplate(packageName,routines,warnings);
+}
+function convertOracleToJava(sql,mode,preferBody,preferLogic){
+  sql=sql.trim();if(!sql)return"// 请输入 Oracle SQL 内容";
+  if(mode==="procedure")return convertProcedure(sql,preferBody,preferLogic);
+  if(mode==="function")return convertFunction(sql,preferLogic);
+  if(mode==="package")return convertPackage(sql,preferLogic);
+  return"// 未知翻译模式";
+}
+
+/* ── VUE 3 APP ── */
+const FB_KEY="oracle_workbench_feedback";
+const{createApp,ref,computed,onMounted,onUnmounted}=Vue;
+
+const app=createApp({
+  setup(){
+    const currentMode=ref("procedure");
+    const bodyMode=ref(true);
+    const logicMode=ref(true);
+    const oracleInput=ref(SAMPLES.procedure);
+    const javaOutput=ref("");
+    const statusText=ref("");
+    const fbOpen=ref(false);
+    const fbTab=ref("write");
+    const fbName=ref("");
+    const fbText=ref("");
+    const fbList=ref([]);
+    const showScrollTop=ref(false);
+
+    const modes=[
+      {key:"procedure",label:"存储过程"},
+      {key:"function",label:"函数"},
+      {key:"package",label:"包"}
+    ];
+
+    const modeLabel=computed(()=>MODE_LABELS[currentMode.value]||currentMode.value);
+    const modeHint=computed(()=>MODE_HINTS[currentMode.value]||"");
+    const inputLineCount=computed(()=>oracleInput.value?oracleInput.value.split("\n").length:0);
+    const outputMeta=computed(()=>{
+      if(!javaOutput.value)return"等待翻译";
+      const lines=javaOutput.value.split("\n").length;
+      return lines+" 行 / "+javaOutput.value.length+" 字符";
+    });
+    const fbListReversed=computed(()=>[...fbList.value].reverse());
+
+    function loadFb(){try{return JSON.parse(localStorage.getItem(FB_KEY))||[];}catch(e){return[];}}
+    function saveFb(list){localStorage.setItem(FB_KEY,JSON.stringify(list));}
+
+    function switchMode(mode){
+      currentMode.value=mode;
+      oracleInput.value=SAMPLES[mode]||"";
+      javaOutput.value="";
+      statusText.value="模式已切换为："+MODE_LABELS[mode];
+    }
+    function loadSample(){
+      oracleInput.value=SAMPLES[currentMode.value]||"";
+      statusText.value="已加载 "+MODE_LABELS[currentMode.value]+" 示例";
+    }
+    function clearAll(){
+      oracleInput.value="";javaOutput.value="";
+      statusText.value="已清空输入和输出";
+    }
+    function convert(){
+      const code=convertOracleToJava(oracleInput.value,currentMode.value,bodyMode.value,logicMode.value);
+      javaOutput.value=code;
+      statusText.value="翻译完成："+MODE_LABELS[currentMode.value];
+    }
+    function copyOutput(){
+      const t=javaOutput.value;
+      if(!t.trim()){statusText.value="暂无可复制内容";return;}
+      navigator.clipboard.writeText(t).then(()=>statusText.value="输出已复制到剪贴板").catch(()=>{
+        const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);
+        statusText.value="输出已复制到剪贴板";
+      });
+    }
+    function saveOutput(){
+      const t=javaOutput.value;
+      if(!t.trim()){statusText.value="暂无可保存内容";return;}
+      const clsM=t.match(/public\s+(?:class|interface)\s+(\w+)/);
+      const fileName=clsM?clsM[1]+".java":"OracleOutput.java";
+      const blob=new Blob([t],{type:"text/x-java-source;charset=utf-8"});
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);a.download=fileName;
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      statusText.value="已保存为 "+fileName;
+    }
+    function fbToggle(){fbOpen.value=!fbOpen.value;}
+    function fbSubmit(){
+      const text=fbText.value.trim();
+      if(!text)return;
+      const now=new Date();
+      const time=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0")+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+      fbList.value.push({name:fbName.value.trim(),text,time});
+      saveFb(fbList.value);
+      fbText.value="";fbName.value="";
+      fbTab.value="list";
+      statusText.value="感谢您的建议！";
+    }
+    function fbDelete(idx){
+      fbList.value.splice(idx,1);
+      saveFb(fbList.value);
+    }
+    function fbClearAll(){
+      if(!fbList.value.length)return;
+      if(confirm("确认清空所有建议？")){fbList.value=[];saveFb([]);}
+    }
+    function scrollToTop(){window.scrollTo({top:0,behavior:"smooth"});}
+
+    let scrollHandler;
+    onMounted(()=>{
+      fbList.value=loadFb();
+      scrollHandler=()=>{showScrollTop.value=window.scrollY>300;};
+      window.addEventListener("scroll",scrollHandler,{passive:true});
+    });
+    onUnmounted(()=>{
+      if(scrollHandler)window.removeEventListener("scroll",scrollHandler);
+    });
+
+    return{
+      currentMode,bodyMode,logicMode,oracleInput,javaOutput,statusText,
+      modes,modeLabel,modeHint,inputLineCount,outputMeta,
+      switchMode,loadSample,clearAll,convert,copyOutput,saveOutput,
+      fbOpen,fbTab,fbName,fbText,fbList,fbListReversed,
+      fbToggle,fbSubmit,fbDelete,fbClearAll,
+      showScrollTop,scrollToTop
+    };
+  }
+});
+app.mount("#app");
+</script>
+</body>
+</html>
