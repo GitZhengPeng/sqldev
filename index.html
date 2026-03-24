@@ -165,17 +165,6 @@ textarea.output-area{background:rgba(15,15,26,.8)}
 textarea.output-area:focus{outline:2px solid rgba(199,70,52,.4);outline-offset:-2px}
 textarea::placeholder{color:var(--text-muted)}
 .edit-hint{font-size:11px;color:var(--text-muted);margin-left:auto;font-style:italic}
-.foot{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:8px 28px;gap:12px;flex-wrap:wrap;
-  border-top:1px solid var(--border);background:rgba(22,33,62,.4);
-}
-.metrics{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
-.metric{font-size:12px;color:var(--text-muted);font-family:var(--font-code);white-space:nowrap}
-.metric strong{color:var(--text-secondary);font-weight:600}
-.state{font-family:var(--font-code);font-size:12px;font-weight:500;color:var(--accent-green);min-height:16px;text-align:right}
-.state::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent-green);margin-right:6px;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @media(max-width:1180px){
   .header{flex-direction:column;align-items:flex-start}
   .toolbar{flex-direction:column;align-items:flex-start}
@@ -183,7 +172,6 @@ textarea::placeholder{color:var(--text-muted)}
   .workspace{grid-template-columns:1fr}
   .panel{border-right:none;border-bottom:1px solid var(--border)}
   textarea{min-height:260px}
-  .foot{flex-direction:column;align-items:flex-start}
   .state{text-align:left}
 }
 @media(max-width:640px){
@@ -192,7 +180,6 @@ textarea::placeholder{color:var(--text-muted)}
   .panel-head{padding:8px 14px}
   .panel-desc{padding:4px 14px}
   textarea{padding:10px 14px;min-height:200px;font-size:11.5px}
-  .foot{padding:8px 16px}
   .mode-btn{padding:5px 10px;font-size:12px}
   .btn{padding:5px 12px;font-size:12px}
 }
@@ -347,14 +334,6 @@ textarea::placeholder{color:var(--text-muted)}
       </article>
     </section>
 
-    <section class="foot">
-      <div class="metrics">
-        <span class="metric">模式: <strong>{{modeLabel}}</strong></span>
-        <span class="metric">转换器: <strong>Oracle2Java</strong></span>
-        <span class="metric">引擎: <strong>Vue3 + JS Regex v4.0</strong></span>
-      </div>
-      <div class="state">{{statusText}}</div>
-    </section>
   </div>
 
   <!-- Feedback Widget -->
