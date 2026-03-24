@@ -23,7 +23,7 @@
 html{width:100%;scroll-behavior:smooth}
 body{
   font-family:var(--font-body);color:var(--text);
-  background:var(--bg-deep);height:100vh;overflow:hidden;
+  background:var(--bg-deep);min-height:100vh;
   -webkit-font-smoothing:antialiased;font-size:14px;line-height:1.5;
 }
 body::before{
@@ -43,12 +43,11 @@ body::after{
 .app{
   position:relative;z-index:1;
   width:min(1680px,100%);margin:0 auto;
-  height:100vh;
+  min-height:100vh;
   display:flex;flex-direction:column;
   background:rgba(15,15,26,.6);
   backdrop-filter:blur(20px);
   border-left:1px solid var(--border);border-right:1px solid var(--border);
-  overflow:hidden;
 }
 .header{
   display:flex;justify-content:space-between;align-items:center;
@@ -130,11 +129,10 @@ body::after{
   background:linear-gradient(135deg,#e05544,#f06555);
   box-shadow:0 4px 20px rgba(199,70,52,.4);
 }
-.workspace{display:grid;grid-template-columns:1fr 1fr;flex:1;min-height:0;overflow:hidden}
+.workspace{display:grid;grid-template-columns:1fr 1fr}
 .panel{
   display:flex;flex-direction:column;
   border-right:1px solid var(--border);
-  min-height:0;overflow:hidden;
 }
 .panel:last-child{border-right:none}
 .panel-head{
@@ -154,9 +152,9 @@ body::after{
 textarea{
   width:100%;border:none;
   background:var(--bg-deep);color:#e2e8f0;
-  padding:14px 18px;resize:none;
+  padding:14px 18px;resize:vertical;
   font-family:var(--font-code);font-size:12.5px;line-height:1.7;
-  flex:1;min-height:0;
+  min-height:420px;
   scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent;
 }
 textarea::-webkit-scrollbar{width:8px}
@@ -168,15 +166,57 @@ textarea.output-area{background:rgba(15,15,26,.8)}
 textarea.output-area:focus{outline:2px solid rgba(199,70,52,.4);outline-offset:-2px}
 textarea::placeholder{color:var(--text-muted)}
 .edit-hint{font-size:11px;color:var(--text-muted);margin-left:auto;font-style:italic}
+/* Reference Section */
+.ref-wrapper{
+  border-top:1px solid var(--border);padding:20px 28px 24px;
+  background:rgba(22,33,62,.25);flex:1;
+}
+.ref-header{
+  display:flex;align-items:center;gap:10px;margin-bottom:16px;
+}
+.ref-header h2{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.ref-header .ref-badge{
+  font-size:10px;padding:2px 8px;border-radius:10px;
+  background:rgba(199,70,52,.15);color:var(--oracle-red);font-weight:600;
+  border:1px solid rgba(199,70,52,.2);
+}
+.ref-section{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.ref-card{
+  background:rgba(15,15,26,.5);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;transition:border-color .2s;
+}
+.ref-card:hover{border-color:var(--border-hover)}
+.ref-card h3{
+  font-size:12px;font-weight:700;color:var(--oracle-red);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.ref-card h3 .card-icon{font-size:14px}
+.ref-table{width:100%;border-collapse:collapse}
+.ref-table th{
+  text-align:left;font-size:11px;font-weight:600;color:var(--text-secondary);
+  padding:4px 0;border-bottom:1px solid var(--border);
+}
+.ref-table td{
+  font-size:11.5px;font-family:var(--font-code);padding:3px 0;
+  color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,.03);
+}
+.ref-table td:first-child{color:var(--accent-amber);width:42%}
+.ref-table td:last-child{color:var(--accent-green)}
+.ref-table tr:last-child td{border-bottom:none}
+.ref-note{
+  font-size:11px;color:var(--text-muted);line-height:1.6;margin-top:8px;
+  padding:8px 10px;background:rgba(255,255,255,.02);border-radius:var(--radius-sm);
+  border-left:2px solid rgba(199,70,52,.3);
+}
 @media(max-width:1180px){
   .header{flex-direction:column;align-items:flex-start}
   .toolbar{flex-direction:column;align-items:flex-start}
   .actions{width:100%;justify-content:flex-start}
-  .app{height:auto;min-height:100vh;overflow:auto}
-  .workspace{grid-template-columns:1fr;flex:none}
-  .panel{border-right:none;border-bottom:1px solid var(--border);overflow:visible}
-  textarea{min-height:260px;flex:none}
+  .workspace{grid-template-columns:1fr}
+  .panel{border-right:none;border-bottom:1px solid var(--border)}
+  textarea{min-height:260px}
   .state{text-align:left}
+  .ref-section{grid-template-columns:1fr}
 }
 @media(max-width:640px){
   .header{padding:12px 16px}
@@ -336,6 +376,59 @@ textarea::placeholder{color:var(--text-muted)}
         <p class="panel-desc">输出 Spring Boot 风格 Java 代码，包含完整的 JdbcTemplate 调用、日志记录和异常处理</p>
         <textarea v-model="javaOutput" class="output-area" spellcheck="false" placeholder="点击「开始翻译」后输出结果"></textarea>
       </article>
+    </section>
+
+    <!-- Reference Section -->
+    <section class="ref-wrapper">
+      <div class="ref-header">
+        <h2>转换参考手册</h2>
+        <span class="ref-badge">Quick Reference</span>
+      </div>
+      <div class="ref-section">
+        <div class="ref-card">
+          <h3><span class="card-icon">&#9638;</span> 数据类型映射</h3>
+          <table class="ref-table">
+            <tr><th>Oracle 类型</th><th>Java 类型</th></tr>
+            <tr><td>NUMBER</td><td>BigDecimal</td></tr>
+            <tr><td>VARCHAR2 / CHAR</td><td>String</td></tr>
+            <tr><td>DATE / TIMESTAMP</td><td>LocalDateTime</td></tr>
+            <tr><td>BOOLEAN</td><td>Boolean</td></tr>
+            <tr><td>CLOB / BLOB</td><td>String / byte[]</td></tr>
+            <tr><td>INTEGER / PLS_INTEGER</td><td>Integer</td></tr>
+            <tr><td>%TYPE</td><td>Object</td></tr>
+            <tr><td>REF CURSOR</td><td>List&lt;Map&lt;String,Object&gt;&gt;</td></tr>
+          </table>
+        </div>
+        <div class="ref-card">
+          <h3><span class="card-icon">&#8644;</span> 表达式转换规则</h3>
+          <table class="ref-table">
+            <tr><th>Oracle 表达式</th><th>Java 表达式</th></tr>
+            <tr><td>:= (赋值)</td><td>= (赋值)</td></tr>
+            <tr><td>|| (拼接)</td><td>+ (字符串拼接)</td></tr>
+            <tr><td>SYSDATE</td><td>LocalDateTime.now()</td></tr>
+            <tr><td>NVL(a, b)</td><td>Optional / 三元表达式</td></tr>
+            <tr><td>IS NULL / IS NOT NULL</td><td>== null / != null</td></tr>
+            <tr><td>AND / OR / NOT</td><td>&amp;&amp; / || / !</td></tr>
+            <tr><td>DECODE()</td><td>switch 或三元表达式</td></tr>
+            <tr><td>TO_CHAR / TO_NUMBER</td><td>String.valueOf / new BigDecimal</td></tr>
+          </table>
+        </div>
+        <div class="ref-card">
+          <h3><span class="card-icon">&#9881;</span> Spring Boot 模式</h3>
+          <table class="ref-table">
+            <tr><th>Oracle 构造</th><th>Spring 模式</th></tr>
+            <tr><td>PROCEDURE (无参)</td><td>@Service + JdbcTemplate</td></tr>
+            <tr><td>PROCEDURE (有参)</td><td>SimpleJdbcCall</td></tr>
+            <tr><td>FUNCTION</td><td>SimpleJdbcCall.executeFunction</td></tr>
+            <tr><td>PACKAGE</td><td>Gateway 接口 + Impl</td></tr>
+            <tr><td>COMMIT</td><td>@Transactional (自动)</td></tr>
+            <tr><td>EXCEPTION WHEN</td><td>try-catch 块</td></tr>
+            <tr><td>DBMS_OUTPUT</td><td>log.info() (Slf4j)</td></tr>
+            <tr><td>EXECUTE IMMEDIATE</td><td>jdbcTemplate.execute()</td></tr>
+          </table>
+          <div class="ref-note">注意：数值比较使用 BigDecimal.compareTo()，字符串比较使用 Objects.equals()，裸 RETURN 转换为 return; 而非 jdbcTemplate 调用</div>
+        </div>
+      </div>
     </section>
 
   </div>
