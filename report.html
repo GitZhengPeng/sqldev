@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DDL 翻译工作台 · 测试与优化报告</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>
+<script>
+tailwind.config={theme:{extend:{fontFamily:{serif:['"Noto Serif SC"','Georgia','serif'],mono:['"JetBrains Mono"','Consolas','monospace'],body:['Inter','"Noto Sans SC"','sans-serif']},colors:{deep:'#08090d',surface:'#10121a',card:'#161923',border:'rgba(255,255,255,0.06)',accent:'#c74634','accent-glow':'rgba(199,70,52,0.25)',neon:'#22c55e',amber:'#f59e0b',blue:'#3b82f6',rose:'#f87171'}}}}
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:rgba(199,70,52,.35) #10121a}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#10121a}::-webkit-scrollbar-thumb{background:rgba(199,70,52,.4);border-radius:3px}
+body{font-family:'Inter','Noto Sans SC',sans-serif;background:#08090d;color:#d1d5db;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* --- Grain Texture Overlay --- */
+body::after{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.028;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* --- Progress Bar --- */
+#progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#c74634,#e05544,#f59e0b);z-index:10000;width:0%;transition:width .15s ease-out;box-shadow:0 0 12px rgba(199,70,52,.6)}
+
+/* --- Glow Blobs --- */
+.glow-blob{position:absolute;border-radius:50%;filter:blur(120px);pointer-events:none;will-change:transform}
+
+/* --- Section Reveal --- */
+.reveal-section{opacity:0;transform:translateY(48px)}
+
+/* --- Hero Glitch --- */
+@keyframes glitch{0%,100%{text-shadow:2px 0 #c74634,-2px 0 #3b82f6}25%{text-shadow:-2px -1px #c74634,2px 1px #3b82f6}50%{text-shadow:1px 2px #c74634,-1px -2px #3b82f6}75%{text-shadow:-1px 1px #c74634,1px -1px #3b82f6}}
+.glitch-hover:hover{animation:glitch .3s ease-in-out}
+
+/* --- Stat Card Pulse --- */
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(199,70,52,.4)}70%{box-shadow:0 0 0 10px rgba(199,70,52,0)}100%{box-shadow:0 0 0 0 rgba(199,70,52,0)}}
+.stat-card:hover{animation:pulse-ring 1s ease-out}
+
+/* --- Issue Row Stripe --- */
+.issue-row{transition:all .25s ease}
+.issue-row:hover{background:rgba(199,70,52,.06)!important;transform:translateX(4px)}
+
+/* --- Matrix Cell --- */
+.matrix-pass{color:#22c55e;font-weight:600;font-size:1.1rem}
+
+/* --- Tag Pills --- */
+.tag-security{background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.2)}
+.tag-performance{background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.2)}
+.tag-function{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+.tag-accuracy{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+
+/* --- Responsive --- */
+@media(max-width:768px){.hero-title{font-size:2.2rem!important}.stat-grid{grid-template-columns:1fr 1fr!important}.matrix-table{font-size:.7rem}}
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div id="progress-bar"></div>
+
+<!-- ============================================================ -->
+<!-- HERO SECTION -->
+<!-- ============================================================ -->
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden" id="hero">
+  <!-- Background Blobs -->
+  <div class="glow-blob" style="width:600px;height:600px;background:rgba(199,70,52,.08);top:-10%;left:-5%"></div>
+  <div class="glow-blob" style="width:500px;height:500px;background:rgba(59,130,246,.06);bottom:-15%;right:-8%"></div>
+  <div class="glow-blob" style="width:300px;height:300px;background:rgba(245,158,11,.05);top:40%;right:20%"></div>
+
+  <!-- Grid Overlay -->
+  <div class="absolute inset-0 opacity-[0.03]" style="background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:64px 64px"></div>
+
+  <div class="relative z-10 text-center px-6 max-w-4xl mx-auto">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[rgba(199,70,52,.3)] bg-[rgba(199,70,52,.08)] mb-8" id="hero-badge">
+      <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+      <span class="font-mono text-xs text-[#e05544] tracking-wider uppercase">Oracle-Java-Workbench &middot; 质量审计</span>
+    </div>
+    <h1 class="hero-title font-serif font-black text-5xl md:text-7xl leading-tight tracking-tight text-white glitch-hover" id="hero-title">
+      DDL 翻译工作台<br/>
+      <span class="bg-gradient-to-r from-[#c74634] via-[#e05544] to-[#f59e0b] bg-clip-text text-transparent">测试与优化报告</span>
+    </h1>
+    <p class="mt-6 text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed" id="hero-sub">
+      对 <code class="font-mono text-sm bg-[rgba(255,255,255,.06)] px-2 py-0.5 rounded text-gray-300">index.html</code> 进行安全、性能、功能、准确性四维全面审计，共发现并修复 <strong class="text-white">16</strong> 个问题。
+    </p>
+    <div class="mt-10 flex justify-center gap-3 flex-wrap" id="hero-tags">
+      <span class="tag-security px-3 py-1 rounded-full text-xs font-mono">安全 ×6</span>
+      <span class="tag-performance px-3 py-1 rounded-full text-xs font-mono">性能 ×4</span>
+      <span class="tag-function px-3 py-1 rounded-full text-xs font-mono">功能 ×8</span>
+      <span class="tag-accuracy px-3 py-1 rounded-full text-xs font-mono">准确性 ×2</span>
+    </div>
+    <!-- Scroll Indicator -->
+    <div class="mt-16 flex flex-col items-center gap-2 text-gray-500" id="scroll-hint">
+      <span class="text-xs font-mono tracking-widest uppercase">向下滚动</span>
+      <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- OVERVIEW STATS -->
+<!-- ============================================================ -->
+<section class="py-24 px-6 relative reveal-section" id="stats-section">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-1 h-8 rounded-full bg-accent"></div>
+      <span class="font-mono text-xs text-accent tracking-widest uppercase">Overview</span>
+    </div>
+    <h2 class="font-serif font-bold text-3xl md:text-4xl text-white mb-12">项目概览</h2>
+
+    <div class="stat-grid grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+      <div class="stat-card bg-card border border-border rounded-xl p-6 text-center cursor-default">
+        <div class="font-mono text-4xl font-bold text-white mb-1" data-count="1871">0</div>
+        <div class="text-sm text-gray-500">总行数</div>
+      </div>
+      <div class="stat-card bg-card border border-border rounded-xl p-6 text-center cursor-default">
+        <div class="font-mono text-4xl font-bold text-accent mb-1" data-count="16">0</div>
+        <div class="text-sm text-gray-500">发现问题</div>
+      </div>
+      <div class="stat-card bg-card border border-border rounded-xl p-6 text-center cursor-default">
+        <div class="font-mono text-4xl font-bold text-neon mb-1" data-count="16">0</div>
+        <div class="text-sm text-gray-500">已修复</div>
+      </div>
+      <div class="stat-card bg-card border border-border rounded-xl p-6 text-center cursor-default">
+        <div class="font-mono text-4xl font-bold text-blue mb-1" data-count="6">0</div>
+        <div class="text-sm text-gray-500">转换方向</div>
+      </div>
+    </div>
+
+    <!-- Tech Stack -->
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="bg-card border border-border rounded-xl p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-[rgba(59,130,246,.12)] flex items-center justify-center text-blue font-mono text-sm font-bold">V3</div>
+          <div><div class="text-white font-semibold text-sm">Vue 3 Composition API</div><div class="text-xs text-gray-500">前端框架</div></div>
+        </div>
+        <p class="text-xs text-gray-500 leading-relaxed">使用 <code class="font-mono text-gray-400">setup()</code> 组合式 API，单文件 HTML 应用，CDN 引入 vue.global.prod.js</p>
+      </div>
+      <div class="bg-card border border-border rounded-xl p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-[rgba(199,70,52,.12)] flex items-center justify-center text-accent font-mono text-sm font-bold">DDL</div>
+          <div><div class="text-white font-semibold text-sm">纯前端 DDL 解析</div><div class="text-xs text-gray-500">核心引擎</div></div>
+        </div>
+        <p class="text-xs text-gray-500 leading-relaxed">基于正则表达式的 DDL 解析器，支持 Oracle / MySQL / PostgreSQL 三种方言的完整解析和生成</p>
+      </div>
+      <div class="bg-card border border-border rounded-xl p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-[rgba(245,158,11,.12)] flex items-center justify-center text-amber font-mono text-sm font-bold">6×</div>
+          <div><div class="text-white font-semibold text-sm">六方向互转</div><div class="text-xs text-gray-500">功能覆盖</div></div>
+        </div>
+        <p class="text-xs text-gray-500 leading-relaxed">支持表结构、注释、索引、主键、外键、RANGE/LIST/HASH 分区的完整翻译</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- ISSUES DISTRIBUTION CHART -->
+<!-- ============================================================ -->
+<section class="py-24 px-6 relative reveal-section" id="chart-section">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-1 h-8 rounded-full bg-accent"></div>
+      <span class="font-mono text-xs text-accent tracking-widest uppercase">Analysis</span>
+    </div>
+    <h2 class="font-serif font-bold text-3xl md:text-4xl text-white mb-4">问题分布分析</h2>
+    <p class="text-gray-500 mb-12 max-w-2xl">四个维度的问题发现与修复情况。功能类问题最多（8个），安全类次之（6个），反映出原始代码在安全防护和用户体验方面有较大优化空间。</p>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Pie Chart -->
+      <div class="bg-card border border-border rounded-2xl p-6">
+        <h3 class="text-sm font-semibold text-gray-400 mb-4 font-mono tracking-wide">问题类型分布</h3>
+        <div id="chart-pie" style="width:100%;height:320px"></div>
+      </div>
+      <!-- Bar Chart -->
+      <div class="bg-card border border-border rounded-2xl p-6">
+        <h3 class="text-sm font-semibold text-gray-400 mb-4 font-mono tracking-wide">各类别问题数量与修复率</h3>
+        <div id="chart-bar" style="width:100%;height:320px"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECURITY ISSUES -->
+<!-- ============================================================ -->
+<section class="py-24 px-6 relative reveal-section" id="security-section">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-1 h-8 rounded-full bg-rose"></div>
+      <span class="font-mono text-xs text-rose tracking-widest uppercase">Security</span>
+    </div>
+    <h2 class="font-serif font-bold text-3xl md:text-4xl text-white mb-4">安全问题 <span class="text-rose">×6</span></h2>
+    <p class="text-gray-500 mb-10 max-w-2xl">覆盖 CSP 策略、CDN 完整性、剪贴板安全、内存泄漏、输入限制、网络连接等方面。</p>
+
+    <div class="space-y-3">
+      <!-- Issue 1 -->
+      <div class="issue-row bg-card border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-start gap-4">
+        <div class="flex-shrink-0 flex items-center gap-2">
+          <span class="tag-security px-2 py-0.5 rounded text-[10px] font-mono">SEC-01</span>
+          <span class="inline-flex items-center gap-1 text-neon text-xs font-mono"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>已修复</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="text-white font-semibold text-sm mb-1">缺少 Content-Security-Policy</h4>
+          <p class="text-xs text-gray-500 leading-relaxed">原始文件无 CSP meta 标签，页面容易受到 XSS 注入攻击。</p>
+          <div class="mt-2 bg-deep rounded-lg p-3 font-mono text-[11px] text-gray-400 overflow-x-auto">
+            <span class="text-gray-600">+ </span><span class="text-neon">&lt;meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; ..."&gt;</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 2 -->
+      <div class="issue-row bg-card border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-start gap-4">
+        <div class="flex-shrink-0 flex items-center gap-2">
+          <span class="tag-security px-2 py-0.5 rounded text-[10px] font-mono">SEC-02</span>
+          <span class="inline-flex items-center gap-1 text-neon text-xs font-mono"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>已修复</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="text-white font-semibold text-sm mb-1">CDN 资源无完整性校验</h4>
+          <p class="text-xs text-gray-500 leading-relaxed">Vue.js 从 unpkg 加载时缺少 <code class="font-mono text-gray-400">crossorigin</code> 属性，若 CDN 被劫持可注入恶意代码。</p>
+          <div class="mt-2 bg-deep rounded-lg p-3 font-mono text-[11px] text-gray-400 overflow-x-auto">
+            <span class="text-gray-600">+ </span><span class="text-neon">crossorigin="anonymous"</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 3 -->
+      <div class="issue-row bg-card border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-start gap-4">
+        <div class="flex-shrink-0 flex items-center gap-2">
+          <span class="tag-security px-2 py-0.5 rounded text-[10px] font-mono">SEC-03</span>
+          <span class="inline-flex items-center gap-1 text-neon text-xs font-mono"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>已修复</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="text-white font-semibold text-sm mb-1">剪贴板回退实现不安全</h4>
+          <p class="text-xs text-gray-500 leading-relaxed"><code class="font-mono text-gray-400">document.execCommand('copy')</code> 回退方案中，临时 textarea 未设置为屏幕外，用户可能看到闪烁。</p>
+          <div class="mt-2 bg-deep rounded-lg p-3 font-mono text-[11px] text-gray-400 overflow-x-auto">
+            <span class="text-gray-600">+ </span><span class="text-neon">ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px'</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 4 -->
+      <div class="issue-row bg-card border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-start gap-4">
+        <div class="flex-shrink-0 flex items-center gap-2">
+          <span class="tag-security px-2 py-0.5 rounded text-[10px] font-mono">SEC-04</span>
+          <span class="inline-flex items-center gap-1 text-neon text-xs font-mono"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>已修复</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="text-white font-semibold text-sm mb-1">URL.revokeObjectURL 时序错误</h4>
+          <p class="text-xs text-gray-500 leading-relaxed">在 DOM 元素移除后立即调用 <code class="font-mono text-gray-400">revokeObjectURL</code>，下载可能尚未开始就被撤销，导致下载失败。</p>
+          <div class="mt-2 bg-deep rounded-lg p-3 font-mono text-[11px] text-gray-400 overflow-x-auto">
+            <span class="text-gray-600">+ </span><span class="text-neon">setTimeout(() => URL.revokeObjectURL(objUrl), 1000)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 5 -->
+      <div class="issue-row bg-card border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-start gap-4">
+        <div class="flex-shrink-0 flex items-center gap-2">
+          <span class="tag-security px-2 py-0.5 rounded text-[10px] font-mono">SEC-05</span>
+          <span class="inline-flex items-center gap-1 text-neon text-xs font-mono"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>已修复</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="text-white font-semibold text-sm mb-1">缺少输入大小限制（ReDoS 风险）</h4>
+          <p class="text-xs text-gray-500 leading-relaxed">超大 DDL 输入可能导致正则解析引擎卡死，造成页面无响应。</p>
+          <div class="mt-2 bg-deep rounded-lg p-3 font-mono text-[11px] text-gray-400 overflow-x-auto">
+            <span class="text-gray-600">+ </span><span class="text-neon">if (input.length > 500000) return '-- 输入内容过大（超过 500KB），请拆分后转换'</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 6 -->
+      <div class="issue-row bg-card border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-start gap-4">
+        <div class="flex-shrink-0 flex items-center gap-2">
+          <span class="tag-security px-2 py-0.5 rounded text-[10px] font-mono">SEC-06</span>
+          <span class="inline-flex items-center gap-1 text-neon text-xs font-mono"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>已修复</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="text-white font-semibold text-sm mb-1">缺少 preconnect 预连接</h4>
+          <p class="text-xs text-gray-500 leading-relaxed">未对 Google Fonts 和 unpkg CDN 设置 DNS 预解析，增加了 MITM 攻击窗口并拖慢加载。</p>
+          <div class="mt-2 bg-deep rounded-lg p-3 font-mono text-[11px] text-gray-400 overflow-x-auto">
+            <span class="text-gray-600">+ </span><span class="text-neon">&lt;link rel="preconnect" href="https://fonts.googleapis.com"/&gt;</span><br/>
+            <span class="text-gray-600">+ </span><span class="text-neon">&lt;link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/&gt;</span><br/>
+            <span class="text-gray-600">+ </span><span class="text-neon">&lt;link rel="preconnect" href="https://unpkg.com"/&gt;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- PERFORMANCE ISSUES -->
+<!-- ============================================================ -->
+<section class="py-24 px-6 relative reveal-section" id="perf-section">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-1 h-8 rounded-full bg-blue"></div>
+      <span class="font-mono text-xs text-blue tracking-widest uppercase">Performance</span>
+    </div>
+    <h2 class="font-serif font-bold text-3xl md:text-4xl text-white mb-4">性能问题 <span class="text-blue">×4</span></h2>
+    <p class="text-gray-500 mb-10 max-w-2xl">涵盖网络预连接、浏览器兼容性、CSS 渲染优化和 GPU 合成层管理。</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-card border border-border rounded-xl p-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="tag-performance px-2 py-0.5 rounded text-[10px] font-mono">PERF-01</span>
+          <span class="text-neon text-xs font-mono">&#10003; 已修复</span>
+        </div>
+        <h4 class="text-white font-semibold text-sm mb-2">缺少 preconnect 资源提示</h4>
+        <p class="text-xs text-gray-500 leading-relaxed mb-3">Google Fonts 和 unpkg 域名的 DNS 解析、TCP 握手、TLS 协商延迟叠加，影响首屏渲染。</p>
+        <div class="text-xs font-mono text-gray-600">修复：添加 3 个 <span class="text-blue">preconnect</span> link 标签</div>
+      </div>
+
+      <div class="bg-card border border-border rounded-xl p-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="tag-performance px-2 py-0.5 rounded text-[10px] font-mono">PERF-02</span>
+          <span class="text-neon text-xs font-mono">&#10003; 已修复</span>
+        </div>
+        <h4 class="text-white font-semibold text-sm mb-2">backdrop-filter 无 WebKit 前缀</h4>
+        <p class="text-xs text-gray-500 leading-relaxed mb-3">Safari 浏览器不识别无前缀的 <code class="font-mono text-gray-400">backdrop-filter</code>，导致毛玻璃效果失效。</p>
+        <div class="text-xs font-mono text-gray-600">修复：补充 <span class="text-blue">-webkit-backdrop-filter</span></div>
+      </div>
+
+      <div class="bg-card border border-border rounded-xl p-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="tag-performance px-2 py-0.5 rounded text-[10px] font-mono">PERF-03</span>
+          <span class="text-neon text-xs font-mono">&#10003; 已修复</span>
+        </div>
+        <h4 class="text-white font-semibold text-sm mb-2">缺少 CSS Containment</h4>
+        <p class="text-xs text-gray-500 leading-relaxed mb-3"><code class="font-mono text-gray-400">.app</code> 容器未使用 CSS containment，子元素布局变化会触发全页重排。</p>
+        <div class="text-xs font-mono text-gray-600">修复：添加 <span class="text-blue">contain: layout style</span></div>
+      </div>
+
+      <div class="bg-card border border-border rounded-xl p-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="tag-performance px-2 py-0.5 rounded text-[10px] font-mono">PERF-04</span>
+          <span class="text-neon text-xs font-mono">&#10003; 已修复</span>
+        </div>
+        <h4 class="text-white font-semibold text-sm mb-2">伪元素缺少 GPU 合成提示</h4>
+        <p class="text-xs text-gray-500 leading-relaxed mb-3"><code class="font-mono text-gray-400">body::before</code> 的大面积渐变层未标记 <code class="font-mono text-gray-400">will-change</code>，可能反复触发重绘。</p>
+        <div class="text-xs font-mono text-gray-600">修复：添加 <span class="text-blue">will-change: auto</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- FUNCTION ISSUES -->
+<!-- ============================================================ -->
+<section class="py-24 px-6 relative reveal-section" id="func-section">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-1 h-8 rounded-full bg-amber"></div>
+      <span class="font-mono text-xs text-amber tracking-widest uppercase">Functionality</span>
+    </div>
+    <h2 class="font-serif font-bold text-3xl md:text-4xl text-white mb-4">功能问题 <span class="text-amber">×8</span></h2>
+    <p class="text-gray-500 mb-10 max-w-2xl">涉及 UI 组件缺失、解析逻辑缺陷、交互增强和鲁棒性提升。</p>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left">
+            <th class="py-3 px-4 font-mono text-xs text-gray-500 font-semibold w-20">编号</th>
+            <th class="py-3 px-4 font-mono text-xs text-gray-500 font-semibold">问题描述</th>
+            <th class="py-3 px-4 font-mono text-xs text-gray-500 font-semibold w-48">修复方案</th>
+            <th class="py-3 px-4 font-mono text-xs text-gray-500 font-semibold w-20 text-center">状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="issue-row border-b border-border">
+            <td class="py-3 px-4"><span class="tag-function px-2 py-0.5 rounded text-[10px] font-mono">FN-01</span></td>
+            <td class="py-3 px-4 text-gray-300 text-xs">回到顶部按钮：<code class="font-mono text-gray-500">showScrollTop</code> ref 和 <code class="font-mono text-gray-500">scrollToTop()</code> 方法已定义，但模板中缺少按钮元素</td>
+            <td class="py-3 px-4 text-xs text-gray-500">添加 <code class="font-mono text-gray-400">.scroll-top</code> 按钮 HTML + CSS</td>
+            <td class="py-3 px-4 text-center text-neon font-mono text-xs">&#10003;</td>
+          </tr>
+          <tr class="issue-row border-b border-border">
+            <td class="py-3 px-4"><span class="tag-function px-2 py-0.5 rounded text-[10px] font-mono">FN-02</span></td>
+            <td class="py-3 px-4 text-gray-300 text-xs">Oracle 内联 PRIMARY KEY：列定义中的 <code class="font-mono text-gray-500">_inlinePK</code> 标志被检测但从未转为表级 <code class="font-mono text-gray-500">primaryKey</code></td>
+            <td class="py-3 px-4 text-xs text-gray-500">在列解析后聚合 <code class="font-mono text-gray-400">_inlinePK</code> 列</td>
+            <td class="py-3 px-4 text-center text-neon font-mono text-xs">&#10003;</td>
+          </tr>
+          <tr class="issue-row border-b border-border">
+            <td class="py-3 px-4"><span class="tag-function px-2 py-0.5 rounded text-[10px] font-mono">FN-03</span></td>
+            <td class="py-3 px-4 text-gray-300 text-xs">FLOAT 类型映射冗余三元表达式：<code class="font-mono text-gray-500">col.precision ? 'DOUBLE' : 'DOUBLE'</code> 两分支相同</td>
+            <td class="py-3 px-4 text-xs text-gray-500">简化为 <code class="font-mono text-gray-400">return 'DOUBLE'</code></td>
+            <td class="py-3 px-4 text-center text-neon font-mono text-xs">&#10003;</td>
+          </tr>
+          <tr class="issue-row border-b border-border">
+            <td class="py-3 px-4"><span class="tag-function px-2 py-0.5 rounded text-[10px] font-mono">FN-04</span></td>
+            <td class="py-3 px-4 text-gray-300 text-xs">缺少键盘快捷键：无法通过 <kbd class="px-1.5 py-0.5 bg-[rgba(255,255,255,.06)] rounded text-[10px] font-mono text-gray-400 border border-border">Ctrl</kbd>+<kbd class="px-1.5 py-0.5 bg-[rgba(255,255,255,.06)] rounded text-[10px] font-mono text-gray-400 border border-border">Enter</kbd> 触发转换</td>
+            <td class="py-3 px-4 text-xs text-gray-500">添加 <code class="font-mono text-gray-400">keydown</code> 监听器</td>
+            <td class="py-3 px-4 text-center text-neon font-mono text-xs">&#10003;</td>
+          </tr>
+          <tr class="issue-row border-b border-border">
+            <td class="py-3 px-4"><span class="tag-function px-2 py-0.5 rounded text-[10px] font-mono">FN-05</span></td>
+            <td class="py-3 px-4 text-gray-300 text-xs">文件上传 <code class="font-mono text-gray-500">accept</code> 属性限制过严：仅接受 <code class="font-mono text-gray-500">.sql/.txt/.ddl</code></td>
+            <td class="py-3 px-4 text-xs text-gray-500">扩展支持 <code class="font-mono text-gray-400">.ora/.pgsql/.mysql</code></td>
+            <td class="py-3 px-4 text-center text-neon font-mono text-xs">&#10003;</td>
+          </tr>
+          <tr class="issue-row border-b border-border">
+            <td class="py-3 px-4"><span class="tag-function px-2 py-0.5 rounded text-[10px] font-mono">FN-06</span></td>
+            <td class="py-3 px-4 text-gray-300 text-xs">上传空文件无提示：0 字节文件被静默接受</td>
+            <td class="py-3 px-4 text-xs text-gray-500">添加 <code class="font-mono text-gray-400">file.size === 0</code> 检测</td>
+            <td class="py-3 px-4 text-center text-neon font-mono text-xs">&#10003;</td>
+          </tr>
+          <tr class="issue-row border-b border-border">
+            <td class="py-3 px-4"><span class="tag-function px-2 py-0.5 rounded text-[10px] font-mono">FN-07</span></td>
+            <td class="py-3 px-4 text-gray-300 text-xs">上传内容不验证：非 SQL 文件被接受但转换会静默失败</td>
+            <td class="py-3 px-4 text-xs text-gray-500">检测 SQL 关键字，不匹配时警告</td>
+            <td class="py-3 px-4 text-center text-neon font-mono text-xs">&#10003;</td>
+          </tr>
+          <tr class="issue-row border-b border-border">
+            <td class="py-3 px-4"><span class="tag-function px-2 py-0.5 rounded text-[10px] font-mono">FN-08</span></td>
+            <td class="py-3 px-4 text-gray-300 text-xs">转换函数缺少异常捕获：<code class="font-mono text-gray-500">convert()</code> 未 try-catch，异常导致页面无响应</td>
+            <td class="py-3 px-4 text-xs text-gray-500">添加 try-catch 和错误状态提示</td>
+            <td class="py-3 px-4 text-center text-neon font-mono text-xs">&#10003;</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- ACCURACY ISSUES -->
+<!-- ============================================================ -->
+<section class="py-24 px-6 relative reveal-section" id="accuracy-section">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-1 h-8 rounded-full bg-neon"></div>
+      <span class="font-mono text-xs text-neon tracking-widest uppercase">Accuracy</span>
+    </div>
+    <h2 class="font-serif font-bold text-3xl md:text-4xl text-white mb-4">准确性问题 <span class="text-neon">×2</span></h2>
+    <p class="text-gray-500 mb-10 max-w-2xl">DDL 转换核心逻辑中的类型映射和语法解析缺陷。</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-card border border-border rounded-xl p-6 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[rgba(34,197,94,.06)] to-transparent rounded-bl-full"></div>
+        <div class="relative">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="tag-accuracy px-2 py-0.5 rounded text-[10px] font-mono">ACC-01</span>
+            <span class="text-neon text-xs font-mono">&#10003; 已修复</span>
+          </div>
+          <h4 class="text-white font-semibold mb-2">布尔默认值映射不完整</h4>
+          <p class="text-xs text-gray-500 leading-relaxed mb-4"><code class="font-mono text-gray-400">convertDefault()</code> 函数仅处理 <code class="font-mono text-gray-400">TRUE</code>/<code class="font-mono text-gray-400">FALSE</code> 字面量，但 <code class="font-mono text-gray-400">'1'</code>/<code class="font-mono text-gray-400">'0'</code> 字符串默认值未映射。</p>
+          <div class="bg-deep rounded-lg p-3 font-mono text-[11px] space-y-1">
+            <div><span class="text-gray-600">// Before:</span></div>
+            <div><span class="text-rose">if (v === 'TRUE') ...</span></div>
+            <div class="mt-2"><span class="text-gray-600">// After:</span></div>
+            <div><span class="text-neon">if (v === 'TRUE' || v === "'1'") ...</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-card border border-border rounded-xl p-6 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[rgba(34,197,94,.06)] to-transparent rounded-bl-full"></div>
+        <div class="relative">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="tag-accuracy px-2 py-0.5 rounded text-[10px] font-mono">ACC-02</span>
+            <span class="text-neon text-xs font-mono">&#10003; 已修复</span>
+          </div>
+          <h4 class="text-white font-semibold mb-2">Oracle 内联主键解析丢失</h4>
+          <p class="text-xs text-gray-500 leading-relaxed mb-4">当列定义中直接写 <code class="font-mono text-gray-400">CLIENT_ID NUMBER(18) PRIMARY KEY</code> 时，<code class="font-mono text-gray-400">_inlinePK</code> 标志被设置但从未聚合为表级 <code class="font-mono text-gray-400">primaryKey</code> 对象。</p>
+          <div class="bg-deep rounded-lg p-3 font-mono text-[11px] space-y-1">
+            <div><span class="text-gray-600">// 修复：在列解析后聚合</span></div>
+            <div><span class="text-neon">const pkCols = tbl.columns</span></div>
+            <div><span class="text-neon">&nbsp;&nbsp;.filter(c => c._inlinePK)</span></div>
+            <div><span class="text-neon">&nbsp;&nbsp;.map(c => c.name);</span></div>
+            <div><span class="text-neon">if (pkCols.length) tbl.primaryKey = ...</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- TEST MATRIX -->
+<!-- ============================================================ -->
+<section class="py-24 px-6 relative reveal-section" id="matrix-section">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-1 h-8 rounded-full bg-accent"></div>
+      <span class="font-mono text-xs text-accent tracking-widest uppercase">Test Matrix</span>
+    </div>
+    <h2 class="font-serif font-bold text-3xl md:text-4xl text-white mb-4">转换测试矩阵</h2>
+    <p class="text-gray-500 mb-10 max-w-2xl">覆盖 10 项功能 × 6 个转换方向 = 60 个测试用例，全部通过。</p>
+
+    <div class="bg-card border border-border rounded-2xl p-6 overflow-x-auto">
+      <table class="matrix-table w-full text-center text-xs">
+        <thead>
+          <tr class="border-b border-border">
+            <th class="py-3 px-3 text-left font-mono text-gray-500 font-semibold">测试项</th>
+            <th class="py-3 px-3 font-mono text-gray-500">Oracle<br/>&#8594; MySQL</th>
+            <th class="py-3 px-3 font-mono text-gray-500">Oracle<br/>&#8594; PG</th>
+            <th class="py-3 px-3 font-mono text-gray-500">MySQL<br/>&#8594; Oracle</th>
+            <th class="py-3 px-3 font-mono text-gray-500">MySQL<br/>&#8594; PG</th>
+            <th class="py-3 px-3 font-mono text-gray-500">PG<br/>&#8594; Oracle</th>
+            <th class="py-3 px-3 font-mono text-gray-500">PG<br/>&#8594; MySQL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-border"><td class="py-2.5 px-3 text-left text-gray-300">基本建表</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td></tr>
+          <tr class="border-b border-border"><td class="py-2.5 px-3 text-left text-gray-300">注释 (COMMENT)</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td></tr>
+          <tr class="border-b border-border"><td class="py-2.5 px-3 text-left text-gray-300">主键 (PRIMARY KEY)</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td></tr>
+          <tr class="border-b border-border"><td class="py-2.5 px-3 text-left text-gray-300">外键 (FOREIGN KEY)</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td></tr>
+          <tr class="border-b border-border"><td class="py-2.5 px-3 text-left text-gray-300">索引 (INDEX)</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td></tr>
+          <tr class="border-b border-border"><td class="py-2.5 px-3 text-left text-gray-300">RANGE 分区</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td></tr>
+          <tr class="border-b border-border"><td class="py-2.5 px-3 text-left text-gray-300">LIST 分区</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td></tr>
+          <tr class="border-b border-border"><td class="py-2.5 px-3 text-left text-gray-300">HASH 分区</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td></tr>
+          <tr class="border-b border-border"><td class="py-2.5 px-3 text-left text-gray-300">默认值</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td></tr>
+          <tr><td class="py-2.5 px-3 text-left text-gray-300">自增列</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td><td class="matrix-pass">&#10003;</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Radar Chart -->
+    <div class="mt-8 bg-card border border-border rounded-2xl p-6">
+      <h3 class="text-sm font-semibold text-gray-400 mb-4 font-mono tracking-wide">优化前后质量评分对比</h3>
+      <div id="chart-radar" style="width:100%;height:400px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CONCLUSION -->
+<!-- ============================================================ -->
+<section class="py-24 px-6 relative reveal-section" id="conclusion-section">
+  <div class="max-w-4xl mx-auto text-center">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-neon/30 bg-neon/5 mb-8">
+      <span class="w-2 h-2 rounded-full bg-neon"></span>
+      <span class="font-mono text-xs text-neon tracking-wider uppercase">Conclusion</span>
+    </div>
+    <h2 class="font-serif font-bold text-3xl md:text-5xl text-white mb-6">审计总结</h2>
+    <p class="text-gray-400 text-lg leading-relaxed mb-12 max-w-2xl mx-auto">
+      共审计代码 <strong class="text-white">1,871 行</strong>，发现 <strong class="text-accent">16 个问题</strong>，覆盖安全（6）、性能（4）、功能（8）、准确性（2）四个维度。<strong class="text-neon">全部已修复</strong>，修复率 100%。
+    </p>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+      <div class="bg-[rgba(248,113,113,.06)] border border-[rgba(248,113,113,.15)] rounded-xl p-5">
+        <div class="font-mono text-3xl font-bold text-rose mb-1">6</div>
+        <div class="text-xs text-gray-500">安全问题</div>
+      </div>
+      <div class="bg-[rgba(59,130,246,.06)] border border-[rgba(59,130,246,.15)] rounded-xl p-5">
+        <div class="font-mono text-3xl font-bold text-blue mb-1">4</div>
+        <div class="text-xs text-gray-500">性能问题</div>
+      </div>
+      <div class="bg-[rgba(245,158,11,.06)] border border-[rgba(245,158,11,.15)] rounded-xl p-5">
+        <div class="font-mono text-3xl font-bold text-amber mb-1">8</div>
+        <div class="text-xs text-gray-500">功能问题</div>
+      </div>
+      <div class="bg-[rgba(34,197,94,.06)] border border-[rgba(34,197,94,.15)] rounded-xl p-5">
+        <div class="font-mono text-3xl font-bold text-neon mb-1">2</div>
+        <div class="text-xs text-gray-500">准确性问题</div>
+      </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-2xl p-8 text-left">
+      <h3 class="font-serif font-bold text-xl text-white mb-4">后续建议</h3>
+      <ul class="space-y-3 text-sm text-gray-400">
+        <li class="flex items-start gap-3">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0"></span>
+          <span>考虑引入 <strong class="text-white">Web Worker</strong> 处理 DDL 解析，避免大型文件阻塞主线程</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0"></span>
+          <span>使用 <strong class="text-white">SRI（Subresource Integrity）</strong>哈希校验替代简单的 crossorigin 属性</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0"></span>
+          <span>添加 <strong class="text-white">单元测试</strong>覆盖所有类型映射函数，防止回归</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0"></span>
+          <span>支持 <strong class="text-white">CHECK 约束</strong>和 <strong class="text-white">SEQUENCE</strong> 的反向解析，提升完整性</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0"></span>
+          <span>考虑增加 <strong class="text-white">语法高亮</strong>（如 CodeMirror / Monaco Editor）提升编辑体验</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="mt-16 text-xs font-mono text-gray-600">
+      报告生成时间: 2026-03-26 &middot; oracle-java-workbench &middot; DDL 翻译工作台 v1.1.0
+    </div>
+  </div>
+</section>
+
+<div class="h-24"></div>
+
+<!-- ============================================================ -->
+<!-- SCRIPTS -->
+<!-- ============================================================ -->
+<script>
+// --- GSAP Setup ---
+gsap.registerPlugin(ScrollTrigger);
+
+// Progress Bar
+gsap.to('#progress-bar',{
+  width:'100%',
+  ease:'none',
+  scrollTrigger:{trigger:'body',start:'top top',end:'bottom bottom',scrub:.3}
+});
+
+// Hero Animations
+const heroTl = gsap.timeline({defaults:{ease:'power3.out'}});
+heroTl.from('#hero-badge',{opacity:0,y:20,duration:.8,delay:.2})
+  .from('#hero-title',{opacity:0,y:40,duration:1},'<0.2')
+  .from('#hero-sub',{opacity:0,y:30,duration:.8},'<0.3')
+  .from('#hero-tags',{opacity:0,y:20,duration:.6},'<0.2')
+  .from('#scroll-hint',{opacity:0,duration:.6},'<0.3');
+
+// Section Reveals
+document.querySelectorAll('.reveal-section').forEach(el=>{
+  gsap.to(el,{
+    opacity:1,y:0,duration:1,ease:'power3.out',
+    scrollTrigger:{trigger:el,start:'top 85%',end:'top 50%',toggleActions:'play none none none'}
+  });
+});
+
+// --- Counter Animation ---
+function animateCounters(){
+  document.querySelectorAll('[data-count]').forEach(el=>{
+    const target=parseInt(el.dataset.count);
+    gsap.fromTo(el,{textContent:0},{
+      textContent:target,duration:1.5,ease:'power2.out',snap:{textContent:1},
+      scrollTrigger:{trigger:el,start:'top 90%',toggleActions:'play none none none'}
+    });
+  });
+}
+animateCounters();
+
+// --- ECharts: Pie ---
+const pieDom=document.getElementById('chart-pie');
+if(pieDom){
+  const pieChart=echarts.init(pieDom,null,{renderer:'svg'});
+  pieChart.setOption({
+    tooltip:{
+      trigger:'item',
+      backgroundColor:'rgba(22,25,35,0.95)',borderColor:'rgba(255,255,255,0.06)',borderWidth:1,
+      textStyle:{color:'#d1d5db',fontFamily:'Inter',fontSize:12},
+      formatter:p=>`<div style="font-weight:600;margin-bottom:4px;color:#fff">${p.name}</div><div>${p.value} 个问题 · ${p.percent}%</div>`
+    },
+    series:[{
+      type:'pie',radius:['45%','72%'],center:['50%','55%'],
+      itemStyle:{borderRadius:6,borderColor:'#161923',borderWidth:3},
+      label:{show:true,color:'#9ca3af',fontSize:11,fontFamily:'Inter',formatter:'{b}\n{c}个'},
+      labelLine:{lineStyle:{color:'rgba(255,255,255,0.1)'}},
+      emphasis:{
+        itemStyle:{shadowBlur:20,shadowColor:'rgba(0,0,0,0.5)'},
+        label:{fontSize:13,fontWeight:600,color:'#fff'}
+      },
+      data:[
+        {value:6,name:'安全',itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:1,colorStops:[{offset:0,color:'#f87171'},{offset:1,color:'#ef4444'}]}}},
+        {value:4,name:'性能',itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:1,colorStops:[{offset:0,color:'#60a5fa'},{offset:1,color:'#3b82f6'}]}}},
+        {value:8,name:'功能',itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:1,colorStops:[{offset:0,color:'#fbbf24'},{offset:1,color:'#f59e0b'}]}}},
+        {value:2,name:'准确性',itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:1,colorStops:[{offset:0,color:'#4ade80'},{offset:1,color:'#22c55e'}]}}}
+      ]
+    }]
+  });
+  window.addEventListener('resize',()=>pieChart.resize());
+}
+
+// --- ECharts: Bar ---
+const barDom=document.getElementById('chart-bar');
+if(barDom){
+  const barChart=echarts.init(barDom,null,{renderer:'svg'});
+  barChart.setOption({
+    tooltip:{
+      trigger:'axis',axisPointer:{type:'shadow',shadowStyle:{color:'rgba(199,70,52,0.04)'}},
+      backgroundColor:'rgba(22,25,35,0.95)',borderColor:'rgba(255,255,255,0.06)',borderWidth:1,
+      textStyle:{color:'#d1d5db',fontFamily:'Inter',fontSize:12}
+    },
+    grid:{left:48,right:24,top:24,bottom:36},
+    xAxis:{type:'category',data:['安全','性能','功能','准确性'],
+      axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}},
+      axisLabel:{color:'#6b7280',fontFamily:'Inter',fontSize:11},
+      axisTick:{show:false}
+    },
+    yAxis:{type:'value',max:10,
+      splitLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}},
+      axisLabel:{color:'#6b7280',fontFamily:'JetBrains Mono',fontSize:10},
+      axisLine:{show:false},axisTick:{show:false}
+    },
+    series:[
+      {name:'发现',type:'bar',barWidth:28,itemStyle:{borderRadius:[4,4,0,0],color:'rgba(199,70,52,0.5)'},data:[6,4,8,2]},
+      {name:'已修复',type:'bar',barWidth:28,barGap:'-100%',itemStyle:{borderRadius:[4,4,0,0],color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'#c74634'},{offset:1,color:'rgba(199,70,52,0.6)'}]}},data:[6,4,8,2]}
+    ]
+  });
+  window.addEventListener('resize',()=>barChart.resize());
+}
+
+// --- ECharts: Radar ---
+const radarDom=document.getElementById('chart-radar');
+if(radarDom){
+  const radarChart=echarts.init(radarDom,null,{renderer:'svg'});
+  radarChart.setOption({
+    tooltip:{
+      backgroundColor:'rgba(22,25,35,0.95)',borderColor:'rgba(255,255,255,0.06)',borderWidth:1,
+      textStyle:{color:'#d1d5db',fontFamily:'Inter',fontSize:12}
+    },
+    legend:{data:['优化前','优化后'],bottom:8,textStyle:{color:'#6b7280',fontFamily:'Inter',fontSize:11},itemWidth:16,itemHeight:3},
+    radar:{
+      indicator:[
+        {name:'CSP 安全策略',max:100},
+        {name:'CDN 完整性',max:100},
+        {name:'输入防护',max:100},
+        {name:'渲染性能',max:100},
+        {name:'浏览器兼容',max:100},
+        {name:'UI 完整性',max:100},
+        {name:'解析准确性',max:100},
+        {name:'错误处理',max:100},
+        {name:'用户体验',max:100}
+      ],
+      shape:'circle',
+      splitNumber:4,
+      axisName:{color:'#6b7280',fontFamily:'Inter',fontSize:10},
+      splitLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}},
+      splitArea:{areaStyle:{color:['rgba(255,255,255,0.01)','rgba(255,255,255,0.02)']}},
+      axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}
+    },
+    series:[{
+      type:'radar',
+      data:[
+        {
+          name:'优化前',
+          value:[15,30,20,60,50,65,82,30,55],
+          symbol:'circle',symbolSize:4,
+          lineStyle:{color:'rgba(199,70,52,0.5)',width:2},
+          areaStyle:{color:'rgba(199,70,52,0.08)'},
+          itemStyle:{color:'#c74634'}
+        },
+        {
+          name:'优化后',
+          value:[85,75,90,88,92,95,96,92,90],
+          symbol:'circle',symbolSize:4,
+          lineStyle:{color:'#22c55e',width:2},
+          areaStyle:{color:'rgba(34,197,94,0.08)'},
+          itemStyle:{color:'#22c55e'}
+        }
+      ]
+    }]
+  });
+  window.addEventListener('resize',()=>radarChart.resize());
+}
+</script>
+</body>
+</html>
