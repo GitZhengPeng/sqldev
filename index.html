@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta name="description" content="Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://github.com"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://unpkg.com; connect-src 'self' https://github.com https://unpkg.com"/>
 <meta property="og:title" content="SQL 翻译工作台"/>
 <meta property="og:description" content="Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转"/>
 <meta property="og:type" content="website"/>
@@ -5164,18 +5164,18 @@ app.mount('#app');
   <div id="miku-tip"></div>
   <div id="miku-name-tag">初音未来</div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.1.4/lib/L2Dwidget.min.js"></script>
+<script src="https://unpkg.com/live2d-widget@3.1.4/lib/L2Dwidget.min.js"></script>
 <script>
 (function() {
   var models = [
-    { url: 'https://cdn.jsdelivr.net/npm/live2d-widget-model-miku@1.0.5/assets/miku.model.json', name: '初音未来', tip: '大家好！我是初音未来~' },
-    { url: 'https://cdn.jsdelivr.net/npm/live2d-widget-model-shizuku@1.0.5/assets/shizuku.model.json', name: '雫 Shizuku', tip: '换上雫的造型啦~' },
-    { url: 'https://cdn.jsdelivr.net/npm/live2d-widget-model-koharu@1.0.5/assets/koharu.model.json', name: '小春 Koharu', tip: '小春来报到！元气满满~' },
-    { url: 'https://cdn.jsdelivr.net/npm/live2d-widget-model-haruto@1.0.5/assets/haruto.model.json', name: '春人 Haruto', tip: '帅气的春人登场！' },
-    { url: 'https://cdn.jsdelivr.net/npm/live2d-widget-model-hibiki@1.0.5/assets/hibiki.model.json', name: '響 Hibiki', tip: '響来啦~一起玩吧！' },
-    { url: 'https://cdn.jsdelivr.net/npm/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json', name: '虎虎 Tororo', tip: '喵~虎虎最可爱！' },
-    { url: 'https://cdn.jsdelivr.net/npm/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json', name: '鹿尾菜 Hijiki', tip: '嘿嘿~我是鹿尾菜~' },
-    { url: 'https://cdn.jsdelivr.net/npm/live2d-widget-model-tsumiki@1.0.5/assets/tsumiki.model.json', name: '積 Tsumiki', tip: '積来陪你啦~' }
+    { url: 'https://unpkg.com/live2d-widget-model-miku@1.0.5/assets/miku.model.json', name: '初音未来', tip: '大家好！我是初音未来~' },
+    { url: 'https://unpkg.com/live2d-widget-model-shizuku@1.0.5/assets/shizuku.model.json', name: '雫 Shizuku', tip: '换上雫的造型啦~' },
+    { url: 'https://unpkg.com/live2d-widget-model-koharu@1.0.5/assets/koharu.model.json', name: '小春 Koharu', tip: '小春来报到！元气满满~' },
+    { url: 'https://unpkg.com/live2d-widget-model-haruto@1.0.5/assets/haruto.model.json', name: '春人 Haruto', tip: '帅气的春人登场！' },
+    { url: 'https://unpkg.com/live2d-widget-model-hibiki@1.0.5/assets/hibiki.model.json', name: '響 Hibiki', tip: '響来啦~一起玩吧！' },
+    { url: 'https://unpkg.com/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json', name: '虎虎 Tororo', tip: '喵~虎虎最可爱！' },
+    { url: 'https://unpkg.com/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json', name: '鹿尾菜 Hijiki', tip: '嘿嘿~我是鹿尾菜~' },
+    { url: 'https://unpkg.com/live2d-widget-model-tsumiki@1.0.5/assets/tsumiki.model.json', name: '積 Tsumiki', tip: '積来陪你啦~' }
   ];
   var currentModel = parseInt(localStorage.getItem('miku_model_idx')) || 0;
   if (currentModel >= models.length) currentModel = 0;
