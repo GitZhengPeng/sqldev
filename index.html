@@ -140,16 +140,6 @@ textarea::placeholder{color:var(--text-muted)}
 .scroll-top.visible{opacity:1;pointer-events:auto;transform:translateY(0)}
 .scroll-top:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 
-/* ===== CHARACTER MASCOT (Slide-out Panel) ===== */
-#chara-tab{position:fixed;top:50%;right:0;z-index:101;transform:translateY(-50%);cursor:pointer;writing-mode:vertical-rl;text-orientation:mixed;background:linear-gradient(180deg,rgba(99,102,241,.9),rgba(139,92,246,.9));color:#fff;font-size:12px;font-weight:700;padding:12px 6px;border-radius:8px 0 0 8px;letter-spacing:2px;box-shadow:-2px 0 12px rgba(99,102,241,.3);transition:right .4s cubic-bezier(.4,0,.2,1);user-select:none;-webkit-tap-highlight-color:transparent}
-#chara-tab:hover{background:linear-gradient(180deg,rgba(79,82,221,.95),rgba(119,72,226,.95))}
-#chara-tab.open{right:200px}
-#chara-panel{position:fixed;top:50%;right:-200px;z-index:100;transform:translateY(-50%);width:200px;display:flex;flex-direction:column;align-items:center;padding:12px 10px;transition:right .4s cubic-bezier(.4,0,.2,1);pointer-events:none}
-#chara-panel.open{right:0;pointer-events:auto}
-#chara-img{display:block;width:180px;height:auto;max-height:320px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,.3));transition:opacity .5s ease,transform .3s ease;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#chara-img.fade{opacity:0;transform:scale(.95)}
-#chara-counter{text-align:center;margin-top:4px;font-size:10px;color:var(--text-muted);letter-spacing:1px}
-
 /* ===== MISC ===== */
 .kbd{display:inline-block;padding:1px 5px;border:1px solid var(--border);border-radius:3px;font-size:10px;font-family:var(--font-code);color:var(--text-muted);background:var(--bg-secondary);margin-left:6px;vertical-align:middle}
 .error-msg{color:var(--red);background:#fef2f2;border:1px solid #fecaca;border-radius:var(--radius-sm);padding:8px 14px;margin:8px 16px;font-size:12px;font-family:var(--font-code)}
@@ -198,11 +188,6 @@ textarea::placeholder{color:var(--text-muted)}
   .sidebar{width:280px;min-width:280px}
   .sidebar-brand{height:48px;padding:12px 16px}
   .scroll-top{bottom:12px;right:12px;width:32px;height:32px;font-size:14px}
-  #chara-tab{font-size:10px;padding:10px 5px}
-  #chara-tab.open{right:130px}
-  #chara-panel{width:130px;right:-130px;padding:8px 6px}
-  #chara-img{width:110px;max-height:200px}
-  #chara-counter{font-size:8px}
   .swap-btn{padding:5px 8px;font-size:14px}
   .arrow-icon{font-size:14px}
 }
@@ -5165,69 +5150,5 @@ const app = createApp({
   }
 });
 app.mount('#app');
-</script>
-<!-- Character Mascot Widget -->
-<div id="chara-tab" title="点击展开角色">斗破苍穹</div>
-<div id="chara-panel">
-  <img id="chara-img" src="img/medusa.png" alt="美杜莎" title="点击切换角色"/>
-  <div id="chara-counter">1 / 9</div>
-</div>
-<script>
-(function() {
-  var chars = [
-    { img: 'img/medusa.png', name: '美杜莎' },
-    { img: 'img/xiaoyixian.png', name: '小医仙' },
-    { img: 'img/xuner.png', name: '萧薰儿' },
-    { img: 'img/caoying.png', name: '曹颖' },
-    { img: 'img/yunyun.png', name: '云韵' },
-    { img: 'img/fengqinger.png', name: '凤清儿' },
-    { img: 'img/qinglin.png', name: '青鳞' },
-    { img: 'img/ziyan.png', name: '紫妍' },
-    { img: 'img/xiaoyan.png', name: '萧炎' }
-  ];
-  var idx = parseInt(localStorage.getItem('chara_idx')) || 0;
-  if (idx >= chars.length) idx = 0;
-  var img = document.getElementById('chara-img');
-  var counter = document.getElementById('chara-counter');
-  var tab = document.getElementById('chara-tab');
-  var panel = document.getElementById('chara-panel');
-  var busy = false;
-  var isOpen = false;
-
-  function showChar(i) {
-    idx = i % chars.length;
-    localStorage.setItem('chara_idx', idx);
-    counter.textContent = (idx + 1) + ' / ' + chars.length;
-    img.src = chars[idx].img;
-    img.alt = chars[idx].name;
-  }
-
-  function togglePanel() {
-    isOpen = !isOpen;
-    tab.classList.toggle('open', isOpen);
-    panel.classList.toggle('open', isOpen);
-    tab.textContent = isOpen ? '收起' : '斗破苍穹';
-  }
-
-  function nextChar() {
-    if (busy) return;
-    busy = true;
-    img.classList.add('fade');
-    setTimeout(function() {
-      showChar(idx + 1);
-      img.classList.remove('fade');
-      setTimeout(function() { busy = false; }, 500);
-    }, 350);
-  }
-
-  // Preload all images
-  chars.forEach(function(c) { var p = new Image(); p.src = c.img; });
-  // Initial display
-  showChar(idx);
-  // Tab click toggles panel
-  tab.addEventListener('click', togglePanel);
-  // Image click switches character
-  img.addEventListener('click', nextChar);
-})();
 </script>
 </body></html>
