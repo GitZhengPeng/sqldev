@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta name="description" content="Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://unpkg.com; connect-src 'self' https://github.com https://unpkg.com"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://github.com"/>
 <meta property="og:title" content="SQL 翻译工作台"/>
 <meta property="og:description" content="Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转"/>
 <meta property="og:type" content="website"/>
@@ -140,10 +140,13 @@ textarea::placeholder{color:var(--text-muted)}
 .scroll-top.visible{opacity:1;pointer-events:auto;transform:translateY(0)}
 .scroll-top:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 
-/* ===== LIVE2D MIKU MASCOT (Right Side) ===== */
-#miku-live2d-wrap{position:fixed;top:50%;right:-10px;z-index:100;transform:translateY(-50%);cursor:pointer}
-#miku-canvas{display:block;width:200px;height:280px}
-#miku-name-tag{position:absolute;top:-24px;left:50%;transform:translateX(-50%);background:rgba(57,197,187,.9);color:#fff;font-size:11px;font-weight:700;padding:3px 12px;border-radius:12px;pointer-events:none;letter-spacing:.5px;white-space:nowrap;box-shadow:0 2px 8px rgba(57,197,187,.3)}
+/* ===== CHARACTER MASCOT (Right Side) ===== */
+#chara-wrap{position:fixed;top:50%;right:8px;z-index:100;transform:translateY(-50%);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+#chara-wrap:hover #chara-img{filter:brightness(1.08)}
+#chara-name{text-align:center;margin-bottom:6px;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,rgba(99,102,241,.85),rgba(139,92,246,.85));padding:4px 14px;border-radius:14px;letter-spacing:1px;white-space:nowrap;box-shadow:0 2px 10px rgba(99,102,241,.3);pointer-events:none;transition:background .4s}
+#chara-img{display:block;width:180px;height:280px;object-fit:cover;object-position:top center;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.25);transition:opacity .5s ease,transform .3s ease;border:2px solid rgba(255,255,255,.15)}
+#chara-img.fade{opacity:0;transform:scale(.95)}
+#chara-counter{text-align:center;margin-top:4px;font-size:10px;color:var(--text-muted);pointer-events:none;letter-spacing:1px}
 
 /* ===== MISC ===== */
 .kbd{display:inline-block;padding:1px 5px;border:1px solid var(--border);border-radius:3px;font-size:10px;font-family:var(--font-code);color:var(--text-muted);background:var(--bg-secondary);margin-left:6px;vertical-align:middle}
@@ -193,7 +196,10 @@ textarea::placeholder{color:var(--text-muted)}
   .sidebar{width:280px;min-width:280px}
   .sidebar-brand{height:48px;padding:12px 16px}
   .scroll-top{bottom:12px;right:12px;width:32px;height:32px;font-size:14px}
-  #miku-live2d-wrap{display:none !important}
+  #chara-wrap{top:auto;bottom:8px;right:6px;transform:none}
+  #chara-img{width:100px;height:160px;border-radius:8px}
+  #chara-name{font-size:10px;padding:2px 10px;margin-bottom:4px;border-radius:10px}
+  #chara-counter{font-size:8px}
   .swap-btn{padding:5px 8px;font-size:14px}
   .arrow-icon{font-size:14px}
 }
@@ -5157,51 +5163,60 @@ const app = createApp({
 });
 app.mount('#app');
 </script>
-<!-- Live2D Miku Mascot Widget -->
-<div id="miku-live2d-wrap">
-  <div id="miku-name-tag">初音未来</div>
-  <canvas id="miku-canvas" width="400" height="560"></canvas>
+<!-- Character Mascot Widget -->
+<div id="chara-wrap" title="点击切换角色">
+  <div id="chara-name">美杜莎</div>
+  <img id="chara-img" src="img/medusa.webp" alt="美杜莎"/>
+  <div id="chara-counter">1 / 9</div>
 </div>
-<script src="live2d.min.js"></script>
 <script>
 (function() {
-  var models = [
-    { url: 'https://unpkg.com/live2d-widget-model-miku@1.0.5/assets/miku.model.json', name: '初音未来' },
-    { url: 'https://unpkg.com/live2d-widget-model-shizuku@1.0.5/assets/shizuku.model.json', name: '雫 Shizuku' },
-    { url: 'https://unpkg.com/live2d-widget-model-koharu@1.0.5/assets/koharu.model.json', name: '小春 Koharu' },
-    { url: 'https://unpkg.com/live2d-widget-model-haruto@1.0.5/assets/haruto.model.json', name: '春人 Haruto' },
-    { url: 'https://unpkg.com/live2d-widget-model-hibiki@1.0.5/assets/hibiki.model.json', name: '響 Hibiki' },
-    { url: 'https://unpkg.com/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json', name: '虎虎 Tororo' },
-    { url: 'https://unpkg.com/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json', name: '鹿尾菜 Hijiki' },
-    { url: 'https://unpkg.com/live2d-widget-model-tsumiki@1.0.5/assets/tsumiki.model.json', name: '積 Tsumiki' }
+  var chars = [
+    { img: 'img/medusa.webp', name: '美杜莎' },
+    { img: 'img/xiaoyixian.webp', name: '小医仙' },
+    { img: 'img/xuner.webp', name: '萧薰儿' },
+    { img: 'img/caoying.webp', name: '曹颖' },
+    { img: 'img/yunyun.webp', name: '云韵' },
+    { img: 'img/fengqinger.webp', name: '凤清儿' },
+    { img: 'img/qinglin.webp', name: '青麟' },
+    { img: 'img/ziyan.webp', name: '紫妍' },
+    { img: 'img/xiaoyan.webp', name: '萧炎' }
   ];
-  var currentModel = parseInt(localStorage.getItem('miku_model_idx')) || 0;
-  if (currentModel >= models.length) currentModel = 0;
-  var nameTag = document.getElementById('miku-name-tag');
-  var switching = false;
+  var idx = parseInt(localStorage.getItem('chara_idx')) || 0;
+  if (idx >= chars.length) idx = 0;
+  var img = document.getElementById('chara-img');
+  var name = document.getElementById('chara-name');
+  var counter = document.getElementById('chara-counter');
+  var busy = false;
 
-  function switchTo(idx) {
-    if (switching) return;
-    switching = true;
-    currentModel = idx % models.length;
-    localStorage.setItem('miku_model_idx', currentModel);
-    nameTag.textContent = models[currentModel].name;
-    try { loadlive2d('miku-canvas', models[currentModel].url); } catch(e) {}
-    setTimeout(function() { switching = false; }, 1500);
+  function show(i) {
+    idx = i % chars.length;
+    localStorage.setItem('chara_idx', idx);
+    name.textContent = chars[idx].name;
+    counter.textContent = (idx + 1) + ' / ' + chars.length;
+    img.src = chars[idx].img;
+    img.alt = chars[idx].name;
   }
 
-  // Initial load
-  switchTo(currentModel);
-
-  // Click to cycle
-  document.getElementById('miku-live2d-wrap').addEventListener('click', function() {
-    switchTo(currentModel + 1);
-  });
-
-  // Hide on mobile
-  if (screen.width < 768) {
-    document.getElementById('miku-live2d-wrap').style.display = 'none';
+  function next() {
+    if (busy) return;
+    busy = true;
+    img.classList.add('fade');
+    setTimeout(function() {
+      show(idx + 1);
+      img.classList.remove('fade');
+      setTimeout(function() { busy = false; }, 500);
+    }, 350);
   }
+
+  // Preload all images
+  chars.forEach(function(c) { var p = new Image(); p.src = c.img; });
+
+  // Initial display
+  show(idx);
+
+  // Click to switch
+  document.getElementById('chara-wrap').addEventListener('click', next);
 })();
 </script>
 </body></html>
