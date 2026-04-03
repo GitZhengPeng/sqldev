@@ -5963,6 +5963,7 @@ const app = createApp({
     // ========== Lifecycle ==========
     let scrollHandler;
     let keyHandler;
+    let outsideClickHandler;
     let _scrollTicking = false;
     onMounted(() => {
       scrollHandler = () => {
@@ -5985,11 +5986,12 @@ const app = createApp({
       };
       window.addEventListener('keydown', keyHandler);
       // Close floating panels on outside click
-      document.addEventListener('click', function(e) {
+      outsideClickHandler = function(e) {
         if (showRulesMenu.value && !e.target.closest('.rules-dropdown')) {
           showRulesMenu.value = false;
         }
-      });
+      };
+      document.addEventListener('click', outsideClickHandler);
       // Drag event listeners for modals
       window.addEventListener('mousemove', _onDragMove);
       window.addEventListener('mouseup', _onDragEnd);
@@ -5997,6 +5999,7 @@ const app = createApp({
     onUnmounted(() => {
       if (scrollHandler) window.removeEventListener('scroll', scrollHandler);
       if (keyHandler) window.removeEventListener('keydown', keyHandler);
+      if (outsideClickHandler) document.removeEventListener('click', outsideClickHandler);
       window.removeEventListener('mousemove', _onDragMove);
       window.removeEventListener('mouseup', _onDragEnd);
     });
