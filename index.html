@@ -5482,7 +5482,7 @@ const app = createApp({
 
     function addRule(category) {
       _pushUndo('ddl');
-      ddlRules.value[category].push({source:'',target:''});
+      ddlRules.value[category].unshift({source:'',target:''});
     }
     function deleteRule(category, index) {
       _pushUndo('ddl');
@@ -5513,7 +5513,7 @@ const app = createApp({
       _pushUndo('body');
       var info = _bodyDirInfo(category);
       if (!info) return;
-      _bodyRulesRef.value[info.pair].push({s:'', t:'', fwd:null, rev:null});
+      _bodyRulesRef.value[info.pair].unshift({s:'', t:'', fwd:null, rev:null});
     }
     function deleteBodyRule(category, index) {
       _pushUndo('body');
@@ -5611,7 +5611,7 @@ const app = createApp({
         if (m.index === -1) {
           if (!src && !tgt) { ruleModal.value.visible = false; return; }
           _pushUndo('body');
-          arr.push({s: sVal, t: tVal, fwd: null, rev: null});
+          arr.unshift({s: sVal, t: tVal, fwd: null, rev: null});
           triggerRef(_bodyRulesRef);
           statusText.value = '已新增规则: ' + src + ' → ' + tgt;
         } else {
@@ -5634,7 +5634,7 @@ const app = createApp({
         if (m.index === -1) {
           if (!src && !tgt) { ruleModal.value.visible = false; return; }
           _pushUndo('ddl');
-          store.value[m.category].push({source: src, target: tgt});
+          store.value[m.category].unshift({source: src, target: tgt});
           statusText.value = '已新增规则: ' + src + ' → ' + tgt;
         } else {
           if (!src && !tgt) {
