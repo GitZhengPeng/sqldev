@@ -47,6 +47,8 @@
     /* Force dark theme on first entry for visual continuity with poster */
     document.documentElement.setAttribute('data-theme','dark');
     localStorage.setItem('theme','dark');
+    /* Sync Vue's themeMode ref */
+    window.dispatchEvent(new CustomEvent('sp-theme-sync',{detail:'dark'}));
     /* Fade in the workbench */
     var appEl=document.getElementById('app');
     if(appEl){appEl.style.opacity='0';appEl.style.transition='opacity .6s ease .1s';requestAnimationFrame(function(){appEl.style.opacity='1'});}

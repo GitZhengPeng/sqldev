@@ -2072,6 +2072,11 @@ const app = createApp({
   setup() {
     const activePage = ref('ddl');
     const sidebarOpen = ref(false);
+    const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === '1');
+    function toggleSidebar() {
+      sidebarCollapsed.value = !sidebarCollapsed.value;
+      localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value ? '1' : '0');
+    }
     const NAV_PAGES = ['ddl', 'func', 'proc', 'rules', 'bodyRules'];
     function setPage(page) {
       activePage.value = page;
@@ -2126,6 +2131,10 @@ const app = createApp({
       applyTheme(themeMode.value);
     }
     applyTheme(themeMode.value);
+    /* Sync theme if poster forced dark after Vue mounted */
+    window.addEventListener('sp-theme-sync', function(e) {
+      themeMode.value = e.detail;
+    });
     const refCollapsed = ref(true);
     const ruleSearchQuery = ref('');
     const ruleFilterDir = ref('all');
@@ -2837,7 +2846,7 @@ const app = createApp({
     });
 
     return {
-      activePage, sidebarOpen, setPage, navKeydown,
+      activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, setPage, navKeydown,
       // Theme
       themeMode, themeLabel, toggleTheme,
       // DDL
