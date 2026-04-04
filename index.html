@@ -371,17 +371,17 @@ body.splash-active{overflow:hidden}
 .sp-tok{position:absolute;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(37,99,235,.25);white-space:nowrap;animation:tokFloat linear infinite}
 @keyframes tokFloat{0%{transform:translateY(0) rotate(var(--r));opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(calc(-100vh - 40px)) rotate(var(--r));opacity:0}}
 .sp-content{position:relative;z-index:2;text-align:center;max-width:720px;padding:0 24px}
-.sp-badge{display:inline-block;padding:6px 18px;border:1px solid rgba(37,99,235,.35);border-radius:100px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#60a5fa;text-transform:uppercase;margin-bottom:28px;opacity:0;animation:spFadeUp .8s .3s forwards}
+.sp-badge{display:inline-block;padding:6px 18px;border:1px solid rgba(37,99,235,.35);border-radius:100px;font-family:var(--font-body);font-size:12px;letter-spacing:.08em;color:#60a5fa;margin-bottom:28px;opacity:0;animation:spFadeUp .8s .3s forwards}
 .sp-title{font-family:'Instrument Serif',serif;font-size:clamp(42px,8vw,96px);line-height:1.05;color:#f1f5f9;margin:0 0 8px;opacity:0;animation:spFadeUp .8s .5s forwards}
 .sp-title em{font-style:italic;color:#2563eb}
 .sp-sub{font-family:'Noto Sans SC',sans-serif;font-size:clamp(14px,2vw,18px);color:#94a3b8;margin:0 0 48px;opacity:0;animation:spFadeUp .8s .7s forwards}
 .sp-triad{display:flex;align-items:center;justify-content:center;gap:32px;margin-bottom:44px;opacity:0;animation:spFadeUp .8s .9s forwards}
 .sp-db{display:flex;flex-direction:column;align-items:center;gap:10px}
-.sp-db-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff;border:1px solid rgba(255,255,255,.08)}
+.sp-db-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:var(--font-body);color:#fff;border:1px solid rgba(255,255,255,.08)}
 .sp-db-icon.oracle{background:linear-gradient(135deg,#c74634 0%,#8b2015 100%)}
 .sp-db-icon.mysql{background:linear-gradient(135deg,#00758f 0%,#f29111 100%)}
 .sp-db-icon.pg{background:linear-gradient(135deg,#336791 0%,#1d3f5e 100%)}
-.sp-db-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;letter-spacing:.06em}
+.sp-db-label{font-family:var(--font-body);font-size:12px;color:#94a3b8;letter-spacing:.02em}
 .sp-arrow-bi{display:flex;flex-direction:column;gap:4px;color:#2563eb;font-size:18px;line-height:1;opacity:.7}
 .sp-features{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:44px;opacity:0;animation:spFadeUp .8s 1.1s forwards}
 .sp-feat{padding:8px 20px;border-radius:8px;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.15);font-family:'Noto Sans SC',sans-serif;font-size:13px;color:#93c5fd}
@@ -389,7 +389,7 @@ body.splash-active{overflow:hidden}
 .sp-cta:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(37,99,235,.4)}
 .sp-cta svg{transition:transform .2s}
 .sp-cta:hover svg{transform:translateX(4px)}
-.sp-scroll{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:#475569;font-size:11px;font-family:'Noto Sans SC',sans-serif;opacity:0;animation:spFadeUp .8s 1.5s forwards}
+.sp-scroll{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:#475569;font-size:12px;font-family:var(--font-body);cursor:pointer;opacity:0;animation:spFadeUp .8s 1.5s forwards}
 .sp-scroll-line{width:1px;height:28px;background:linear-gradient(to bottom,#2563eb,transparent);animation:scrollPulse 2s ease-in-out infinite}
 @keyframes scrollPulse{0%,100%{opacity:.3;transform:scaleY(.6)}50%{opacity:1;transform:scaleY(1)}}
 @keyframes spFadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
@@ -425,7 +425,7 @@ body.splash-active{overflow:hidden}
       <span class="sp-feat">存储过程迁移</span>
       <span class="sp-feat">类型映射规则</span>
     </div>
-    <button class="sp-cta" onclick="dismissSplash()">进入工作台 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="sp-cta" id="sp-enter-btn">进入工作台 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
   <div class="sp-scroll"><span>向下滚动</span><div class="sp-scroll-line"></div></div>
 </div>
@@ -1043,7 +1043,8 @@ $$;</pre>
   drawOrbs();
 
   /* Dismiss */
-  window.dismissSplash=function(){
+  function dismissSplash(){
+    if(poster.classList.contains('leaving'))return;
     /* Force dark theme on first entry for visual continuity with poster */
     document.documentElement.setAttribute('data-theme','dark');
     localStorage.setItem('theme','dark');
@@ -1058,7 +1059,17 @@ $$;</pre>
       cancelAnimationFrame(rafId);
       sessionStorage.setItem('sp_seen','1');
     },700);
-  };
+  }
+  /* Bind CTA button click (no inline onclick, CSP compliant) */
+  document.getElementById('sp-enter-btn').addEventListener('click',dismissSplash);
+  /* Bind scroll hint click */
+  poster.querySelector('.sp-scroll').addEventListener('click',dismissSplash);
+  /* Dismiss on mouse wheel or touch swipe up */
+  var wheelFired=false;
+  poster.addEventListener('wheel',function(e){if(!wheelFired&&e.deltaY>30){wheelFired=true;dismissSplash();}},{passive:true});
+  var touchY=0;
+  poster.addEventListener('touchstart',function(e){touchY=e.touches[0].clientY;},{passive:true});
+  poster.addEventListener('touchmove',function(e){if(touchY-e.touches[0].clientY>60)dismissSplash();},{passive:true});
 })();
 </script>
 
