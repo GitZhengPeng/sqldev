@@ -2818,6 +2818,13 @@ const app = createApp({
       };
       window.addEventListener('scroll', scrollHandler, { passive: true });
       keyHandler = (e) => {
+        if (e.key === 'Escape' && showRulesMenu.value) {
+          e.preventDefault();
+          showRulesMenu.value = false;
+          var trigger = document.getElementById('settings-trigger');
+          if (trigger) trigger.focus();
+          return;
+        }
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
           e.preventDefault();
           if (activePage.value === 'func') convertFunc();
