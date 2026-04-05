@@ -1,4 +1,14 @@
 /* ===== splash.js — Splash Poster Animation & Dismiss Logic ===== */
+
+/* Non-blocking font activation (replaces inline onload handler for CSP compliance) */
+(function(){
+  var link=document.getElementById('gfonts-async');
+  if(link){
+    if(link.sheet){link.media='all';}
+    else{link.addEventListener('load',function(){link.media='all';});}
+  }
+})();
+
 (function(){
   var poster=document.getElementById('splash-poster');
   if(!poster)return;
