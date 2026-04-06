@@ -695,40 +695,60 @@ var _handleDbmsRandomValueToFn = function(toDb) {
 };
 
 var _handleWhileLoopToMysql = function(b) {
+  /* Fix: first convert PG <<label>> on separate line to same-line label: format */
+  b = b.replace(/(^|\n)\s*<<(\w+)>>\s*\n(\s*LOOP\b)/gi, '$1$3'.replace(/LOOP/, function() { return ''; }) || '$1$3');
+  b = b.replace(/<<(\w+)>>\s*\n(\s*)LOOP\b/gi, '$2$1: LOOP');
+  b = b.replace(/<<(\w+)>>\s*LOOP\b/gi, '$1: LOOP');
   var lines = b.split('\n');
   var loopStack = [];
   var basicLoopCount = 0;
   var queryForCount = 0;
+  /* Track the current innermost loop label for LEAVE fixup */
+  var _currentLoopLabels = [];
   for (var li = 0; li < lines.length; li++) {
     if (/^\s*--/.test(lines[li])) continue;
     if (/\bWHILE\b.+\bLOOP\b/i.test(lines[li])) {
       lines[li] = lines[li].replace(/\bWHILE\b(.+?)\bLOOP\b/gi, 'WHILE$1DO');
       loopStack.push('while');
+      _currentLoopLabels.push(null);
     } else if (/\bFOR\b.+\bLOOP\b/i.test(lines[li])) {
       if (/\bFOR\s+\w+\s+IN\s+\S+?\s*\.\./i.test(lines[li])) {
         loopStack.push('for');
+        _currentLoopLabels.push(null);
       } else {
         queryForCount++;
-        loopStack.push({ type: 'query_for', label: '_for_loop_' + queryForCount });
+        var qfLabel = '_for_loop_' + queryForCount;
+        loopStack.push({ type: 'query_for', label: qfLabel });
+        _currentLoopLabels.push(qfLabel);
       }
     } else if (/^\s*(?:\w+\s*:\s*)?LOOP\b/i.test(lines[li])) {
       basicLoopCount++;
       var loopLabel = '_loop' + basicLoopCount;
-      if (/^\s*\w+\s*:\s*LOOP\b/i.test(lines[li])) {
+      if (/^\s*(\w+)\s*:\s*LOOP\b/i.test(lines[li])) {
         var existingLabel = lines[li].match(/^\s*(\w+)\s*:/)[1];
         loopStack.push({ type: 'basic', label: existingLabel });
+        _currentLoopLabels.push(existingLabel);
       } else {
         lines[li] = lines[li].replace(/\bLOOP\b/i, loopLabel + ': LOOP');
         loopStack.push({ type: 'basic', label: loopLabel });
+        _currentLoopLabels.push(loopLabel);
       }
     } else if (/\bEND\s+LOOP\b/i.test(lines[li])) {
       var loopType = loopStack.pop();
+      _currentLoopLabels.pop();
       if (loopType === 'while' || loopType === 'for') {
         lines[li] = lines[li].replace(/\bEND\s+LOOP\b/gi, 'END WHILE');
       } else if (loopType && loopType.type === 'query_for') {
         lines[li] = lines[li].replace(/\bEND\s+LOOP\b/gi, 'END LOOP ' + loopType.label);
       } else if (loopType && loopType.type === 'basic') {
         lines[li] = lines[li].replace(/\bEND\s+LOOP\b/gi, 'END LOOP ' + loopType.label);
+      }
+    }
+    /* Fix bare LEAVE; -> LEAVE label; using current innermost loop label */
+    if (/\bLEAVE\s*;/i.test(lines[li]) && _currentLoopLabels.length > 0) {
+      var curLabel = _currentLoopLabels[_currentLoopLabels.length - 1];
+      if (curLabel) {
+        lines[li] = lines[li].replace(/\bLEAVE\s*;/gi, 'LEAVE ' + curLabel + ';');
       }
     }
   }
@@ -1603,10 +1623,18 @@ var _bodyRulesData = {
     {s:'RESIGNAL;',t:'RAISE;', fwd: _handleResignalToRaise, rev: _handleRaiseToResignal},
     /* Pre-convert RAISE NOTICE / DBMS_OUTPUT before || -> CONCAT (PG->MySQL) */
     {s:'RAISE NOTICE pre-convert (PG->MySQL)',t:'SELECT (pre-convert)', fwd: null, rev: _handlePreConvertRaiseNoticeDbmsToMysql},
+    /* Pre-convert PG interval (dt + (n || ' unit')::interval) -> DATE_ADD BEFORE ||->CONCAT */
+    {s:'PG interval pre-convert (PG->MySQL)',t:'DATE_ADD pre-convert', fwd: null, rev: function(b) {
+      return b.replace(/\(\s*(\w+)\s*\+\s*\(\s*([^|]+?)\s*\|\|\s*'\s*(\w+)\s*'\s*\)\s*::interval\s*\)/gi, function(m, dt, n, unit) {
+        return 'DATE_ADD(' + dt.trim() + ', INTERVAL ' + n.trim() + ' ' + unit.toUpperCase() + ')';
+      });
+    }},
+    /* Pre-convert PG EXECUTE 'sql' || var -> MySQL PREPARE/EXECUTE BEFORE ||->CONCAT */
+    {s:'PG EXECUTE pre-convert (PG->MySQL)',t:'PREPARE/EXECUTE pre-convert', fwd: null, rev: _handlePgExecuteToMysql},
     /* CONCAT -> || */
     {s:'CONCAT(a, b, ...)',t:'(a || b || ...)', fwd: function(b) { return _convertConcatToPipe(b); }, rev: _handlePipeConcatToFunction},
     /* DECLARE HANDLER -> EXCEPTION */
-    {s:'DECLARE HANDLER FOR SQLEXCEPTION',t:'EXCEPTION WHEN OTHERS THEN', fwd: _handleMysqlHandlerToPg, rev: null},
+    {s:'DECLARE HANDLER FOR SQLEXCEPTION',t:'EXCEPTION WHEN OTHERS THEN', fwd: _handleMysqlHandlerToPg, rev: _handleExceptionToMysqlHandler},
     {s:'DECLARE HANDLER FOR NOT FOUND',t:'EXCEPTION WHEN NO_DATA_FOUND THEN', fwd: null, rev: null},
     /* DBMS_OUTPUT/SELECT -> RAISE NOTICE */
     {s:'SELECT expr (\u8c03\u8bd5\u8f93\u51fa)',t:"RAISE NOTICE '%', expr", fwd: function(b) { return b.replace(/\bSELECT\s+(.+?)\s*;\s*(?=\n|$)/gi, function(m, expr) { if (/\b(INTO|FROM|WHERE)\b/i.test(expr)) return m; var cleanExpr = expr.trim().replace(/\s+AS\s+\w+\s*$/i, ''); return "RAISE NOTICE '%', " + cleanExpr + ';'; }); }, rev: function(b) { b = b.replace(/\bRAISE\s+NOTICE\s+'[^']*',\s*([^;]+);/gi, 'SELECT $1;'); return b; }},

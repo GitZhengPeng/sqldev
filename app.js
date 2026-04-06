@@ -1555,7 +1555,7 @@ function _convertSingleFunction(input, sourceDb, targetDb) {
   });
 
   // Expand %ROWTYPE variables for MySQL: replace single record var with individual column vars
-  if (targetDb === 'mysql' && sourceDb === 'oracle') {
+  if (targetDb === 'mysql' && (sourceDb === 'oracle' || sourceDb === 'postgresql')) {
     var _rowtypeResult = _expandRowTypeVarsForMySQL(parsed.vars, mappedVars, transformedBody);
     mappedVars = _rowtypeResult.vars;
     transformedBody = _rowtypeResult.body;
@@ -2045,7 +2045,7 @@ function _convertSingleProcedure(input, sourceDb, targetDb) {
   });
 
   // Expand %ROWTYPE variables for MySQL: replace single record var with individual column vars
-  if (targetDb === 'mysql' && sourceDb === 'oracle') {
+  if (targetDb === 'mysql' && (sourceDb === 'oracle' || sourceDb === 'postgresql')) {
     var _rowtypeResult = _expandRowTypeVarsForMySQL(parsed.vars, mappedVars, transformedBody);
     mappedVars = _rowtypeResult.vars;
     transformedBody = _rowtypeResult.body;
