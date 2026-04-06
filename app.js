@@ -1547,12 +1547,19 @@ function _convertSingleFunction(input, sourceDb, targetDb) {
     return { name: p.name, direction: p.direction, type: mapParamType(p.type, sourceDb, targetDb), defaultVal: p.defaultVal };
   });
   const mappedReturnType = mapParamType(parsed.returnType, sourceDb, targetDb);
-  const transformedBody = transformBody(parsed.body, sourceDb, targetDb);
-  const mappedVars = parsed.vars.map(function(v) {
+  let transformedBody = transformBody(parsed.body, sourceDb, targetDb);
+  let mappedVars = parsed.vars.map(function(v) {
     if (v.raw) return v;
     if (v.cursor) return { cursor: true, name: v.name, query: transformBody(v.query, sourceDb, targetDb) };
     return { name: v.name, type: mapParamType(v.type, sourceDb, targetDb), defaultVal: v.defaultVal };
   });
+
+  // Expand %ROWTYPE variables for MySQL: replace single record var with individual column vars
+  if (targetDb === 'mysql' && sourceDb === 'oracle') {
+    var _rowtypeResult = _expandRowTypeVarsForMySQL(parsed.vars, mappedVars, transformedBody);
+    mappedVars = _rowtypeResult.vars;
+    transformedBody = _rowtypeResult.body;
+  }
 
   if (targetDb === 'oracle') return _genOracleFunction(parsed.name, mappedParams, mappedReturnType, mappedVars, transformedBody);
   if (targetDb === 'mysql') return _genMySQLFunction(parsed.name, mappedParams, mappedReturnType, mappedVars, transformedBody);
@@ -1800,8 +1807,18 @@ function _genMySQLFunction(name, params, returnType, vars, body) {
     }
   }
   if (bodyDeclares.length > 0) {
+    // Deduplicate declarations
+    var _seenFnDecl = {};
+    var _dedupedFnDeclares = [];
+    for (var fdi = 0; fdi < bodyDeclares.length; fdi++) {
+      var _normFnDecl = bodyDeclares[fdi].trim().replace(/\s+/g, ' ').toUpperCase();
+      if (!_seenFnDecl[_normFnDecl]) {
+        _seenFnDecl[_normFnDecl] = true;
+        _dedupedFnDeclares.push(bodyDeclares[fdi]);
+      }
+    }
     // Sort: variables first, cursors second, handlers last (MySQL requirement)
-    bodyDeclares.sort(function(a, b) {
+    _dedupedFnDeclares.sort(function(a, b) {
       var aIsHandler = /^\s*DECLARE\s+(EXIT|CONTINUE)\s+HANDLER/i.test(a);
       var bIsHandler = /^\s*DECLARE\s+(EXIT|CONTINUE)\s+HANDLER/i.test(b);
       var aIsCursor = /^\s*DECLARE\s+\w+\s+CURSOR\b/i.test(a);
@@ -1810,7 +1827,7 @@ function _genMySQLFunction(name, params, returnType, vars, body) {
       var bOrder = bIsHandler ? 2 : (bIsCursor ? 1 : 0);
       return aOrder - bOrder;
     });
-    out += bodyDeclares.join('\n') + '\n';
+    out += _dedupedFnDeclares.join('\n') + '\n';
   }
   out += bodyOther.join('\n') + '\n';
   // Ensure it ends with END$$
@@ -1914,6 +1931,75 @@ function convertProcedure(input, sourceDb, targetDb) {
   return header + '\n' + results.join('\n\n');
 }
 
+/* --- Expand %ROWTYPE vars into individual column variables for MySQL --- */
+function _expandRowTypeVarsForMySQL(originalVars, mappedVars, body) {
+  // Build cursor name → column names map
+  var cursorCols = {};
+  for (var i = 0; i < originalVars.length; i++) {
+    var ov = originalVars[i];
+    if (ov.cursor && ov.query) {
+      var selMatch = ov.query.match(/^\s*SELECT\s+([\s\S]+?)\s+FROM\s/i);
+      if (selMatch) {
+        var cols = [];
+        var parts = selMatch[1].split(',');
+        for (var ci = 0; ci < parts.length; ci++) {
+          var colExpr = parts[ci].trim();
+          var aliasMatch = colExpr.match(/\bAS\s+(\w+)\s*$/i);
+          if (aliasMatch) {
+            cols.push(aliasMatch[1]);
+          } else {
+            var lastWord = colExpr.match(/(\w+)\s*$/);
+            if (lastWord) cols.push(lastWord[1]);
+          }
+        }
+        cursorCols[ov.name.toUpperCase()] = cols;
+      }
+    }
+  }
+
+  // Find %ROWTYPE variables and expand them
+  var newVars = [];
+  var rowtypeExpansions = []; // { varName, cursorName, colNames }
+  for (var i = 0; i < originalVars.length; i++) {
+    var ov = originalVars[i];
+    var mv = mappedVars[i];
+    if (ov.type && /%ROWTYPE\b/i.test(ov.type)) {
+      // Extract cursor name from type like "C_ITEMS%ROWTYPE"
+      var cursorRef = ov.type.replace(/%ROWTYPE\b/i, '').trim();
+      var cursorKey = cursorRef.toUpperCase();
+      if (cursorCols[cursorKey]) {
+        var cols = cursorCols[cursorKey];
+        rowtypeExpansions.push({ varName: ov.name, cursorName: cursorRef, colNames: cols });
+        // Generate individual column variable declarations instead
+        for (var ci = 0; ci < cols.length; ci++) {
+          newVars.push({ name: '_' + ov.name.toLowerCase() + '_' + cols[ci].toLowerCase(), type: 'VARCHAR(4000)', defaultVal: null });
+        }
+      } else {
+        newVars.push(mv);
+      }
+    } else {
+      newVars.push(mv);
+    }
+  }
+
+  // Replace FETCH cursor INTO rowtype_var with individual vars
+  var newBody = body;
+  for (var ri = 0; ri < rowtypeExpansions.length; ri++) {
+    var exp = rowtypeExpansions[ri];
+    var fetchVars = exp.colNames.map(function(c) { return '_' + exp.varName.toLowerCase() + '_' + c.toLowerCase(); }).join(', ');
+    // Replace: FETCH cursor_name INTO rowtype_var;
+    var fetchRe = new RegExp('(FETCH\\s+' + exp.cursorName + '\\s+INTO\\s+)' + exp.varName + '\\s*;', 'gi');
+    newBody = newBody.replace(fetchRe, '$1' + fetchVars + ';');
+    // Replace field access: rowtype_var.column_name
+    for (var ci = 0; ci < exp.colNames.length; ci++) {
+      var fieldRe = new RegExp('\\b' + exp.varName + '\\.' + exp.colNames[ci] + '\\b', 'gi');
+      newBody = newBody.replace(fieldRe, '_' + exp.varName.toLowerCase() + '_' + exp.colNames[ci].toLowerCase());
+    }
+  }
+
+  return { vars: newVars, body: newBody };
+}
+
 function _convertSingleProcedure(input, sourceDb, targetDb) {
   let parsed;
   if (sourceDb === 'oracle') parsed = _parseOracleProcedure(input);
@@ -1925,12 +2011,19 @@ function _convertSingleProcedure(input, sourceDb, targetDb) {
   const mappedParams = parsed.params.map(function(p) {
     return { name: p.name, direction: p.direction, type: mapParamType(p.type, sourceDb, targetDb), defaultVal: p.defaultVal };
   });
-  const transformedBody = transformBody(parsed.body, sourceDb, targetDb);
-  const mappedVars = parsed.vars.map(function(v) {
+  let transformedBody = transformBody(parsed.body, sourceDb, targetDb);
+  let mappedVars = parsed.vars.map(function(v) {
     if (v.raw) return v;
     if (v.cursor) return { cursor: true, name: v.name, query: transformBody(v.query, sourceDb, targetDb) };
     return { name: v.name, type: mapParamType(v.type, sourceDb, targetDb), defaultVal: v.defaultVal };
   });
+
+  // Expand %ROWTYPE variables for MySQL: replace single record var with individual column vars
+  if (targetDb === 'mysql' && sourceDb === 'oracle') {
+    var _rowtypeResult = _expandRowTypeVarsForMySQL(parsed.vars, mappedVars, transformedBody);
+    mappedVars = _rowtypeResult.vars;
+    transformedBody = _rowtypeResult.body;
+  }
 
   if (targetDb === 'oracle') return _genOracleProcedure(parsed.name, mappedParams, mappedVars, transformedBody);
   if (targetDb === 'mysql') return _genMySQLProcedure(parsed.name, mappedParams, mappedVars, transformedBody);
@@ -2172,6 +2265,17 @@ function _genMySQLProcedure(name, params, vars, body) {
       bodyOther.push(line);
     }
   }
+  // Deduplicate declarations by normalized content
+  var _seenDecl = {};
+  var _dedupedDeclares = [];
+  for (var di = 0; di < allDeclares.length; di++) {
+    var _normDecl = allDeclares[di].trim().replace(/\s+/g, ' ').toUpperCase();
+    if (!_seenDecl[_normDecl]) {
+      _seenDecl[_normDecl] = true;
+      _dedupedDeclares.push(allDeclares[di]);
+    }
+  }
+  allDeclares = _dedupedDeclares;
   // MySQL requires: variable DECLAREs, then cursor DECLAREs, then handler DECLAREs
   if (allDeclares.length > 0) {
     allDeclares.sort(function(a, b) {

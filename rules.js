@@ -848,6 +848,14 @@ var _handleMergeToMysql = function(b) {
 };
 
 var _handleExecImmediateOracleToMysql = function(b) {
+  // First, replace Oracle-style :N or :name bind variable placeholders with ? in SQL string literals
+  b = b.replace(/'([^']+)'/g, function(m, inner) {
+    if (/\b(SELECT|INSERT|UPDATE|DELETE|MERGE|WHERE|SET|FROM)\b/i.test(inner)) {
+      var replaced = inner.replace(/:\w+/g, '?');
+      if (replaced !== inner) return "'" + replaced + "'";
+    }
+    return m;
+  });
   return b.replace(/^(\s*)EXECUTE\s+IMMEDIATE\s+([^\n]+?)(?:\s+INTO\s+([^\n]+?))?(?:\s+USING\s+([^\n]+?))?\s*;/gim, function(m, indent, expr, intoVars, usingVars) {
     if (/^\s*--/.test(m)) return m;
     var v = expr.trim();
@@ -1386,12 +1394,60 @@ var _bodyRulesData = {
     {s:'cursor%ISOPEN',t:'-- (MySQL \u65e0 %ISOPEN)', fwd: function(b) { return b.replace(/\bIF\s+(\w+)%ISOPEN\s+THEN\s+CLOSE\s+\1\s*;\s*END\s+IF\s*;/gi, '-- CLOSE $1 (safe close, MySQL has no %ISOPEN check)'); }, rev: null},
     /* Cursor declaration */
     {s:'CURSOR c IS SELECT ...',t:'DECLARE c CURSOR FOR SELECT ...', fwd: function(b) { return b.replace(/\bCURSOR\s+(\w+)\s+IS\b/gi, 'DECLARE $1 CURSOR FOR'); }, rev: function(b) { return b.replace(/\bDECLARE\s+(\w+)\s+CURSOR\s+FOR\b/gi, 'CURSOR $1 IS'); }},
-    /* FOR i IN 1..10 LOOP -> WHILE */
-    {s:'FOR i IN 1..10 LOOP',t:'DECLARE i INT DEFAULT 1; WHILE i<=10 DO', fwd: function(b) { return b.replace(/(^|\n)(\s*)FOR\s+(\w+)\s+IN\s+(\S+?)\s*\.\.\s*(.+?)\s+LOOP\b/gi, function(m, pre, indent, varName, startVal, endVal) { return pre + indent + 'DECLARE ' + varName + ' INT DEFAULT ' + startVal + ';\n' + indent + 'WHILE ' + varName + ' <= ' + endVal + ' DO'; }); }, rev: null},
+    /* FOR i IN 1..10 LOOP -> WHILE with auto-increment */
+    {s:'FOR i IN 1..10 LOOP',t:'DECLARE i INT DEFAULT 1; WHILE i<=10 DO ... SET i=i+1; END WHILE', fwd: function(b) {
+      // Replace numeric FOR loops with WHILE and inject increment before END LOOP/END WHILE
+      var result = b;
+      var forRe = /(^|\n)(\s*)FOR\s+(\w+)\s+IN\s+(\S+?)\s*\.\.\s*(.+?)\s+LOOP\b/gi;
+      var match;
+      var replacements = [];
+      while ((match = forRe.exec(b)) !== null) {
+        var pre = match[1], indent = match[2], varName = match[3], startVal = match[4], endVal = match[5];
+        // Find the matching END LOOP by tracking nesting depth
+        var searchStart = match.index + match[0].length;
+        var depth = 1;
+        var endPos = -1;
+        var endMatch;
+        var scanRe = /\b(LOOP|DO)\b|\bEND\s+(LOOP|WHILE)\b/gi;
+        scanRe.lastIndex = searchStart;
+        while ((endMatch = scanRe.exec(b)) !== null) {
+          if (/\bEND\s+(LOOP|WHILE)\b/i.test(endMatch[0])) {
+            depth--;
+            if (depth === 0) { endPos = endMatch.index; break; }
+          } else {
+            depth++;
+          }
+        }
+        if (endPos >= 0) {
+          replacements.push({
+            varName: varName,
+            startVal: startVal,
+            endVal: endVal,
+            headerStart: match.index,
+            headerEnd: match.index + match[0].length,
+            endLoopStart: endPos,
+            endLoopEnd: endPos + b.substring(endPos).match(/\bEND\s+(LOOP|WHILE)\b\s*;?/i)[0].length,
+            indent: indent,
+            pre: pre
+          });
+        }
+      }
+      // Apply replacements in reverse order to preserve positions
+      for (var ri = replacements.length - 1; ri >= 0; ri--) {
+        var r = replacements[ri];
+        // Replace END LOOP with increment + END WHILE
+        var endReplacement = r.indent + '    SET ' + r.varName + ' = ' + r.varName + ' + 1;\n' + r.indent + 'END WHILE;';
+        result = result.substring(0, r.endLoopStart) + endReplacement + result.substring(r.endLoopEnd);
+        // Replace FOR header with DECLARE + WHILE
+        var headerReplacement = r.pre + r.indent + 'DECLARE ' + r.varName + ' INT DEFAULT ' + r.startVal + ';\n' + r.indent + 'WHILE ' + r.varName + ' <= ' + r.endVal + ' DO';
+        result = result.substring(0, r.headerStart) + headerReplacement + result.substring(r.headerEnd);
+      }
+      return result;
+    }, rev: null},
     /* FOR r IN (SELECT...) LOOP -> cursor loop */
     {s:'FOR r IN (SELECT...) LOOP',t:'DECLARE CURSOR + OPEN + FETCH \u5faa\u73af', fwd: _handleOracleQueryForToMysql, rev: null},
     /* seq.NEXTVAL / CURRVAL */
-    {s:'seq.NEXTVAL',t:'/* MySQL \u65e0\u5e8f\u5217, \u7528 AUTO_INCREMENT */', fwd: function(b) { b = b.replace(/\b(\w+)\.NEXTVAL\b/gi, "/* [\u6ce8\u610f: MySQL \u65e0\u5e8f\u5217, \u8bf7\u4f7f\u7528 AUTO_INCREMENT] */ $1.NEXTVAL"); b = b.replace(/\b(\w+)\.CURRVAL\b/gi, 'LAST_INSERT_ID()'); return b; }, rev: null},
+    {s:'seq.NEXTVAL',t:'/* MySQL \u65e0\u5e8f\u5217, \u7528 AUTO_INCREMENT */', fwd: function(b) { b = b.replace(/\b(\w+)\.NEXTVAL\b/gi, "NULL /* [\u6ce8\u610f: MySQL \u65e0\u5e8f\u5217 ($1.NEXTVAL), \u8bf7\u4f7f\u7528 AUTO_INCREMENT \u6216 UUID()] */"); b = b.replace(/\b(\w+)\.CURRVAL\b/gi, 'LAST_INSERT_ID()'); return b; }, rev: null},
     {s:'seq.CURRVAL',t:'LAST_INSERT_ID()', fwd: null, rev: null},
     /* MONTHS_BETWEEN */
     {s:'MONTHS_BETWEEN(a, b)',t:'TIMESTAMPDIFF(MONTH, b, a)', fwd: _handleOracleMonthsBetweenToMysql, rev: _handleMysqlTimestampdiffToOracle},
