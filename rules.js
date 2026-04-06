@@ -615,10 +615,21 @@ var _handleRownumToLimit = function(b) {
   var rownumMatch = b.match(/\bROWNUM\s*<=?\s*(\d+)/i);
   if (rownumMatch) {
     var limitN = rownumMatch[1];
+    /* Record approximate position of ROWNUM before stripping */
+    var rIdx = b.search(/\bROWNUM\s*<=?\s*\d+/i);
     b = b.replace(/\s*AND\s+ROWNUM\s*<=?\s*\d+/gi, '');
     b = b.replace(/\bWHERE\s+ROWNUM\s*<=?\s*\d+\s*AND\s+/gi, 'WHERE ');
     b = b.replace(/\bWHERE\s+ROWNUM\s*<=?\s*\d+\s*/gi, '');
-    b = b.replace(/;?\s*$/, '\n  LIMIT ' + limitN);
+    /* Insert LIMIT before the semicolon of the statement that contained ROWNUM,
+       not at the very end of the body (which breaks procedure bodies). */
+    var searchFrom = Math.max(0, rIdx - 40);
+    var semiPos = b.indexOf(';', searchFrom);
+    if (semiPos >= 0) {
+      b = b.substring(0, semiPos) + '\n  LIMIT ' + limitN + b.substring(semiPos);
+    } else {
+      /* Fallback for DDL without trailing semicolon */
+      b = b.replace(/\s*$/, '\n  LIMIT ' + limitN);
+    }
   }
   return b;
 };
@@ -981,7 +992,7 @@ var _handlePgDateTruncToOracle = function(b) {
 
 var _handleOracleMonthsBetweenToPg = function(b) {
   return b.replace(/\bMONTHS_BETWEEN\s*\(\s*((?:[^,()]+|\((?:[^()]*|\([^()]*\))*\))+),\s*((?:[^,()]+|\((?:[^()]*|\([^()]*\))*\))+)\)/gi,
-    "(EXTRACT(YEAR FROM AGE($1, $2)) * 12 + EXTRACT(MONTH FROM AGE($1, $2)))");
+    "(EXTRACT(YEAR FROM AGE($1, $2)) * 12 + EXTRACT(MONTH FROM AGE($1, $2)) + EXTRACT(DAY FROM AGE($1, $2)) / 31.0)");
 };
 
 var _handleOracleMonthsBetweenToMysql = function(b) {
@@ -994,11 +1005,11 @@ var _handleMysqlTimestampdiffToOracle = function(b) {
 
 var _handleMysqlTimestampdiffToPg = function(b) {
   return b.replace(/\bTIMESTAMPDIFF\s*\(\s*MONTH\s*,\s*((?:[^,()]+|\((?:[^()]*|\([^()]*\))*\))+),\s*((?:[^,()]+|\((?:[^()]*|\([^()]*\))*\))+)\)/gi,
-    "(EXTRACT(YEAR FROM AGE($2, $1)) * 12 + EXTRACT(MONTH FROM AGE($2, $1)))");
+    "(EXTRACT(YEAR FROM AGE($2, $1)) * 12 + EXTRACT(MONTH FROM AGE($2, $1)) + EXTRACT(DAY FROM AGE($2, $1)) / 31.0)");
 };
 
 var _handlePgExtractAgeToOracle = function(b) {
-  return b.replace(/\(\s*EXTRACT\s*\(\s*YEAR\s+FROM\s+AGE\s*\(\s*([^,]+),\s*([^)]+)\)\s*\)\s*\*\s*12\s*\+\s*EXTRACT\s*\(\s*MONTH\s+FROM\s+AGE\s*\(\s*[^,]+,\s*[^)]+\)\s*\)\s*\)/gi,
+  return b.replace(/\(\s*EXTRACT\s*\(\s*YEAR\s+FROM\s+AGE\s*\(\s*([^,]+),\s*([^)]+)\)\s*\)\s*\*\s*12\s*\+\s*EXTRACT\s*\(\s*MONTH\s+FROM\s+AGE\s*\(\s*[^,]+,\s*[^)]+\)\s*\)(?:\s*\+\s*EXTRACT\s*\(\s*DAY\s+FROM\s+AGE\s*\(\s*[^,]+,\s*[^)]+\)\s*\)\s*\/\s*31\.0)?\s*\)/gi,
     'MONTHS_BETWEEN($1, $2)');
 };
 
@@ -1261,8 +1272,24 @@ var _bodyRulesData = {
     {s:'EXCEPTION WHEN OTHERS THEN',t:'EXCEPTION WHEN OTHERS THEN \u4fdd\u6301', fwd: null, rev: null},
     /* ROWNUM -> LIMIT */
     {s:'ROWNUM <= n',t:'LIMIT n', fwd: _handleRownumToLimit, rev: null},
-    /* EXECUTE IMMEDIATE -> EXECUTE */
-    {s:'EXECUTE IMMEDIATE expr',t:'EXECUTE expr', fwd: function(b) { return b.replace(/\bEXECUTE\s+IMMEDIATE\b/gi, 'EXECUTE'); }, rev: function(b) { return b.replace(/\bEXECUTE\s+(?!IMMEDIATE\b)([^;]+);/gi, function(m, expr) { if (/^\s*(stmt|_dyn_stmt)\b/i.test(expr)) return m; return 'EXECUTE IMMEDIATE ' + expr.trim() + ';'; }); }},
+    /* EXECUTE IMMEDIATE -> EXECUTE (with bind-variable conversion) */
+    {s:'EXECUTE IMMEDIATE expr',t:'EXECUTE expr USING ...', fwd: function(b) {
+      /* Handle EXECUTE IMMEDIATE ... USING ... with Oracle bind vars :1/:name -> $1,$2 */
+      b = b.replace(/\bEXECUTE\s+IMMEDIATE\s+([^\n;]+?)\s+USING\s+([^\n;]+)\s*;/gi, function(m, expr, usingVars) {
+        var params = usingVars.split(/\s*,\s*/);
+        var idx = 0;
+        var newExpr = expr.replace(/:\w+/g, function() { return '$' + (++idx); });
+        if (idx === 0) { idx = 0; newExpr = expr.replace(/\?/g, function() { return '$' + (++idx); }); }
+        return 'EXECUTE ' + newExpr + ' USING ' + params.join(', ') + ';';
+      });
+      /* Handle simple EXECUTE IMMEDIATE with string concatenation -> EXECUTE ... USING $1 */
+      b = b.replace(/\bEXECUTE\s+IMMEDIATE\s+('(?:[^']|'')*')\s*\|\|\s*(\w[\w.]*)\s*;/gi, function(m, sql, variable) {
+        return "EXECUTE " + sql + " || $1 USING " + variable + ";";
+      });
+      /* Fallback: strip IMMEDIATE for remaining cases */
+      b = b.replace(/\bEXECUTE\s+IMMEDIATE\b/gi, 'EXECUTE');
+      return b;
+    }, rev: function(b) { return b.replace(/\bEXECUTE\s+(?!IMMEDIATE\b)([^;]+);/gi, function(m, expr) { if (/^\s*(stmt|_dyn_stmt)\b/i.test(expr)) return m; return 'EXECUTE IMMEDIATE ' + expr.trim() + ';'; }); }},
     /* SQL%ROWCOUNT */
     {s:'SQL%ROWCOUNT',t:'GET DIAGNOSTICS var = ROW_COUNT', fwd: _handleSqlRowcountOracleToPg, rev: function(b) { return b.replace(/\bGET\s+DIAGNOSTICS\s+(\w+)\s*=\s*ROW_COUNT\s*;/gi, '$1 := SQL%ROWCOUNT;'); }},
     /* ELSIF stays */
@@ -1277,7 +1304,7 @@ var _bodyRulesData = {
     /* ADD_MONTHS */
     {s:'ADD_MONTHS(dt, n)',t:"(dt + (n || ' month')::interval)", fwd: function(b) { return b.replace(/\bADD_MONTHS\s*\(\s*([^,]+),\s*([^)]+)\)/gi, "($1 + ($2 || ' month')::interval)"); }, rev: function(b) { return b.replace(/\(\s*([^+]+)\s*\+\s*\(\s*([^|]+)\s*\|\|\s*'\s*month\s*'\s*\)\s*::interval\s*\)/gi, function(m, dt, n) { return 'ADD_MONTHS(' + dt.trim() + ', ' + n.trim() + ')'; }); }},
     /* LAST_DAY */
-    {s:'LAST_DAY(dt)',t:"(date_trunc('month', dt) + interval '1 month - 1 day')::date", fwd: function(b) { return b.replace(/\bLAST_DAY\s*\(\s*([^)]+)\)/gi, "(date_trunc('month', $1) + interval '1 month - 1 day')::date"); }, rev: function(b) { return b.replace(/\(\s*date_trunc\s*\(\s*'month'\s*,\s*([^)]+)\)\s*\+\s*interval\s*'1 month - 1 day'\s*\)::date/gi, 'LAST_DAY($1)'); }},
+    {s:'LAST_DAY(dt)',t:"(date_trunc('month', dt) + interval '1 month' - interval '1 day')", fwd: function(b) { return b.replace(/\bLAST_DAY\s*\(\s*([^)]+)\)/gi, "(date_trunc('month', $1) + interval '1 month' - interval '1 day')"); }, rev: function(b) { return b.replace(/\(\s*date_trunc\s*\(\s*'month'\s*,\s*([^)]+)\)\s*\+\s*interval\s*'1 month'\s*-\s*interval\s*'1 day'\s*\)/gi, 'LAST_DAY($1)'); }},
     /* TRUNC date */
     {s:"TRUNC(dt, 'MM')",t:"date_trunc('month', dt)", fwd: function(b) { return b.replace(/\bTRUNC\s*\(\s*([^,]+),\s*'(?:MM|MON|MONTH)'\s*\)/gi, "date_trunc('month', $1)"); }, rev: null},
     {s:"TRUNC(dt, 'YYYY')",t:"date_trunc('year', dt)", fwd: function(b) { return b.replace(/\bTRUNC\s*\(\s*([^,]+),\s*'(?:YY|YYYY|YEAR)'\s*\)/gi, "date_trunc('year', $1)"); }, rev: null},
@@ -1294,7 +1321,7 @@ var _bodyRulesData = {
     {s:'DBMS_RANDOM.VALUE',t:'random()', fwd: _handleDbmsRandomValueToFn('postgresql'), rev: function(b) { return b.replace(/\brandom\s*\(\s*\)/gi, 'DBMS_RANDOM.VALUE'); }},
     {s:'DBMS_RANDOM.VALUE(lo, hi)',t:'(lo + random() * (hi - lo))', fwd: null, rev: null},
     /* LISTAGG -> string_agg */
-    {s:'LISTAGG(col, sep) WITHIN GROUP(ORDER BY x)',t:'string_agg(col, sep ORDER BY x)', fwd: function(b) { return b.replace(/\bLISTAGG\s*\(\s*([^,]+),\s*'([^']*)'\s*\)\s*WITHIN\s+GROUP\s*\(\s*ORDER\s+BY\s+([^)]+)\)/gi, function(m, col, sep, orderBy) { return "string_agg(" + col.trim() + ", '" + sep + "' ORDER BY " + orderBy.trim() + ")"; }); }, rev: function(b) { return b.replace(/\bstring_agg\s*\(\s*([^,]+),\s*'([^']*)'\s+ORDER\s+BY\s+([^)]+)\)/gi, function(m, col, sep, orderBy) { return "LISTAGG(" + col.trim() + ", '" + sep + "') WITHIN GROUP (ORDER BY " + orderBy.trim() + ")"; }); }},
+    {s:'LISTAGG(col, sep) WITHIN GROUP(ORDER BY x)',t:'string_agg(col::TEXT, sep ORDER BY x)', fwd: function(b) { return b.replace(/\bLISTAGG\s*\(\s*([^,]+),\s*'([^']*)'\s*\)\s*WITHIN\s+GROUP\s*\(\s*ORDER\s+BY\s+([^)]+)\)/gi, function(m, col, sep, orderBy) { var c = col.trim(); if (!/::TEXT\s*$/i.test(c)) c += '::TEXT'; return "string_agg(" + c + ", '" + sep + "' ORDER BY " + orderBy.trim() + ")"; }); }, rev: function(b) { return b.replace(/\bstring_agg\s*\(\s*([^,]+?)(?:::TEXT)?\s*,\s*'([^']*)'\s+ORDER\s+BY\s+([^)]+)\)/gi, function(m, col, sep, orderBy) { return "LISTAGG(" + col.trim() + ", '" + sep + "') WITHIN GROUP (ORDER BY " + orderBy.trim() + ")"; }); }},
     /* Cursor attrs */
     {s:'cursor%NOTFOUND',t:'NOT FOUND', fwd: function(b) { return _handleOracleCursorAttrsToPg(b); }, rev: _handlePgNotFoundToOracle},
     {s:'cursor%FOUND',t:'FOUND', fwd: null, rev: null},
@@ -1555,7 +1582,7 @@ var _bodyRulesData = {
     /* DATE_ADD -> interval */
     {s:'DATE_ADD(dt, INTERVAL n MONTH)',t:"(dt + (n || ' month')::interval)", fwd: function(b) { return b.replace(/\bDATE_ADD\s*\(\s*([^,]+),\s*INTERVAL\s+(\S+)\s+MONTH\s*\)/gi, function(m, dt, n) { return '(' + dt.trim() + ' + (' + n.trim() + " || ' month')::interval)"; }); }, rev: function(b) { return b.replace(/\(\s*([^+]+)\s*\+\s*\(\s*([^|]+)\s*\|\|\s*'\s*month\s*'\s*\)\s*::interval\s*\)/gi, function(m, dt, n) { return 'DATE_ADD(' + dt.trim() + ', INTERVAL ' + n.trim() + ' MONTH)'; }); }},
     /* LAST_DAY */
-    {s:'LAST_DAY(dt)',t:"(date_trunc('month', dt) + interval '1 month - 1 day')::date", fwd: function(b) { return b.replace(/\bLAST_DAY\s*\(\s*([^)]+)\)/gi, "(date_trunc('month', $1) + interval '1 month - 1 day')::date"); }, rev: function(b) { return b.replace(/\(\s*date_trunc\s*\(\s*'month'\s*,\s*([^)]+)\)\s*\+\s*interval\s*'1 month - 1 day'\s*\)::date/gi, 'LAST_DAY($1)'); }},
+    {s:'LAST_DAY(dt)',t:"(date_trunc('month', dt) + interval '1 month' - interval '1 day')", fwd: function(b) { return b.replace(/\bLAST_DAY\s*\(\s*([^)]+)\)/gi, "(date_trunc('month', $1) + interval '1 month' - interval '1 day')"); }, rev: function(b) { return b.replace(/\(\s*date_trunc\s*\(\s*'month'\s*,\s*([^)]+)\)\s*\+\s*interval\s*'1 month'\s*-\s*interval\s*'1 day'\s*\)/gi, 'LAST_DAY($1)'); }},
     /* TRUNCATE -> TRUNC */
     {s:'TRUNCATE(x, n)',t:'TRUNC(x, n)', fwd: function(b) { return b.replace(/\bTRUNCATE\s*\(\s*([^,]+),\s*(\d+)\s*\)/gi, 'TRUNC($1, $2)'); }, rev: _handleTruncNumToMysql},
     /* CHAR_LENGTH -> LENGTH */
