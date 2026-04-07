@@ -12,7 +12,7 @@
 (function(){
   var poster=document.getElementById('splash-poster');
   if(!poster)return;
-  if(sessionStorage.getItem('sp_seen')){poster.style.display='none';document.body.classList.remove('splash-active');return}
+  /* Gate by auth: always keep poster until user is logged in and explicitly enters */
 
   var prefersReducedMotion=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
@@ -61,7 +61,23 @@
   }
 
   /* Dismiss */
+  function canEnterWorkbench() {
+    var api = window.authApi;
+    if (!api || typeof api.getUserSync !== 'function') {
+      return false;
+    }
+    var u = api.getUserSync();
+    if (!u) {
+      if (typeof api.openAuthModal === 'function') {
+        api.openAuthModal('请先注册/登录后再进入工作台');
+      }
+      return false;
+    }
+    return true;
+  }
+
   function dismissSplash(){
+    if(!canEnterWorkbench()) return;
     if(poster.classList.contains('leaving'))return;
     /* Force dark theme on first entry for visual continuity with poster */
     document.documentElement.setAttribute('data-theme','dark');
@@ -89,12 +105,30 @@
   }
   /* Bind CTA button click */
   document.getElementById('sp-enter-btn').addEventListener('click',dismissSplash);
-  /* Bind scroll hint click */
-  poster.querySelector('.sp-scroll').addEventListener('click',dismissSplash);
-  /* Dismiss on mouse wheel or touch swipe up */
-  var wheelFired=false;
-  poster.addEventListener('wheel',function(e){if(!wheelFired&&e.deltaY>30){wheelFired=true;dismissSplash();}},{passive:true});
-  var touchY=0;
-  poster.addEventListener('touchstart',function(e){touchY=e.touches[0].clientY;},{passive:true});
-  poster.addEventListener('touchmove',function(e){if(touchY-e.touches[0].clientY>60)dismissSplash();},{passive:true});
+  window.addEventListener('auth:login-success', dismissSplash);
+
+  /* Scroll hint and scroll gestures should also trigger auth gate */
+  var scrollHint = poster.querySelector('.sp-scroll');
+  if (scrollHint) {
+    scrollHint.addEventListener('click', dismissSplash);
+  }
+
+  var wheelTriggered = false;
+  poster.addEventListener('wheel', function(e) {
+    if (!wheelTriggered && e.deltaY > 30) {
+      wheelTriggered = true;
+      dismissSplash();
+      setTimeout(function() { wheelTriggered = false; }, 300);
+    }
+  }, { passive: true });
+
+  var touchY = 0;
+  poster.addEventListener('touchstart', function(e) {
+    touchY = e.touches[0].clientY;
+  }, { passive: true });
+  poster.addEventListener('touchmove', function(e) {
+    if (touchY - e.touches[0].clientY > 60) {
+      dismissSplash();
+    }
+  }, { passive: true });
 })();

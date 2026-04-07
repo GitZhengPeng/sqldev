@@ -6,7 +6,7 @@
 <meta name="description" content="Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转"/>
 <!-- CSP: 'unsafe-eval' is required by Vue 3 in-DOM template compilation (new Function) and CodeMirror 5 mode parser;
      to remove it, migrate to a build-step with pre-compiled Vue SFCs and CodeMirror 6 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://github.com; object-src 'none'; base-uri 'self'; form-action 'self'"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://github.githubassets.com; connect-src 'self' https://github.com https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'"/>
 <meta property="og:title" content="SQL 翻译工作台"/>
 <meta property="og:description" content="Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转"/>
 <meta property="og:type" content="website"/>
@@ -31,6 +31,7 @@
 
 <!-- ====== Splash Poster ====== -->
 <div id="splash-poster">
+  <button class="sp-auth-top-btn" id="sp-auth-top-btn" type="button">注册 / 登录</button>
   <canvas class="sp-canvas"></canvas>
   <div class="sp-grid"></div>
   <div class="sp-tokens"></div>
@@ -75,9 +76,38 @@
         <span class="sp-stat-detail">函数 / 语句 / 类型</span>
       </div>
     </div>
-    <button class="sp-cta" id="sp-enter-btn">进入工作台 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="sp-cta" id="sp-enter-btn" type="button">登录后进入工作台 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
   <div class="sp-scroll"><span>向下滚动</span><div class="sp-scroll-line"></div></div>
+
+  <div class="auth-modal-mask" id="auth-modal-mask" hidden>
+    <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title" aria-describedby="auth-modal-desc">
+      <div class="auth-modal-head">
+        <h3 id="auth-modal-title">账号登录</h3>
+        <button class="auth-close" id="auth-close-btn" type="button" aria-label="关闭">&times;</button>
+      </div>
+      <p id="auth-modal-desc" class="auth-modal-desc">支持密码和验证码两种登录方式，可自行切换。</p>
+      <div class="auth-mode-switch" role="tablist" aria-label="登录方式">
+        <button class="auth-mode-btn active" id="auth-mode-password-btn" type="button" role="tab" aria-selected="true">密码登录</button>
+        <button class="auth-mode-btn" id="auth-mode-code-btn" type="button" role="tab" aria-selected="false">验证码登录</button>
+      </div>
+      <label class="auth-label" for="auth-email">邮箱</label>
+      <input class="auth-input" id="auth-email" type="email" autocomplete="email" placeholder="you@example.com"/>
+      <div id="auth-password-wrap">
+        <label class="auth-label" for="auth-password">密码</label>
+        <input class="auth-input" id="auth-password" type="password" autocomplete="current-password" placeholder="至少 6 位"/>
+      </div>
+      <div id="auth-code-wrap" hidden>
+        <label class="auth-label" for="auth-code">验证码</label>
+        <input class="auth-input" id="auth-code" type="text" autocomplete="one-time-code" placeholder="请输入邮箱收到的验证码"/>
+      </div>
+      <p class="auth-status" id="auth-status" aria-live="polite"></p>
+      <div class="auth-actions">
+        <button class="auth-btn" id="auth-register-btn" type="button">密码注册</button>
+        <button class="auth-btn primary" id="auth-login-btn" type="button">密码登录</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <a href="#main-content" class="skip-link">跳转到主要内容</a>
@@ -144,6 +174,15 @@
             <svg v-else-if="themeMode==='light'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           </button>
+          <div class="header-user-pop" id="app-user-pop" hidden>
+            <button class="header-user-btn" id="app-user-btn" type="button" aria-label="用户信息">
+              <img class="header-user-avatar" id="app-user-avatar" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="avatar"/>
+            </button>
+            <div class="header-user-email" id="app-user-email"></div>
+            <div class="header-user-menu" id="app-user-menu">
+              <button class="header-user-logout" id="app-auth-btn" type="button">退出登录</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -657,6 +696,9 @@ $$;</pre>
 <script src="vendor/placeholder.min.js"></script>
 <script src="vendor/active-line.min.js"></script>
 <script src="vendor/vue.global.prod.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="supabase-config.js"></script>
+<script src="auth.js"></script>
 <script src="samples.js"></script>
 <script src="rules.js"></script>
 <script src="app.js"></script>
