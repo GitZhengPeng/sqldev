@@ -399,25 +399,26 @@ body.splash-active{overflow:hidden}
 @keyframes scrollPulse{0%,100%{opacity:.3;transform:scaleY(.6)}50%{opacity:1;transform:scaleY(1)}}
 @keyframes spFadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:640px){
-#splash-poster{overflow-y:auto;-webkit-overflow-scrolling:touch;flex-direction:column;justify-content:flex-start;padding-top:max(24px,env(safe-area-inset-top))}
-.sp-content{padding:24px 16px 32px}
-.sp-badge{margin-bottom:18px;padding:5px 14px;font-size:11px}
-.sp-sub{margin-bottom:24px}
-.sp-triad{gap:16px;margin-bottom:24px}
+#splash-poster{overflow-y:auto;-webkit-overflow-scrolling:touch;flex-direction:column;justify-content:flex-start;padding-top:max(16px,env(safe-area-inset-top))}
+.sp-content{padding:16px 16px 32px}
+.sp-badge{margin-bottom:12px;padding:5px 14px;font-size:11px}
+.sp-sub{margin-bottom:18px}
+.sp-sub-em{font-size:clamp(18px,5vw,24px)}
+.sp-triad{gap:16px;margin-bottom:18px}
 .sp-db-icon{width:44px;height:44px;font-size:11px;border-radius:10px}
 .sp-db-label{font-size:11px}
 .sp-arrow-bi{font-size:16px}
-.sp-features{gap:8px;margin-bottom:28px}
-.sp-feat-row{gap:8px;flex-wrap:wrap}
-.sp-feat{padding:6px 14px;font-size:12px}
-.sp-stats{grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px;max-width:360px}
-.sp-stat{padding:14px 10px}
-.sp-stat-num{font-size:26px}
-.sp-stat-num small{font-size:16px}
-.sp-stat-label{font-size:12px}
+.sp-features{gap:6px;margin-bottom:20px}
+.sp-feat-row{gap:6px;flex-wrap:wrap}
+.sp-feat{padding:5px 12px;font-size:11px}
+.sp-stats{grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;max-width:360px}
+.sp-stat{padding:10px 6px}
+.sp-stat-num{font-size:24px}
+.sp-stat-num small{font-size:14px}
+.sp-stat-label{font-size:11px}
 .sp-stat-detail{font-size:10px}
-.sp-cta{padding:14px 36px;font-size:15px}
-.sp-scroll{position:static;margin-top:24px;padding-bottom:max(20px,env(safe-area-inset-bottom))}
+.sp-cta{padding:12px 32px;font-size:14px;margin-bottom:max(24px,env(safe-area-inset-bottom))}
+.sp-scroll{display:none}
 }
 /* Splash landscape — prevent overflow & overlap */
 @media(max-height:500px){
