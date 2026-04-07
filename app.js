@@ -2542,6 +2542,20 @@ const app = createApp({
     }
     /* navKeydown removed: sidebar is now role="navigation" with aria-current, not tablist */
     const showRulesMenu = ref(false);
+    /* ARIA menu keyboard: arrow cycle, Home/End, Escape, auto-focus first item */
+    function handleMenuKey(e) {
+      var items = e.currentTarget.querySelectorAll('[role="menuitem"]');
+      if (!items.length) return;
+      var idx = Array.prototype.indexOf.call(items, document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); items[(idx + 1) % items.length].focus(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); items[(idx - 1 + items.length) % items.length].focus(); }
+      else if (e.key === 'Home') { e.preventDefault(); items[0].focus(); }
+      else if (e.key === 'End') { e.preventDefault(); items[items.length - 1].focus(); }
+      else if (e.key === 'Escape') { e.preventDefault(); showRulesMenu.value = false; var t = document.getElementById('settings-trigger'); if (t) t.focus(); }
+    }
+    watch(showRulesMenu, function(open) {
+      if (open) { nextTick(function() { var el = document.querySelector('.settings-menu [role="menuitem"]'); if (el) el.focus(); }); }
+    });
 
     // Theme: 'system' | 'light' | 'dark'
     const themeMode = ref(localStorage.getItem('theme') || 'system');
@@ -3360,6 +3374,7 @@ const app = createApp({
           return;
         }
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          if (ruleModal.value.visible || alertModal.value.visible || confirmModal.value.visible) return;
           e.preventDefault();
           if (activePage.value === 'func') convertFunc();
           else if (activePage.value === 'proc') convertProc();
@@ -3413,7 +3428,7 @@ const app = createApp({
       confirmModal, confirmModalRef, confirmModalOk, confirmModalCancel,
       canUndoRule, undoRule, resetDdlRules, resetBodyRules,
       // New redesign state
-      showRulesMenu, refCollapsed, ruleSearchQuery, ruleFilterDir,
+      showRulesMenu, handleMenuKey, refCollapsed, ruleSearchQuery, ruleFilterDir,
       ddlRuleTab, bodyRuleTab, DDL_CATS_ALL, BODY_CATS_ALL,
       ddlRuleCatsFiltered, bodyCatsFiltered,
       outputStatus, filteredDdlRules, filteredBodyRules, toggleRef,
