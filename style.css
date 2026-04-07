@@ -366,7 +366,7 @@ body.splash-active{overflow:hidden}
 .sp-tokens{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .sp-tok{position:absolute;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(37,99,235,.25);white-space:nowrap;animation:tokFloat linear infinite}
 @keyframes tokFloat{0%{transform:translateY(0) rotate(var(--r));opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(calc(-100vh - 40px)) rotate(var(--r));opacity:0}}
-.sp-content{position:relative;z-index:2;text-align:center;max-width:760px;padding:0 24px}
+.sp-content{position:relative;z-index:2;text-align:center;max-width:760px;width:100%;padding:0 24px;display:flex;flex-direction:column;align-items:center;box-sizing:border-box}
 .sp-badge{display:inline-block;padding:6px 18px;border:1px solid rgba(37,99,235,.35);border-radius:100px;font-family:var(--font-body);font-size:12px;letter-spacing:.08em;color:#60a5fa;margin-bottom:28px;opacity:0;animation:spFadeUp .8s .3s forwards}
 .sp-title{font-family:'Instrument Serif',serif;font-size:clamp(32px,6vw,68px);line-height:1.1;color:#f1f5f9;margin:0 0 8px;white-space:nowrap;opacity:0;animation:spFadeUp .8s .5s forwards}
 .sp-title em{font-style:italic;color:#2563eb}
@@ -399,8 +399,8 @@ body.splash-active{overflow:hidden}
 @keyframes scrollPulse{0%,100%{opacity:.3;transform:scaleY(.6)}50%{opacity:1;transform:scaleY(1)}}
 @keyframes spFadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:640px){
-#splash-poster{overflow-y:auto;-webkit-overflow-scrolling:touch}
-.sp-content{padding-bottom:80px}
+#splash-poster{overflow-y:auto;-webkit-overflow-scrolling:touch;flex-direction:column;justify-content:flex-start;padding-top:max(24px,env(safe-area-inset-top))}
+.sp-content{padding:24px 16px 32px}
 .sp-badge{margin-bottom:18px;padding:5px 14px;font-size:11px}
 .sp-sub{margin-bottom:24px}
 .sp-triad{gap:16px;margin-bottom:24px}
@@ -417,7 +417,7 @@ body.splash-active{overflow:hidden}
 .sp-stat-label{font-size:12px}
 .sp-stat-detail{font-size:10px}
 .sp-cta{padding:14px 36px;font-size:15px}
-.sp-scroll{bottom:20px}
+.sp-scroll{position:static;margin-top:24px;padding-bottom:max(20px,env(safe-area-inset-bottom))}
 }
 /* Splash landscape — prevent overflow & overlap */
 @media(max-height:500px){
