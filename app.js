@@ -3144,20 +3144,39 @@ const app = createApp({
         throw new Error('Supabase 配置缺失，请检查 supabase-config.js');
       }
       var base = String(window.SUPABASE_URL).replace(/\/+$/, '');
-      var res = await fetch(base + '/functions/v1/convert', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
-          'apikey': window.SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          kind: kind,
-          input: input,
-          fromDb: fromDb,
-          toDb: toDb
-        })
-      });
+      var requestUrl = base + '/functions/v1/convert';
+      var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var timeoutId = null;
+      if (controller) {
+        timeoutId = setTimeout(function () {
+          controller.abort();
+        }, 20000);
+      }
+      var res;
+      try {
+        res = await fetch(requestUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'apikey': window.SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({
+            kind: kind,
+            input: input,
+            fromDb: fromDb,
+            toDb: toDb
+          }),
+          signal: controller ? controller.signal : undefined
+        });
+      } catch (networkErr) {
+        var netMsg = networkErr && networkErr.name === 'AbortError'
+          ? '连接转换服务超时，请稍后重试'
+          : '无法连接转换服务，请检查网络，或确认 Supabase Edge Function `convert` 已部署';
+        throw new Error(netMsg + '：' + requestUrl);
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
       var json;
       try { json = await res.json(); } catch(_e) { json = null; }
       if (!res.ok) {
