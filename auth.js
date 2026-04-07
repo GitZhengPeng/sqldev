@@ -67,6 +67,28 @@
     return (user.email || '').trim();
   }
 
+  function isEmailNotConfirmedError(err) {
+    var msg = String((err && err.message) || err || '').toLowerCase();
+    return msg.indexOf('email not confirmed') >= 0 ||
+           msg.indexOf('email_not_confirmed') >= 0 ||
+           msg.indexOf('not confirmed') >= 0;
+  }
+
+  async function resendSignupConfirmation(email) {
+    if (!sb || !email || !sb.auth || typeof sb.auth.resend !== 'function') return false;
+    try {
+      var redirectTo = window.location.origin + window.location.pathname;
+      var resendRes = await sb.auth.resend({
+        type: 'signup',
+        email: email,
+        options: { emailRedirectTo: redirectTo }
+      });
+      return !(resendRes && resendRes.error);
+    } catch (_e) {
+      return false;
+    }
+  }
+
   function setBusy(busy) {
     if (authLoginBtn) authLoginBtn.disabled = busy;
     if (authRegisterBtn) authRegisterBtn.disabled = busy;
@@ -108,7 +130,7 @@
     if (!loggedIn && appUserMenu) appUserMenu.hidden = true;
     if (appAuthBtn) appAuthBtn.textContent = '退出登录';
     if (appUserEmail) appUserEmail.textContent = getEmail();
-    if (appUserBtn) appUserBtn.title = getEmail() || '用户信息';
+    if (appUserBtn) appUserBtn.removeAttribute('title');
   }
 
   function closeUserMenu() {
@@ -260,13 +282,20 @@
       try {
         var registerRes = await registerWithPassword(email, password);
         if (registerRes.error) throw registerRes.error;
-        await sb.auth.signOut();
-        user = null;
-        accessToken = '';
-        updatePosterCta();
-        emit();
+        if (registerRes && registerRes.data && registerRes.data.session) {
+          await sb.auth.signOut();
+          user = null;
+          accessToken = '';
+          updatePosterCta();
+          emit();
+        }
         if (authPassword) authPassword.value = '';
-        setStatus('注册成功，请重新输入密码后点击“密码登录”进入', false);
+        var needsConfirm = !(registerRes && registerRes.data && registerRes.data.session);
+        if (needsConfirm) {
+          setStatus('注册成功。当前项目已开启邮箱验证，请先在邮件中完成验证后再密码登录。', false);
+        } else {
+          setStatus('注册成功，请重新输入密码后点击“密码登录”进入', false);
+        }
         if (authPassword) authPassword.focus();
       } catch (err1) {
         setStatus(err1.message || '注册失败', true);
@@ -313,7 +342,14 @@
       if (res.error) throw res.error;
       setStatus('登录成功', false);
     } catch (err) {
-      setStatus(err.message || '登录失败', true);
+      if (authMode === 'password' && isEmailNotConfirmedError(err)) {
+        var resent = await resendSignupConfirmation(email);
+        var hint = '邮箱未验证，请先完成邮箱验证后再密码登录。';
+        if (resent) hint += ' 已为你重新发送验证邮件。';
+        setStatus(hint, true);
+      } else {
+        setStatus(err.message || '登录失败', true);
+      }
     } finally {
       setBusy(false);
     }
