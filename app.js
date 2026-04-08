@@ -3170,9 +3170,12 @@ const app = createApp({
           typeof window.authApi.getUserSync === 'function' &&
           window.authApi.getUserSync());
       }
-      var token = window.authApi.getAccessToken() || '';
-      if (!token && typeof window.authApi.ensureAccessToken === 'function') {
+      var token = '';
+      if (typeof window.authApi.ensureAccessToken === 'function') {
         token = await window.authApi.ensureAccessToken(false);
+      }
+      if (!token) {
+        token = window.authApi.getAccessToken() || '';
       }
       if (!token && hasSignedUser()) {
         throw new Error('登录会话异常，请点击右上角退出后重新登录');
@@ -3235,12 +3238,12 @@ const app = createApp({
       if (!res.ok) {
         if (res.status === 401) {
           if (hasSignedUser()) {
-            throw new Error((json && json.error) || '后端鉴权失败(401)：会话可能已失效，请点击右上角退出后重新登录');
+            throw new Error((json && (json.error || json.message || json.msg)) || '后端鉴权失败(401)：会话可能已失效，请点击右上角退出后重新登录');
           }
           if (typeof window.authApi.openAuthModal === 'function') {
             window.authApi.openAuthModal('登录状态失效，请重新登录');
           }
-          throw new Error((json && json.error) || '后端鉴权失败(401)，请重新登录后重试');
+          throw new Error((json && (json.error || json.message || json.msg)) || '后端鉴权失败(401)，请重新登录后重试');
         }
         throw new Error((json && json.error) || ('后端请求失败: HTTP ' + res.status));
       }

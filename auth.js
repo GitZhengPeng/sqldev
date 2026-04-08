@@ -330,7 +330,8 @@
 
   async function ensureAccessToken(forceRefresh) {
     if (!sb || !sb.auth) return accessToken || '';
-    if (forceRefresh && typeof sb.auth.refreshSession === 'function') {
+    var needsRefresh = forceRefresh || !accessToken || isJwtExpired(accessToken);
+    if (needsRefresh && typeof sb.auth.refreshSession === 'function') {
       try {
         var refreshRes = await sb.auth.refreshSession();
         var refreshSession = refreshRes && refreshRes.data ? refreshRes.data.session : null;
