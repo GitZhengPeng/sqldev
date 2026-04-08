@@ -3129,19 +3129,6 @@ const app = createApp({
       return { level: 'success', summary: '未发现明显兼容问题' };
     }
 
-    function _convertViaLocalEngine(kind, input, fromDb, toDb) {
-      if (kind === 'ddl' && typeof convertDDL === 'function') {
-        return convertDDL(input, fromDb, toDb);
-      }
-      if (kind === 'func' && typeof convertFunction === 'function') {
-        return convertFunction(input, fromDb, toDb);
-      }
-      if (kind === 'proc' && typeof convertProcedure === 'function') {
-        return convertProcedure(input, fromDb, toDb);
-      }
-      throw new Error('本地转换引擎不可用');
-    }
-
     async function _convertViaBackend(kind, input, fromDb, toDb) {
       if (!window.authApi || typeof window.authApi.getAccessToken !== 'function') {
         throw new Error('认证模块未初始化');
@@ -3150,13 +3137,7 @@ const app = createApp({
       if (!token && typeof window.authApi.ensureAccessToken === 'function') {
         token = await window.authApi.ensureAccessToken(false);
       }
-      var signedInUser = (window.authApi && typeof window.authApi.getUserSync === 'function')
-        ? window.authApi.getUserSync()
-        : null;
       if (!token) {
-        if (signedInUser) {
-          return _convertViaLocalEngine(kind, input, fromDb, toDb);
-        }
         if (typeof window.authApi.openAuthModal === 'function') {
           window.authApi.openAuthModal('请先注册/登录后再进行 SQL 转换');
         }
@@ -3191,8 +3172,11 @@ const app = createApp({
             }),
             signal: controller ? controller.signal : undefined
           });
-        } catch (_networkErr) {
-          return null;
+        } catch (networkErr) {
+          var netMsg = networkErr && networkErr.name === 'AbortError'
+            ? '连接转换服务超时，请稍后重试'
+            : '无法连接转换服务，请检查网络，或确认 Supabase Edge Function `convert` 已部署';
+          throw new Error(netMsg + '：' + requestUrl);
         } finally {
           if (timeoutId) clearTimeout(timeoutId);
         }
@@ -3204,25 +3188,16 @@ const app = createApp({
           res = await sendRequest(refreshed);
         }
       }
-      if (!res) {
-        return _convertViaLocalEngine(kind, input, fromDb, toDb);
-      }
       var json;
       try { json = await res.json(); } catch(_e) { json = null; }
       if (!res.ok) {
-        if (res.status === 401 && !signedInUser && typeof window.authApi.openAuthModal === 'function') {
-          window.authApi.openAuthModal('登录状态失效，请重新登录');
-        }
-        if (res.status === 401 && signedInUser) {
-          return _convertViaLocalEngine(kind, input, fromDb, toDb);
-        }
-        if (res.status >= 500) {
-          return _convertViaLocalEngine(kind, input, fromDb, toDb);
+        if (res.status === 401) {
+          throw new Error((json && json.error) || '后端鉴权失败(401)：请确认 Edge Function 已按最新代码部署');
         }
         throw new Error((json && json.error) || ('后端请求失败: HTTP ' + res.status));
       }
       if (!json || typeof json.output !== 'string') {
-        return _convertViaLocalEngine(kind, input, fromDb, toDb);
+        throw new Error('后端返回格式异常');
       }
       return json.output;
     }
