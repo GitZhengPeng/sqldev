@@ -274,8 +274,8 @@
 
   async function ensureAccessToken(forceRefresh) {
     if (!sb || !sb.auth) return accessToken || '';
-    try {
-      if (forceRefresh && typeof sb.auth.refreshSession === 'function') {
+    if (forceRefresh && typeof sb.auth.refreshSession === 'function') {
+      try {
         var refreshRes = await sb.auth.refreshSession();
         var refreshSession = refreshRes && refreshRes.data ? refreshRes.data.session : null;
         if (refreshSession && refreshSession.access_token) {
@@ -285,7 +285,12 @@
           emit();
           return accessToken;
         }
+      } catch (_refreshErr) {
+        // Ignore refresh failure and continue with getSession below.
+        // This avoids returning a stale revoked token.
       }
+    }
+    try {
       var sessionRes = await sb.auth.getSession();
       var session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
       accessToken = session && session.access_token ? session.access_token : '';
@@ -294,7 +299,11 @@
       emit();
       return accessToken;
     } catch (_e) {
-      return accessToken || '';
+      accessToken = '';
+      user = null;
+      updatePosterCta();
+      emit();
+      return '';
     }
   }
 
