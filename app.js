@@ -3174,9 +3174,6 @@ const app = createApp({
       if (!token && typeof window.authApi.ensureAccessToken === 'function') {
         token = await window.authApi.ensureAccessToken(false);
       }
-      if (!token && typeof window.authApi.ensureAccessToken === 'function') {
-        token = await window.authApi.ensureAccessToken(true);
-      }
       if (!token && hasSignedUser()) {
         throw new Error('登录会话异常，请点击右上角退出后重新登录');
       }
