@@ -164,8 +164,16 @@
   function updatePosterCta() {
     refreshHeaderRefs();
     var loggedIn = !!user;
+    if (splashAuthBtn) {
+      splashAuthBtn.textContent = '注册 / 登录';
+      splashAuthBtn.hidden = loggedIn;
+    }
     if (splashEnterBtn) splashEnterBtn.textContent = loggedIn ? '进入工作台' : '登录后进入工作台';
     if (splashAuthBtn) splashAuthBtn.textContent = loggedIn ? '退出登录' : '注册 / 登录';
+    if (splashAuthBtn) {
+      splashAuthBtn.textContent = '注册 / 登录';
+      splashAuthBtn.hidden = loggedIn;
+    }
     if (appUserPop) appUserPop.hidden = !loggedIn;
     if (!loggedIn && appUserPop) appUserPop.classList.remove('is-open');
     if (!loggedIn && appUserMenu) appUserMenu.hidden = true;
@@ -517,9 +525,9 @@
   if (splashAuthBtn) {
     splashAuthBtn.addEventListener('click', async function () {
       if (user) {
-        await signOut();
-        returnToSplashHome();
-        setStatus('', false);
+        if (window.splashApi && typeof window.splashApi.enterWorkbench === 'function') {
+          window.splashApi.enterWorkbench();
+        }
         return;
       }
       openAuthModal('请选择登录方式并继续');
