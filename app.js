@@ -3130,18 +3130,12 @@ const app = createApp({
     }
 
     async function _convertViaBackend(kind, input, fromDb, toDb) {
-      if (!window.authApi || typeof window.authApi.getAccessToken !== 'function') {
-        throw new Error('认证模块未初始化');
+      var token = '';
+      if (window.authApi && typeof window.authApi.getAccessToken === 'function') {
+        token = window.authApi.getAccessToken() || '';
       }
-      var token = window.authApi.getAccessToken();
-      if (!token && typeof window.authApi.ensureAccessToken === 'function') {
+      if (!token && window.authApi && typeof window.authApi.ensureAccessToken === 'function') {
         token = await window.authApi.ensureAccessToken(false);
-      }
-      if (!token) {
-        if (typeof window.authApi.openAuthModal === 'function') {
-          window.authApi.openAuthModal('请先注册/登录后再进行 SQL 转换');
-        }
-        throw new Error('未登录，无法调用后端转换服务');
       }
       if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
         throw new Error('Supabase 配置缺失，请检查 supabase-config.js');
@@ -3161,7 +3155,6 @@ const app = createApp({
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + accessToken,
               'apikey': window.SUPABASE_ANON_KEY
             },
             body: JSON.stringify({
@@ -3181,8 +3174,46 @@ const app = createApp({
           if (timeoutId) clearTimeout(timeoutId);
         }
       }
+      if (token) {
+        // Preserve user-context auth when token is available.
+        sendRequest = (function (oldSend) {
+          return async function (accessToken) {
+            var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var timeoutId = null;
+            if (controller) {
+              timeoutId = setTimeout(function () {
+                controller.abort();
+              }, 20000);
+            }
+            try {
+              return await fetch(requestUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer ' + accessToken,
+                  'apikey': window.SUPABASE_ANON_KEY
+                },
+                body: JSON.stringify({
+                  kind: kind,
+                  input: input,
+                  fromDb: fromDb,
+                  toDb: toDb
+                }),
+                signal: controller ? controller.signal : undefined
+              });
+            } catch (networkErr) {
+              var netMsg = networkErr && networkErr.name === 'AbortError'
+                ? '连接转换服务超时，请稍后重试'
+                : '无法连接转换服务，请检查网络，或确认 Supabase Edge Function `convert` 已部署';
+              throw new Error(netMsg + '：' + requestUrl);
+            } finally {
+              if (timeoutId) clearTimeout(timeoutId);
+            }
+          };
+        })(sendRequest);
+      }
       var res = await sendRequest(token);
-      if (res.status === 401 && typeof window.authApi.ensureAccessToken === 'function') {
+      if (res.status === 401 && window.authApi && typeof window.authApi.ensureAccessToken === 'function') {
         var refreshed = await window.authApi.ensureAccessToken(true);
         if (refreshed) {
           res = await sendRequest(refreshed);
@@ -3192,7 +3223,7 @@ const app = createApp({
       try { json = await res.json(); } catch(_e) { json = null; }
       if (!res.ok) {
         if (res.status === 401) {
-          throw new Error((json && json.error) || '后端鉴权失败(401)：请确认 Edge Function 已按最新代码部署');
+          throw new Error((json && json.error) || '后端返回 401：请确认 convert 函数已关闭 JWT 强校验并重新部署');
         }
         throw new Error((json && json.error) || ('后端请求失败: HTTP ' + res.status));
       }
