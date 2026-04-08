@@ -688,18 +688,11 @@ $$;</pre>
   </div>
 </div>
 
-<!-- Splash Poster Script -->
-<script src="splash.js"></script>
-
-<script src="vendor/codemirror.min.js"></script>
-<script src="vendor/sql.min.js"></script>
-<script src="vendor/placeholder.min.js"></script>
-<script src="vendor/active-line.min.js"></script>
-<script src="vendor/vue.global.prod.js"></script>
-<script src="vendor/supabase.js"></script>
-<script src="supabase-config.js"></script>
-<script src="auth.js?v=20260408b"></script>
-<script src="samples.js"></script>
-<script src="rules.js"></script>
-<script src="app.js?v=20260408f"></script>
+<!-- Critical path: splash + auth -->
+<script defer src="splash.js"></script>
+<script defer src="vendor/supabase.js"></script>
+<script defer src="supabase-config.js"></script>
+<script defer src="auth.js?v=20260408b"></script>
+<!-- Non-critical heavy modules are loaded in idle time by bootstrap.js -->
+<script defer src="bootstrap.js?v=20260408a"></script>
 </body></html>
