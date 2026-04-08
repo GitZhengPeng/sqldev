@@ -232,8 +232,10 @@ function validateUserToken(token: string): boolean {
   return /^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(t)
 }
 
-async function validateUserSession(token: string): Promise<boolean> {
-  if (!validateUserToken(token) || !SUPABASE_URL || !SUPABASE_ANON_KEY) return false
+type SessionValidationResult = 'valid' | 'invalid' | 'unknown'
+
+async function validateUserSession(token: string): Promise<SessionValidationResult> {
+  if (!validateUserToken(token) || !SUPABASE_URL || !SUPABASE_ANON_KEY) return 'invalid'
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 5000)
   try {
@@ -245,11 +247,13 @@ async function validateUserSession(token: string): Promise<boolean> {
       },
       signal: controller.signal
     })
-    if (!res.ok) return false
+    if (res.status === 401 || res.status === 403) return 'invalid'
+    if (!res.ok) return 'unknown'
     const user = await res.json().catch(() => null) as { id?: unknown } | null
-    return !!(user && typeof user.id === 'string' && user.id.length > 0)
+    if (user && typeof user.id === 'string' && user.id.length > 0) return 'valid'
+    return 'invalid'
   } catch {
-    return false
+    return 'unknown'
   } finally {
     clearTimeout(timeoutId)
   }
@@ -273,8 +277,8 @@ Deno.serve(async (req) => {
   try {
     const token = bearerToken(req)
     if (!validateUserToken(token)) return json({ error: 'Unauthorized' }, 401, corsHeaders)
-    const isSessionValid = await validateUserSession(token)
-    if (!isSessionValid) return json({ error: 'Unauthorized' }, 401, corsHeaders)
+    const sessionState = await validateUserSession(token)
+    if (sessionState === 'invalid') return json({ error: 'Unauthorized' }, 401, corsHeaders)
 
     const body = await req.json().catch(() => null)
     const kind = String(body?.kind || '')
