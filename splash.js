@@ -103,6 +103,25 @@
       sessionStorage.setItem('sp_seen','1');
     },700);
   }
+
+  function showSplashHome(){
+    var appEl=document.getElementById('app');
+    if(appEl){
+      appEl.style.opacity='1';
+      appEl.style.transition='';
+    }
+    poster.classList.remove('leaving');
+    poster.style.display='';
+    document.body.classList.add('splash-active');
+    sessionStorage.removeItem('sp_seen');
+    try{window.scrollTo(0,0);}catch(_e){}
+  }
+
+  window.splashApi = Object.assign({}, window.splashApi || {}, {
+    showHome: showSplashHome,
+    enterWorkbench: dismissSplash
+  });
+
   /* Bind CTA button click */
   document.getElementById('sp-enter-btn').addEventListener('click',dismissSplash);
   window.addEventListener('auth:login-success', dismissSplash);

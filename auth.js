@@ -212,6 +212,19 @@
     setStatus('', false);
   }
 
+  function returnToSplashHome() {
+    closeUserMenu();
+    closeAuthModal();
+    if (window.splashApi && typeof window.splashApi.showHome === 'function') {
+      window.splashApi.showHome();
+      return;
+    }
+    var poster = document.getElementById('splash-poster');
+    if (poster) poster.style.display = '';
+    document.body.classList.add('splash-active');
+    try { window.scrollTo(0, 0); } catch (_e) {}
+  }
+
   async function syncSession() {
     if (!sb) return;
     var sessionRes = await sb.auth.getSession();
@@ -275,11 +288,25 @@
   }
 
   async function signOut() {
-    if (!sb) return { error: null };
-    var res = await sb.auth.signOut();
+    if (!sb) {
+      user = null;
+      accessToken = '';
+      if (authCode) authCode.value = '';
+      closeAuthModal();
+      updatePosterCta();
+      emit();
+      return { error: null };
+    }
+    var res = { error: null };
+    try {
+      res = await sb.auth.signOut();
+    } catch (err) {
+      res = { error: err };
+    }
     user = null;
     accessToken = '';
     if (authCode) authCode.value = '';
+    closeAuthModal();
     updatePosterCta();
     emit();
     return res;
@@ -491,6 +518,7 @@
     splashAuthBtn.addEventListener('click', async function () {
       if (user) {
         await signOut();
+        returnToSplashHome();
         setStatus('', false);
         return;
       }
@@ -505,7 +533,7 @@
       e.preventDefault();
       e.stopPropagation();
       if (user) await signOut();
-      closeUserMenu();
+      returnToSplashHome();
       return;
     }
 
