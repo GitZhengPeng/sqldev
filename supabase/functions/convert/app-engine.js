@@ -11,6 +11,9 @@ function makeTable() {
 function makeColumn() {
   return { name:'', type:'', precision:null, scale:null, length:null, nullable:true, defaultValue:null, comment:'', autoIncrement:false, rawType:'', extra:{} };
 }
+function makeView() {
+  return { name:'', columns:[], query:'', comment:'', withCheckOption:false, checkOptionType:null, readOnly:false, orReplace:true, force:false, algorithm:null };
+}
 
 /* Helper: split statements on ; respecting quotes and comments (-- and block) */
 function splitStatements(sql) {
@@ -854,6 +857,169 @@ function generatePostgreSQLDDL(tables, fromDb) {
       lines.push(fkLine + ';');
     }
     if (tbl.foreignKeys.length) lines.push('');
+  }
+  return lines.join('\n').trim();
+}
+
+/* ===== VIEW PARSER ===== */
+function parseViews(sql, sourceDb) {
+  var views = [];
+  var clean = sql.replace(/\/\s*$/gm, '').replace(/\r\n/g, '\n');
+  var stmts = splitStatements(clean);
+
+  for (var si = 0; si < stmts.length; si++) {
+    var s = stmts[si].trim();
+    var viewRe = /^CREATE\s+(?:OR\s+REPLACE\s+)?(?:(FORCE|NOFORCE)\s+)?(?:ALGORITHM\s*=\s*(\w+)\s+)?(?:(?:TEMP|TEMPORARY)\s+)?(?:(?:DEFINER\s*=\s*\S+)\s+)?(?:SQL\s+SECURITY\s+\w+\s+)?VIEW\s+(?:[\w"`]+\.)?["`]?(\w+)["`]?\s*/i;
+    var vm = s.match(viewRe);
+    if (!vm) continue;
+
+    var view = makeView();
+    view.name = vm[3];
+    if (vm[1]) view.force = vm[1].toUpperCase() === 'FORCE';
+    if (vm[2]) view.algorithm = vm[2].toUpperCase();
+    view.orReplace = /OR\s+REPLACE/i.test(s);
+
+    var rest = s.slice(vm[0].length);
+
+    if (rest.charAt(0) === '(') {
+      var depth = 0, ci = 0;
+      for (; ci < rest.length; ci++) {
+        if (rest[ci] === '(') depth++;
+        if (rest[ci] === ')') { depth--; if (depth === 0) break; }
+      }
+      var colBody = rest.slice(1, ci);
+      view.columns = colBody.split(',').map(function(c) { return c.trim().replace(/["`]/g, ''); });
+      rest = rest.slice(ci + 1).trim();
+    }
+
+    var asMatch = rest.match(/^AS\s+/i);
+    if (asMatch) rest = rest.slice(asMatch[0].length);
+
+    var query = rest;
+    var readOnlyMatch = query.match(/\s+WITH\s+READ\s+ONLY\s*$/i);
+    if (readOnlyMatch) {
+      view.readOnly = true;
+      query = query.slice(0, readOnlyMatch.index);
+    }
+
+    var checkMatch = query.match(/\s+WITH\s+(CASCADED\s+|LOCAL\s+)?CHECK\s+OPTION\s*$/i);
+    if (checkMatch) {
+      view.withCheckOption = true;
+      view.checkOptionType = checkMatch[1] ? checkMatch[1].trim().toUpperCase() : null;
+      query = query.slice(0, checkMatch.index);
+    }
+
+    view.query = query.trim();
+    views.push(view);
+  }
+
+  for (var ci2 = 0; ci2 < stmts.length; ci2++) {
+    var s2 = stmts[ci2].trim();
+    var tcm = s2.match(/^COMMENT\s+ON\s+(?:TABLE|VIEW)\s+(?:[\w"]+\.)?["']?(\w+)["']?\s+IS\s+'((?:''|[^'])*)'/i);
+    if (tcm) {
+      var vw = views.find(function(v) { return v.name.toUpperCase() === tcm[1].toUpperCase(); });
+      if (vw) vw.comment = tcm[2].replace(/''/g, "'");
+    }
+  }
+
+  return views;
+}
+
+/* ===== VIEW QUERY TRANSFORMER ===== */
+function transformViewQuery(query, fromDb, toDb) {
+  if (!query || fromDb === toDb) return query;
+  var q = query;
+  q = transformBody(q, fromDb, toDb);
+  if (fromDb === 'oracle' && toDb === 'postgresql') {
+    q = q.replace(/\s+FROM\s+DUAL\b/gi, '');
+  }
+  return q;
+}
+
+/* ===== VIEW GENERATORS ===== */
+function generateOracleViews(views, fromDb) {
+  var lines = [];
+  for (var i = 0; i < views.length; i++) {
+    var vw = views[i];
+    var vname = vw.name.toUpperCase();
+    if (vw.comment) lines.push('-- ' + vw.comment);
+    var header = 'CREATE OR REPLACE VIEW ' + vname;
+    if (vw.columns.length > 0) {
+      header += ' (' + vw.columns.map(function(c) { return c.toUpperCase(); }).join(', ') + ')';
+    }
+    header += ' AS';
+    lines.push(header);
+    var q = transformViewQuery(vw.query, fromDb, 'oracle');
+    lines.push(q);
+    if (vw.readOnly) {
+      lines[lines.length - 1] += '\nWITH READ ONLY';
+    } else if (vw.withCheckOption) {
+      lines[lines.length - 1] += '\nWITH CHECK OPTION';
+    }
+    lines.push(';');
+    lines.push('');
+    if (vw.comment) {
+      lines.push("COMMENT ON TABLE " + vname + " IS '" + vw.comment.replace(/'/g, "''") + "';");
+      lines.push('');
+    }
+  }
+  return lines.join('\n').trim();
+}
+
+function generateMySQLViews(views, fromDb) {
+  var lines = [];
+  for (var i = 0; i < views.length; i++) {
+    var vw = views[i];
+    var vname = vw.name.toLowerCase();
+    if (vw.comment) lines.push('-- ' + vw.comment);
+    var header = 'CREATE OR REPLACE';
+    if (vw.algorithm) header += ' ALGORITHM = ' + vw.algorithm;
+    header += ' VIEW `' + vname + '`';
+    if (vw.columns.length > 0) {
+      header += ' (' + vw.columns.map(function(c) { return '`' + c.toLowerCase() + '`'; }).join(', ') + ')';
+    }
+    header += ' AS';
+    lines.push(header);
+    var q = transformViewQuery(vw.query, fromDb, 'mysql');
+    lines.push(q);
+    if (vw.withCheckOption) {
+      var optType = vw.checkOptionType || 'CASCADED';
+      lines[lines.length - 1] += '\nWITH ' + optType + ' CHECK OPTION';
+    } else if (vw.readOnly) {
+      lines.push('/* [注意: MySQL 不支持 WITH READ ONLY, 请通过权限控制实现只读] */');
+    }
+    lines.push(';');
+    lines.push('');
+  }
+  return lines.join('\n').trim();
+}
+
+function generatePGViews(views, fromDb) {
+  var lines = [];
+  for (var i = 0; i < views.length; i++) {
+    var vw = views[i];
+    var vname = vw.name.toLowerCase();
+    if (vw.comment) lines.push('-- ' + vw.comment);
+    var header = 'CREATE OR REPLACE VIEW ' + vname;
+    if (vw.columns.length > 0) {
+      header += ' (' + vw.columns.map(function(c) { return c.toLowerCase(); }).join(', ') + ')';
+    }
+    header += ' AS';
+    lines.push(header);
+    var q = transformViewQuery(vw.query, fromDb, 'postgresql');
+    lines.push(q);
+    if (vw.withCheckOption) {
+      var optType = vw.checkOptionType || 'LOCAL';
+      lines[lines.length - 1] += '\nWITH ' + optType + ' CHECK OPTION';
+    } else if (vw.readOnly) {
+      lines.push('/* [注意: PostgreSQL 不支持 WITH READ ONLY, 可通过 security_barrier 或 GRANT 控制] */');
+    }
+    lines.push(';');
+    lines.push('');
+    if (vw.comment) {
+      lines.push("COMMENT ON VIEW " + vname + " IS '" + vw.comment.replace(/'/g, "''") + "';");
+      lines.push('');
+    }
   }
   return lines.join('\n').trim();
 }
@@ -1703,13 +1869,24 @@ function _genMySQLFunction(name, params, returnType, vars, body) {
     }
   }
   if (bodyDeclares.length > 0) {
-    // Deduplicate declarations
+    // Deduplicate declarations by semantic key:
+    // var-name / cursor-name / normalized handler text
     var _seenFnDecl = {};
     var _dedupedFnDeclares = [];
+    function _declKeyFn(line) {
+      var s = (line || '').trim();
+      var mVar = s.match(/^DECLARE\s+(\w+)\s+/i);
+      if (mVar) {
+        if (/^DECLARE\s+\w+\s+CURSOR\b/i.test(s)) return 'CURSOR:' + mVar[1].toUpperCase();
+        if (/^DECLARE\s+(EXIT|CONTINUE)\s+HANDLER\b/i.test(s)) return 'HANDLER:' + s.replace(/\s+/g, ' ').toUpperCase();
+        return 'VAR:' + mVar[1].toUpperCase();
+      }
+      return 'RAW:' + s.replace(/\s+/g, ' ').toUpperCase();
+    }
     for (var fdi = 0; fdi < bodyDeclares.length; fdi++) {
-      var _normFnDecl = bodyDeclares[fdi].trim().replace(/\s+/g, ' ').toUpperCase();
-      if (!_seenFnDecl[_normFnDecl]) {
-        _seenFnDecl[_normFnDecl] = true;
+      var _kFn = _declKeyFn(bodyDeclares[fdi]);
+      if (!_seenFnDecl[_kFn]) {
+        _seenFnDecl[_kFn] = true;
         _dedupedFnDeclares.push(bodyDeclares[fdi]);
       }
     }
@@ -2238,13 +2415,24 @@ function _genMySQLProcedure(name, params, vars, body) {
       bodyOther.push(line);
     }
   }
-  // Deduplicate declarations by normalized content
+  // Deduplicate declarations by semantic key:
+  // var-name / cursor-name / normalized handler text
   var _seenDecl = {};
   var _dedupedDeclares = [];
+  function _declKey(line) {
+    var s = (line || '').trim();
+    var mVar = s.match(/^DECLARE\s+(\w+)\s+/i);
+    if (mVar) {
+      if (/^DECLARE\s+\w+\s+CURSOR\b/i.test(s)) return 'CURSOR:' + mVar[1].toUpperCase();
+      if (/^DECLARE\s+(EXIT|CONTINUE)\s+HANDLER\b/i.test(s)) return 'HANDLER:' + s.replace(/\s+/g, ' ').toUpperCase();
+      return 'VAR:' + mVar[1].toUpperCase();
+    }
+    return 'RAW:' + s.replace(/\s+/g, ' ').toUpperCase();
+  }
   for (var di = 0; di < allDeclares.length; di++) {
-    var _normDecl = allDeclares[di].trim().replace(/\s+/g, ' ').toUpperCase();
-    if (!_seenDecl[_normDecl]) {
-      _seenDecl[_normDecl] = true;
+    var _k = _declKey(allDeclares[di]);
+    if (!_seenDecl[_k]) {
+      _seenDecl[_k] = true;
       _dedupedDeclares.push(allDeclares[di]);
     }
   }
