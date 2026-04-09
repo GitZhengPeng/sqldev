@@ -507,13 +507,49 @@
     if (!sb.functions || typeof sb.functions.invoke !== 'function') {
       throw new Error('当前 Supabase SDK 不支持 functions.invoke');
     }
-    return sb.functions.invoke(name, {
+    var invokeOptions = {
       body: body,
       headers: {
         Authorization: 'Bearer ' + token,
         apikey: anonKey
       }
+    };
+
+    var firstRes = await sb.functions.invoke(name, invokeOptions);
+    var firstStatus = Number(firstRes && firstRes.error && firstRes.error.context && firstRes.error.context.status || 0);
+    if (!firstRes || !firstRes.error || firstStatus !== 401) {
+      return firstRes;
+    }
+
+    // Fallback: bypass SDK invoke path and call function endpoint directly with explicit headers.
+    var endpoint = String(projectUrl || '').replace(/\/+$/, '') + '/functions/v1/' + encodeURIComponent(name);
+    var fetchRes = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + token,
+        apikey: anonKey
+      },
+      body: JSON.stringify(body || {})
     });
+    var text = await fetchRes.text().catch(function () { return ''; });
+    var parsed = null;
+    if (text) {
+      try { parsed = JSON.parse(text); } catch (_e) { parsed = null; }
+    }
+    if (!fetchRes.ok) {
+      return {
+        data: null,
+        error: {
+          message: (parsed && (parsed.error || parsed.message)) ? String(parsed.error || parsed.message) : ('HTTP ' + fetchRes.status),
+          context: {
+            status: fetchRes.status,
+            statusText: fetchRes.statusText
+          }
+        }
+      };
+    }
+    return { data: parsed, error: null };
   }
 
   window.authApi = {
