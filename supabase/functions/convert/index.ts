@@ -1,5 +1,3 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
-
 const PRIMARY_WEB_ORIGIN = 'https://gitzhengpeng.github.io'
 const ALLOWED_ORIGINS = new Set([PRIMARY_WEB_ORIGIN])
 const LOCAL_ORIGIN_RE = /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i
@@ -10,9 +8,6 @@ const corsBaseHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
-const supabaseAuthClient = (SUPABASE_URL && SUPABASE_ANON_KEY)
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null
 
 type DdlRuleItem = { source?: string; target?: string }
 type BodyRuleItem = { s?: string; t?: string }
@@ -227,28 +222,6 @@ function json(data: unknown, status = 200, corsHeaders: Record<string, string> =
   })
 }
 
-function bearerToken(req: Request): string {
-  const auth = req.headers.get('authorization') || ''
-  const match = auth.match(/^Bearer\s+(.+)$/i)
-  return match ? match[1].trim() : ''
-}
-
-function validateUserToken(token: string): boolean {
-  const t = (token || '').trim()
-  return /^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(t)
-}
-
-async function validateUserSession(token: string): Promise<boolean> {
-  if (!validateUserToken(token) || !supabaseAuthClient) return false
-  try {
-    const { data, error } = await supabaseAuthClient.auth.getUser(token)
-    if (error) return false
-    return !!(data && data.user && typeof data.user.id === 'string' && data.user.id.length > 0)
-  } catch {
-    return false
-  }
-}
-
 Deno.serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req)
 
@@ -266,10 +239,6 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => null)
-    const token = bearerToken(req) || String(body?.accessToken || '').trim()
-    if (!validateUserToken(token)) return json({ error: 'Unauthorized' }, 401, corsHeaders)
-    const isValidUser = await validateUserSession(token)
-    if (!isValidUser) return json({ error: 'Unauthorized' }, 401, corsHeaders)
     const kind = String(body?.kind || '')
     const fromDb = String(body?.fromDb || '')
     const toDb = String(body?.toDb || '')
