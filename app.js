@@ -2596,19 +2596,19 @@ const app = createApp({
 
     // DDL state
     const sourceDb = ref('oracle');
-    const targetDb = ref('mysql');
+    const targetDb = ref('postgresql');
     const inputDdl = ref('');
     const outputDdl = ref('');
 
     // Function state
     const funcSourceDb = ref('oracle');
-    const funcTargetDb = ref('mysql');
+    const funcTargetDb = ref('postgresql');
     const funcInput = ref('');
     const funcOutput = ref('');
 
     // Procedure state
     const procSourceDb = ref('oracle');
-    const procTargetDb = ref('mysql');
+    const procTargetDb = ref('postgresql');
     const procInput = ref('');
     const procOutput = ref('');
 
@@ -3067,18 +3067,18 @@ const app = createApp({
     const procSourceLabel = computed(() => DB_LABELS[procSourceDb.value] || procSourceDb.value);
     const procTargetLabel = computed(() => DB_LABELS[procTargetDb.value] || procTargetDb.value);
     const currentPageTitle = computed(() => {
-      if (activePage.value === 'func') return '函数翻译工作台';
-      if (activePage.value === 'proc') return '存储过程翻译工作台';
+      if (activePage.value === 'func') return '函数翻译';
+      if (activePage.value === 'proc') return '存储过程翻译';
       if (activePage.value === 'rules') return 'DDL 映射规则管理';
       if (activePage.value === 'bodyRules') return '程序块映射规则管理';
-      return 'DDL 翻译工作台';
+      return 'DDL 语句翻译';
     });
     const currentPageSubtitle = computed(() => {
       if (activePage.value === 'func') return 'CREATE FUNCTION / CREATE OR REPLACE FUNCTION 兼容转换';
       if (activePage.value === 'proc') return 'CREATE PROCEDURE / CREATE OR REPLACE PROCEDURE 兼容转换';
       if (activePage.value === 'rules') return '维护前端与后端共享的 DDL 类型映射规则';
       if (activePage.value === 'bodyRules') return '维护函数与存储过程语句块映射规则';
-      return '建表、注释、索引、主外键与分区的跨库翻译';
+      return '建表 · 注释 · 索引 · 主键 · 外键 · 分区';
     });
     const currentEngineLabel = computed(() => {
       if (activePage.value === 'func') return 'Function Parser v2.0';
@@ -3378,13 +3378,22 @@ const app = createApp({
           return;
         }
         statusText.value = 'DDL 转换中，请稍候...';
-        const result = await _convertViaBackend('ddl', inputDdl.value, sourceDb.value, targetDb.value);
+        var result;
+        var isLocal = false;
+        try {
+          result = await _convertViaBackend('ddl', inputDdl.value, sourceDb.value, targetDb.value);
+        } catch (_backendErr) {
+          // Fallback to local conversion engine
+          result = convertDDL(inputDdl.value, sourceDb.value, targetDb.value);
+          isLocal = true;
+        }
         outputDdl.value = result;
         var cls = _classifyResult(result);
+        var suffix = isLocal ? '（本地引擎）' : '';
         statusText.value = cls.level === 'error'   ? cls.summary
                          : cls.level === 'info'    ? cls.summary
-                         : cls.level === 'warning' ? 'DDL 翻译完成: ' + sourceLabel.value + ' → ' + targetLabel.value + ' (' + cls.summary + ')'
-                         : 'DDL 翻译完成: ' + sourceLabel.value + ' → ' + targetLabel.value;
+                         : cls.level === 'warning' ? 'DDL 翻译完成: ' + sourceLabel.value + ' → ' + targetLabel.value + ' (' + cls.summary + ')' + suffix
+                         : 'DDL 翻译完成: ' + sourceLabel.value + ' → ' + targetLabel.value + suffix;
       } catch (e) {
         outputDdl.value = '-- \u8F6C\u6362\u5F02\u5E38: ' + e.message;
         statusText.value = '\u8F6C\u6362\u5F02\u5E38: ' + e.message;
@@ -3425,13 +3434,21 @@ const app = createApp({
           return;
         }
         statusText.value = '函数转换中，请稍候...';
-        const result = await _convertViaBackend('func', funcInput.value, funcSourceDb.value, funcTargetDb.value);
+        var result;
+        var isLocal = false;
+        try {
+          result = await _convertViaBackend('func', funcInput.value, funcSourceDb.value, funcTargetDb.value);
+        } catch (_backendErr) {
+          result = convertFunction(funcInput.value, funcSourceDb.value, funcTargetDb.value);
+          isLocal = true;
+        }
         funcOutput.value = result;
         var cls = _classifyResult(result);
+        var suffix = isLocal ? '（本地引擎）' : '';
         statusText.value = cls.level === 'error'   ? cls.summary
                          : cls.level === 'info'    ? cls.summary
-                         : cls.level === 'warning' ? '函数翻译完成: ' + funcSourceLabel.value + ' → ' + funcTargetLabel.value + ' (' + cls.summary + ')'
-                         : '函数翻译完成: ' + funcSourceLabel.value + ' → ' + funcTargetLabel.value;
+                         : cls.level === 'warning' ? '函数翻译完成: ' + funcSourceLabel.value + ' → ' + funcTargetLabel.value + ' (' + cls.summary + ')' + suffix
+                         : '函数翻译完成: ' + funcSourceLabel.value + ' → ' + funcTargetLabel.value + suffix;
       } catch (e) {
         funcOutput.value = '-- \u8F6C\u6362\u5F02\u5E38: ' + e.message;
         statusText.value = '\u8F6C\u6362\u5F02\u5E38: ' + e.message;
@@ -3472,13 +3489,21 @@ const app = createApp({
           return;
         }
         statusText.value = '存储过程转换中，请稍候...';
-        const result = await _convertViaBackend('proc', procInput.value, procSourceDb.value, procTargetDb.value);
+        var result;
+        var isLocal = false;
+        try {
+          result = await _convertViaBackend('proc', procInput.value, procSourceDb.value, procTargetDb.value);
+        } catch (_backendErr) {
+          result = convertProcedure(procInput.value, procSourceDb.value, procTargetDb.value);
+          isLocal = true;
+        }
         procOutput.value = result;
         var cls = _classifyResult(result);
+        var suffix = isLocal ? '（本地引擎）' : '';
         statusText.value = cls.level === 'error'   ? cls.summary
                          : cls.level === 'info'    ? cls.summary
-                         : cls.level === 'warning' ? '存储过程翻译完成: ' + procSourceLabel.value + ' → ' + procTargetLabel.value + ' (' + cls.summary + ')'
-                         : '存储过程翻译完成: ' + procSourceLabel.value + ' → ' + procTargetLabel.value;
+                         : cls.level === 'warning' ? '存储过程翻译完成: ' + procSourceLabel.value + ' → ' + procTargetLabel.value + ' (' + cls.summary + ')' + suffix
+                         : '存储过程翻译完成: ' + procSourceLabel.value + ' → ' + procTargetLabel.value + suffix;
       } catch (e) {
         procOutput.value = '-- \u8F6C\u6362\u5F02\u5E38: ' + e.message;
         statusText.value = '\u8F6C\u6362\u5F02\u5E38: ' + e.message;

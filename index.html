@@ -43,181 +43,216 @@
   <div class="sp-vignette"></div>
   <div class="sp-shell">
     <div class="sp-page">
-      <header class="sp-nav">
-        <div class="sp-brand">
-          <div class="sp-brand-mark">SQL</div>
-          <span class="sp-brand-text">SQL 翻译工作台</span>
+
+      <!-- NAV -->
+      <nav class="sp-nav">
+        <div class="sp-nav-logo">
+          <div class="sp-nav-logo-mark">SQL</div>
+          <span class="sp-nav-logo-text">SQL 翻译工作台</span>
         </div>
         <div class="sp-nav-right">
+          <a class="sp-nav-link" href="#">文档</a>
           <a class="sp-nav-link" href="https://github.com/gitzhengpeng/sqldev" target="_blank" rel="noreferrer">GitHub</a>
-          <button class="sp-auth-top-btn" id="sp-auth-top-btn" type="button">注册 / 登录</button>
+          <button class="sp-nav-login" id="sp-auth-top-btn" type="button">登录</button>
         </div>
-      </header>
+      </nav>
 
-      <div class="sp-content">
-        <section class="sp-hero">
-          <div class="sp-badge">
-            <span class="sp-badge-dot"></span>
-            <span>SQL Translation Workbench · v2.0</span>
+      <!-- HERO -->
+      <section class="sp-hero">
+        <div class="sp-hero-badge">
+          <span class="sp-hero-badge-dot"></span>
+          <span>v2.0 · 开源免费</span>
+        </div>
+
+        <h1 class="sp-hero-title" id="splash-title">跨数据库<br/><em>SQL 翻译</em></h1>
+        <p class="sp-hero-sub">Oracle、MySQL、PostgreSQL 之间的 DDL 建表语句、<br/>函数与存储过程 — 一键精准互转</p>
+
+        <!-- DB Triangle Visualization -->
+        <div class="sp-db-viz">
+          <svg viewBox="0 0 380 300" aria-hidden="true">
+            <defs>
+              <linearGradient id="sp-line-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="rgba(79,125,249,.3)"></stop>
+                <stop offset="50%" stop-color="rgba(139,92,246,.4)"></stop>
+                <stop offset="100%" stop-color="rgba(34,211,238,.3)"></stop>
+              </linearGradient>
+            </defs>
+            <path class="sp-db-line" d="M190 55 L70 250"></path>
+            <path class="sp-db-line sp-db-line-2" d="M190 55 L310 250"></path>
+            <path class="sp-db-line sp-db-line-3" d="M70 250 L310 250"></path>
+          </svg>
+          <div class="sp-particle sp-particle-1"></div>
+          <div class="sp-particle sp-particle-2"></div>
+          <div class="sp-particle sp-particle-3"></div>
+          <div class="sp-db-node sp-db-node-oracle">
+            <div class="sp-db-node-icon oracle">ORA</div>
+            <span class="sp-db-node-label">Oracle</span>
           </div>
-          <h1 class="sp-title" id="splash-title">跨数据库 <em>SQL 翻译</em></h1>
-          <p class="sp-sub">Oracle / MySQL / PostgreSQL 之间的 DDL、函数与存储过程转换工作台，支持在线体验、规则编辑与结果校正。</p>
+          <div class="sp-db-node sp-db-node-mysql">
+            <div class="sp-db-node-icon mysql">MY</div>
+            <span class="sp-db-node-label">MySQL</span>
+          </div>
+          <div class="sp-db-node sp-db-node-pg">
+            <div class="sp-db-node-icon pg">PG</div>
+            <span class="sp-db-node-label">PostgreSQL</span>
+          </div>
+        </div>
 
-          <div class="sp-stage">
-            <div class="sp-hero-copy">
-              <div class="sp-copy-strip">
-                <span>六向互转</span>
-                <span>规则可调</span>
-                <span>在线工作台</span>
+        <div class="sp-hero-cta">
+          <button class="sp-btn-primary" id="sp-enter-btn" type="button">
+            立即体验
+            <svg width="16" height="16" fill="none" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10m-4-4 4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="sp-btn-secondary" id="sp-auth-hero-btn" type="button">注册 / 登录</button>
+        </div>
+      </section>
+
+      <!-- TRANSLATION PREVIEW -->
+      <section class="sp-preview-section">
+        <div class="sp-preview-label"><span>实时翻译预览</span></div>
+        <div class="sp-preview-wrap">
+          <!-- Left: Oracle Input -->
+          <div class="sp-preview-panel">
+            <div class="sp-preview-header">
+              <div class="sp-preview-header-left">
+                <span class="sp-preview-dot oracle"></span>
+                <span class="sp-preview-db-name">Oracle 输入</span>
               </div>
-              <div class="sp-triad">
-                <svg viewBox="0 0 380 280" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="sp-line-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="rgba(79,125,249,.55)"></stop>
-                      <stop offset="50%" stop-color="rgba(139,92,246,.6)"></stop>
-                      <stop offset="100%" stop-color="rgba(34,211,238,.55)"></stop>
-                    </linearGradient>
-                  </defs>
-                  <path class="sp-line" d="M190 42 L78 224"></path>
-                  <path class="sp-line" d="M190 42 L302 224"></path>
-                  <path class="sp-line" d="M78 224 L302 224"></path>
-                </svg>
-                <div class="sp-particle sp-particle-1"></div>
-                <div class="sp-particle sp-particle-2"></div>
-                <div class="sp-particle sp-particle-3"></div>
-                <div class="sp-db sp-db-oracle">
-                  <div class="sp-db-icon oracle">ORA</div>
-                  <span class="sp-db-label">Oracle</span>
-                </div>
-                <div class="sp-db sp-db-mysql">
-                  <div class="sp-db-icon mysql">MY</div>
-                  <span class="sp-db-label">MySQL</span>
-                </div>
-                <div class="sp-db sp-db-pg">
-                  <div class="sp-db-icon pg">PG</div>
-                  <span class="sp-db-label">PostgreSQL</span>
-                </div>
-              </div>
-              <div class="sp-features">
-                <span class="sp-feat">DDL 建表语句</span>
-                <span class="sp-feat">函数转换</span>
-                <span class="sp-feat">存储过程迁移</span>
-                <span class="sp-feat">类型映射规则</span>
-                <span class="sp-feat">索引 / 主外键 / 分区</span>
-                <span class="sp-feat">异常处理转换</span>
-              </div>
-              <div class="sp-cta-group">
-                <button class="sp-cta sp-cta-primary" id="sp-enter-btn" type="button">立即体验
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                </button>
-                <button class="sp-cta sp-cta-secondary" id="sp-auth-hero-btn" type="button">注册 / 登录</button>
-              </div>
+              <span class="sp-preview-lines">24 行</span>
             </div>
-
-            <div class="sp-preview" aria-label="SQL 实时翻译预览">
-              <div class="sp-preview-head">
-                <span>实时翻译预览</span>
-                <small>Oracle → PostgreSQL</small>
-              </div>
-              <div class="sp-preview-grid">
-                <article class="sp-preview-panel">
-                  <header class="sp-preview-panel-head">
-                    <div class="sp-preview-db">
-                      <span class="sp-preview-dot oracle"></span>
-                      <span>Oracle 输入</span>
-                    </div>
-                    <span class="sp-preview-meta">24 lines</span>
-                  </header>
-                  <pre class="sp-preview-code"><span class="kw">CREATE TABLE</span> USERS (
-  USER_ID    <span class="type">NUMBER</span>(18) <span class="kw">NOT NULL</span>,
-  USERNAME   <span class="type">VARCHAR2</span>(100) <span class="kw">NOT NULL</span>,
-  BALANCE    <span class="type">NUMBER</span>(18,2) <span class="kw">DEFAULT</span> <span class="num">0</span>,
-  CREATED_AT <span class="type">DATE</span> <span class="kw">DEFAULT</span> <span class="fn">SYSDATE</span>,
-  <span class="kw">CONSTRAINT</span> PK_USERS <span class="kw">PRIMARY KEY</span> (USER_ID)
+            <div class="sp-preview-code">
+<span class="cmt">-- 用户信息表</span>
+<span class="kw">CREATE TABLE</span> USERS (
+    USER_ID       <span class="type">NUMBER</span>(18)       <span class="kw">NOT NULL</span>,
+    USERNAME      <span class="type">VARCHAR2</span>(100)    <span class="kw">NOT NULL</span>,
+    EMAIL         <span class="type">VARCHAR2</span>(200),
+    BALANCE       <span class="type">NUMBER</span>(18,2)     <span class="kw">DEFAULT</span> <span class="num">0</span>,
+    STATUS        <span class="type">NUMBER</span>(1)        <span class="kw">DEFAULT</span> <span class="num">1</span>,
+    AVATAR        <span class="type">BLOB</span>,
+    BIO           <span class="type">CLOB</span>,
+    CREATED_AT    <span class="type">DATE</span>            <span class="kw">DEFAULT</span> <span class="fn">SYSDATE</span>,
+    <span class="kw">CONSTRAINT</span> PK_USERS <span class="kw">PRIMARY KEY</span> (USER_ID)
 );
 
-<span class="kw">COMMENT ON TABLE</span> USERS <span class="kw">IS</span> <span class="str">'用户信息表'</span>;</pre>
-                </article>
-                <div class="sp-preview-divider">
-                  <span class="sp-preview-arrow">
-                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  </span>
-                </div>
-                <article class="sp-preview-panel">
-                  <header class="sp-preview-panel-head">
-                    <div class="sp-preview-db">
-                      <span class="sp-preview-dot pg"></span>
-                      <span>PostgreSQL 输出</span>
-                    </div>
-                    <span class="sp-preview-meta">24 lines</span>
-                  </header>
-                  <pre class="sp-preview-code"><span class="kw">CREATE TABLE</span> users (
-  user_id    <span class="type">BIGINT</span> <span class="kw">NOT NULL</span>,
-  username   <span class="type">VARCHAR</span>(100) <span class="kw">NOT NULL</span>,
-  balance    <span class="type">NUMERIC</span>(18,2) <span class="kw">DEFAULT</span> <span class="num">0</span>,
-  created_at <span class="type">TIMESTAMP</span> <span class="kw">DEFAULT</span> <span class="fn">CLOCK_TIMESTAMP</span>(),
-  <span class="kw">CONSTRAINT</span> pk_users <span class="kw">PRIMARY KEY</span> (user_id)
-);
-
-<span class="kw">COMMENT ON TABLE</span> users <span class="kw">IS</span> <span class="str">'用户信息表'</span>;</pre>
-                </article>
-              </div>
+<span class="kw">COMMENT ON TABLE</span> USERS <span class="kw">IS</span> <span class="str">'用户信息表'</span>;
+<span class="kw">COMMENT ON COLUMN</span> USERS.EMAIL <span class="kw">IS</span> <span class="str">'邮箱'</span>;
             </div>
           </div>
-        </section>
 
-        <section class="sp-features-grid" aria-label="首页功能概览">
-          <article class="sp-feature-card">
-            <div class="sp-feature-icon">6</div>
-            <h3>六种翻译方向</h3>
-            <p>Oracle、MySQL、PostgreSQL 三库任意两两互转，覆盖主流迁移场景。</p>
-          </article>
-          <article class="sp-feature-card">
-            <div class="sp-feature-icon">400+</div>
-            <h3>规则映射可调</h3>
-            <p>DDL 类型映射与程序块规则分层维护，适合持续校正规则库。</p>
-          </article>
-          <article class="sp-feature-card">
-            <div class="sp-feature-icon">3</div>
-            <h3>覆盖三类核心对象</h3>
-            <p>建表语句、函数定义、存储过程同时支持，异常处理和分区也能兼顾。</p>
-          </article>
-          <article class="sp-feature-card">
-            <div class="sp-feature-icon">RT</div>
-            <h3>实时预览</h3>
-            <p>语法高亮对照展示，进入工作台前就能看清转换效果和产出风格。</p>
-          </article>
-        </section>
+          <!-- Center Arrow -->
+          <div class="sp-preview-divider">
+            <div class="sp-preview-arrow">
+              <svg fill="none" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
 
-        <section class="sp-stats">
-          <div class="sp-stat">
-            <span class="sp-stat-num">6</span>
-            <span class="sp-stat-label">转换方向</span>
-            <span class="sp-stat-detail">任意两库互转</span>
-          </div>
-          <div class="sp-stat">
-            <span class="sp-stat-num">400<small>+</small></span>
-            <span class="sp-stat-label">规则映射</span>
-            <span class="sp-stat-detail">DDL + 程序块双规则集</span>
-          </div>
-          <div class="sp-stat">
-            <span class="sp-stat-num">160<small>+</small></span>
-            <span class="sp-stat-label">SQL 语法</span>
-            <span class="sp-stat-detail">函数 / 语句 / 类型兼容</span>
-          </div>
-        </section>
+          <!-- Right: PostgreSQL Output -->
+          <div class="sp-preview-panel">
+            <div class="sp-preview-header">
+              <div class="sp-preview-header-left">
+                <span class="sp-preview-dot pg"></span>
+                <span class="sp-preview-db-name">PostgreSQL 输出</span>
+              </div>
+              <span class="sp-preview-lines">24 行</span>
+            </div>
+            <div class="sp-preview-code">
+<span class="cmt">-- 用户信息表</span>
+<span class="kw">CREATE TABLE</span> users (
+    user_id       <span class="type">BIGINT</span>           <span class="kw">NOT NULL</span>,
+    username      <span class="type">VARCHAR</span>(100)      <span class="kw">NOT NULL</span>,
+    email         <span class="type">VARCHAR</span>(200),
+    balance       <span class="type">NUMERIC</span>(18,2)     <span class="kw">DEFAULT</span> <span class="num">0</span>,
+    status        <span class="type">SMALLINT</span>          <span class="kw">DEFAULT</span> <span class="num">1</span>,
+    avatar        <span class="type">BYTEA</span>,
+    bio           <span class="type">TEXT</span>,
+    created_at    <span class="type">TIMESTAMP</span>         <span class="kw">DEFAULT</span> <span class="fn">CLOCK_TIMESTAMP</span>(),
+    <span class="kw">CONSTRAINT</span> pk_users <span class="kw">PRIMARY KEY</span> (user_id)
+);
 
-        <section class="sp-final-cta">
-          <h2>开始你的 SQL 迁移流程</h2>
-          <p>首页负责建立认知，工作台负责真正开始转换。两者现在是清晰分离的两个界面。</p>
-          <div class="sp-cta-group">
-            <button class="sp-cta sp-cta-primary sp-final-enter" type="button">进入工作台
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-            </button>
+<span class="kw">COMMENT ON TABLE</span> users <span class="kw">IS</span> <span class="str">'用户信息表'</span>;
+<span class="kw">COMMENT ON COLUMN</span> users.email <span class="kw">IS</span> <span class="str">'邮箱'</span>;
+            </div>
           </div>
-        </section>
+        </div>
+      </section>
+
+      <!-- FEATURES -->
+      <section class="sp-features-section">
+        <div class="sp-features-grid">
+          <div class="sp-feat-card">
+            <div class="sp-feat-icon">
+              <svg fill="none" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="sp-feat-title">6 种翻译方向</div>
+            <div class="sp-feat-desc">Oracle、MySQL、PostgreSQL 三库任意两两互转，覆盖主流迁移场景</div>
+            <div class="sp-feat-stat">6</div>
+          </div>
+          <div class="sp-feat-card">
+            <div class="sp-feat-icon">
+              <svg fill="none" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="sp-feat-title">400+ 映射规则</div>
+            <div class="sp-feat-desc">DDL 类型映射 199 条，程序块语法转换 212 条，持续扩展中</div>
+            <div class="sp-feat-stat">400<small>+</small></div>
+          </div>
+          <div class="sp-feat-card">
+            <div class="sp-feat-icon">
+              <svg fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="sp-feat-title">DDL · 函数 · 存储过程</div>
+            <div class="sp-feat-desc">建表语句、函数定义、存储过程完整翻译，包含异常处理与分区</div>
+            <div class="sp-feat-stat">3<small> 类型</small></div>
+          </div>
+          <div class="sp-feat-card">
+            <div class="sp-feat-icon">
+              <svg fill="none" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="sp-feat-title">即时预览</div>
+            <div class="sp-feat-desc">语法高亮编辑器，实时反馈翻译结果与注意事项，所见即所得</div>
+            <div class="sp-feat-stat">0<small>ms</small></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="sp-stats-section">
+        <div class="sp-stats-row">
+          <div class="sp-stat-card">
+            <div class="sp-stat-num">6</div>
+            <div class="sp-stat-label">转换方向</div>
+            <div class="sp-stat-detail">任意两库互转</div>
+          </div>
+          <div class="sp-stat-card">
+            <div class="sp-stat-num">400<small>+</small></div>
+            <div class="sp-stat-label">条转换规则</div>
+            <div class="sp-stat-detail">DDL 199 + 程序块 212</div>
+          </div>
+          <div class="sp-stat-card">
+            <div class="sp-stat-num">160<small>+</small></div>
+            <div class="sp-stat-label">种 SQL 语法</div>
+            <div class="sp-stat-detail">函数 / 语句 / 类型</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FINAL CTA -->
+      <section class="sp-final-cta">
+        <h2>开始你的 SQL 迁移之旅</h2>
+        <p>无需安装，打开即用。免费开源。</p>
+        <div class="sp-hero-cta sp-hero-cta-center">
+          <button class="sp-btn-primary sp-final-enter" type="button">
+            进入工作台
+            <svg width="16" height="16" fill="none" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10m-4-4 4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- TRANSITION ZONE -->
+      <div class="sp-transition-zone">
+        <span>向下滚动进入工作台</span>
+        <div class="sp-scroll-line"></div>
       </div>
+
     </div>
   </div>
   <div class="auth-modal-mask" id="auth-modal-mask" hidden>
