@@ -425,9 +425,18 @@ body.splash-active{overflow:hidden}
 .auth-mode-btn:hover{border-color:#60a5fa;color:#e2e8f0}
 .auth-mode-btn.active{border-color:#2563eb;background:#2563eb;color:#fff}
 .auth-label{display:block;font-size:12px;color:#cbd5e1;margin:8px 0 4px}
+.auth-password-field{position:relative}
 .auth-input{width:100%;border:1px solid rgba(148,163,184,.35);border-radius:8px;padding:9px 10px;background:rgba(15,23,42,.78);color:#e2e8f0;font-size:13px}
+.auth-input-password{padding-right:40px}
 .auth-input::placeholder{color:#64748b}
 .auth-input:focus{outline:none;border-color:#60a5fa;box-shadow:0 0 0 3px rgba(37,99,235,.24)}
+.auth-password-toggle{position:absolute;top:50%;right:10px;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:22px;height:22px;border:none;background:none;color:#94a3b8;cursor:pointer;padding:0}
+.auth-password-toggle:hover{color:#e2e8f0}
+.auth-password-toggle:focus-visible{outline:2px solid #60a5fa;outline-offset:2px;border-radius:6px}
+.auth-password-toggle svg{width:18px;height:18px}
+.auth-password-toggle-slash{position:absolute;width:18px;height:1.6px;background:currentColor;transform:rotate(-35deg) scaleX(0);transition:transform .15s ease}
+.auth-password-toggle.active .auth-password-toggle-slash{transform:rotate(-35deg) scaleX(1)}
+.auth-input-hint{margin-top:5px;font-size:11px;line-height:1.5;color:#94a3b8}
 .auth-inline-actions{display:flex;justify-content:flex-end;margin-top:6px}
 .auth-text-btn{border:none;background:none;padding:0;color:#7dd3fc;font-size:12px;font-weight:600;cursor:pointer}
 .auth-text-btn:hover{color:#e0f2fe}

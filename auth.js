@@ -20,6 +20,7 @@
   var authResetBackBtn = document.getElementById('auth-reset-back-btn');
   var authModePasswordBtn = document.getElementById('auth-mode-password-btn');
   var authModeCodeBtn = document.getElementById('auth-mode-code-btn');
+  var authPasswordToggles = document.querySelectorAll('.auth-password-toggle');
   var authModeSwitch = document.querySelector('.auth-mode-switch');
   var authPasswordWrap = document.getElementById('auth-password-wrap');
   var authCodeWrap = document.getElementById('auth-code-wrap');
@@ -818,6 +819,20 @@
       e.preventDefault();
       submitResetPassword();
     });
+  }
+
+  if (authPasswordToggles && authPasswordToggles.length) {
+    for (var i = 0; i < authPasswordToggles.length; i++) {
+      authPasswordToggles[i].addEventListener('click', function () {
+        var targetId = this.getAttribute('data-target');
+        if (!targetId) return;
+        var input = document.getElementById(targetId);
+        if (!input) return;
+        var nextType = input.type === 'password' ? 'text' : 'password';
+        input.type = nextType;
+        this.classList.toggle('active', nextType === 'text');
+      });
+    }
   }
 
   closeUserMenu();
