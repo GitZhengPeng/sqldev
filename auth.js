@@ -287,7 +287,8 @@
       splashAuthBtn.textContent = '注册 / 登录';
       splashAuthBtn.hidden = loggedIn;
     }
-    if (splashEnterBtn) splashEnterBtn.textContent = loggedIn ? '进入工作台' : '登录后进入工作台';
+    if (splashAuthHeroBtn) splashAuthHeroBtn.hidden = loggedIn;
+    if (splashEnterBtn) splashEnterBtn.textContent = '立即体验';
     if (appUserPop) appUserPop.hidden = !loggedIn;
     if (appAuthBtn) appAuthBtn.textContent = '退出登录';
     if (appUserEmail) appUserEmail.textContent = getEmail();

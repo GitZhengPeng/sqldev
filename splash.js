@@ -13,27 +13,40 @@
   if (!poster) return;
 
   var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  var workbench = document.getElementById('main-content');
-  var scrollHint = poster.querySelector('.sp-scroll');
-  var transitionHint = document.getElementById('sp-transition');
   var enterBtn = document.getElementById('sp-enter-btn');
+  var finalEnterBtn = document.querySelector('.sp-final-enter');
 
-  function scrollToWorkbench() {
+  function enterWorkbench() {
     document.documentElement.setAttribute('data-theme', 'dark');
     localStorage.setItem('theme', 'dark');
     window.dispatchEvent(new CustomEvent('sp-theme-sync', { detail: 'dark' }));
-    if (workbench && typeof workbench.scrollIntoView === 'function') {
-      workbench.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
+    poster.classList.add('leaving');
+    if (prefersReducedMotion) {
+      poster.style.display = 'none';
+      document.body.classList.remove('splash-active');
+      return;
     }
+    window.setTimeout(function () {
+      poster.style.display = 'none';
+      document.body.classList.remove('splash-active');
+    }, 520);
   }
 
   function showSplashHome() {
-    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+    poster.style.display = '';
+    poster.classList.remove('leaving');
+    document.body.classList.add('splash-active');
+    poster.scrollTop = 0;
+    try {
+      window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'instant' });
+    } catch (_err) {
+      window.scrollTo(0, 0);
+    }
   }
 
   window.splashApi = Object.assign({}, window.splashApi || {}, {
     showHome: showSplashHome,
-    enterWorkbench: scrollToWorkbench
+    enterWorkbench: enterWorkbench
   });
 
   /* Floating SQL tokens */
@@ -93,8 +106,7 @@
     cvs.style.display = 'none';
   }
 
-  if (enterBtn) enterBtn.addEventListener('click', scrollToWorkbench);
-  if (scrollHint) scrollHint.addEventListener('click', scrollToWorkbench);
-  if (transitionHint) transitionHint.addEventListener('click', scrollToWorkbench);
-  window.addEventListener('auth:login-success', scrollToWorkbench);
+  if (enterBtn) enterBtn.addEventListener('click', enterWorkbench);
+  if (finalEnterBtn) finalEnterBtn.addEventListener('click', enterWorkbench);
+  window.addEventListener('auth:login-success', enterWorkbench);
 })();
