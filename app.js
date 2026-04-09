@@ -2530,7 +2530,7 @@ const app = createApp({
   setup() {
     const activePage = ref('ddl');
     const sidebarOpen = ref(false);
-    const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === '1');
+    const sidebarCollapsed = ref(false);
     function toggleSidebar() {
       sidebarCollapsed.value = !sidebarCollapsed.value;
       localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value ? '1' : '0');
@@ -2612,7 +2612,7 @@ const app = createApp({
     const procInput = ref('');
     const procOutput = ref('');
 
-    const statusText = ref('');
+    const statusText = ref('工作台已就绪');
     var _persistWarnShown = false;
     function _doPersist() {
       if (!_persistRules()) {
@@ -3066,6 +3066,42 @@ const app = createApp({
     const funcTargetLabel = computed(() => DB_LABELS[funcTargetDb.value] || funcTargetDb.value);
     const procSourceLabel = computed(() => DB_LABELS[procSourceDb.value] || procSourceDb.value);
     const procTargetLabel = computed(() => DB_LABELS[procTargetDb.value] || procTargetDb.value);
+    const currentPageTitle = computed(() => {
+      if (activePage.value === 'func') return '函数翻译工作台';
+      if (activePage.value === 'proc') return '存储过程翻译工作台';
+      if (activePage.value === 'rules') return 'DDL 映射规则管理';
+      if (activePage.value === 'bodyRules') return '程序块映射规则管理';
+      return 'DDL 翻译工作台';
+    });
+    const currentPageSubtitle = computed(() => {
+      if (activePage.value === 'func') return 'CREATE FUNCTION / CREATE OR REPLACE FUNCTION 兼容转换';
+      if (activePage.value === 'proc') return 'CREATE PROCEDURE / CREATE OR REPLACE PROCEDURE 兼容转换';
+      if (activePage.value === 'rules') return '维护前端与后端共享的 DDL 类型映射规则';
+      if (activePage.value === 'bodyRules') return '维护函数与存储过程语句块映射规则';
+      return '建表、注释、索引、主外键与分区的跨库翻译';
+    });
+    const currentEngineLabel = computed(() => {
+      if (activePage.value === 'func') return 'Function Parser v2.0';
+      if (activePage.value === 'proc') return 'Procedure Parser v2.0';
+      return 'DDL Parser v2.0';
+    });
+    const currentRuleCount = computed(() => {
+      function countMap(map) {
+        var total = 0;
+        if (!map) return total;
+        for (var key in map) {
+          if (!Object.prototype.hasOwnProperty.call(map, key)) continue;
+          if (Array.isArray(map[key])) total += map[key].length;
+        }
+        return total;
+      }
+      var ddlCount = countMap(_ddlRulesData);
+      var bodyCount = countMap(_bodyRulesData);
+      if (activePage.value === 'func' || activePage.value === 'proc' || activePage.value === 'bodyRules') {
+        return bodyCount + ' 条';
+      }
+      return ddlCount + ' 条';
+    });
 
     // --- Computed line counts and meta ---
     const inputLineCount = computed(() => inputDdl.value ? inputDdl.value.split('\n').length : 0);
@@ -3114,6 +3150,50 @@ const app = createApp({
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
       statusText.value = '\u5DF2\u4FDD\u5B58\u4E3A ' + fileName;
+    }
+
+    function formatSqlText(text, preserveBlocks) {
+      var raw = String(text || '').replace(/\r\n/g, '\n').trim();
+      if (!raw) return '';
+      if (preserveBlocks) {
+        return raw
+          .replace(/[ \t]+\n/g, '\n')
+          .replace(/\n{3,}/g, '\n\n');
+      }
+      var stmts = splitStatements(raw);
+      if (!stmts.length) return raw;
+      return stmts.map(function(stmt) {
+        return stmt
+          .replace(/\s+\n/g, '\n')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+      }).join(';\n\n') + ';';
+    }
+
+    function formatActiveWorkbench() {
+      var page = activePage.value;
+      var before = '';
+      var after = '';
+      if (page === 'func') {
+        before = funcInput.value && funcInput.value.trim() ? funcInput.value : funcOutput.value;
+        after = formatSqlText(before, true);
+        if (!after) { statusText.value = '当前没有可格式化的 SQL 内容'; return; }
+        if (funcInput.value && funcInput.value.trim()) funcInput.value = after;
+        else funcOutput.value = after;
+      } else if (page === 'proc') {
+        before = procInput.value && procInput.value.trim() ? procInput.value : procOutput.value;
+        after = formatSqlText(before, true);
+        if (!after) { statusText.value = '当前没有可格式化的 SQL 内容'; return; }
+        if (procInput.value && procInput.value.trim()) procInput.value = after;
+        else procOutput.value = after;
+      } else {
+        before = inputDdl.value && inputDdl.value.trim() ? inputDdl.value : outputDdl.value;
+        after = formatSqlText(before, false);
+        if (!after) { statusText.value = '当前没有可格式化的 SQL 内容'; return; }
+        if (inputDdl.value && inputDdl.value.trim()) inputDdl.value = after;
+        else outputDdl.value = after;
+      }
+      statusText.value = '已按语句块重新整理 SQL 格式';
     }
 
     // ========== Unified result classifier ==========
@@ -3417,6 +3497,12 @@ const app = createApp({
       showRulesMenu.value = false;
     }
 
+    function runPrimaryAction() {
+      if (activePage.value === 'func') return convertFunc();
+      if (activePage.value === 'proc') return convertProc();
+      return convert();
+    }
+
     function runWorkbenchAction(action) {
       var page = activePage.value;
       if (page !== 'ddl' && page !== 'func' && page !== 'proc') {
@@ -3431,6 +3517,11 @@ const app = createApp({
       }
       if (action === 'upload') {
         uploadFile();
+        closeSettingsMenu();
+        return;
+      }
+      if (action === 'format') {
+        formatActiveWorkbench();
         closeSettingsMenu();
         return;
       }
@@ -3559,6 +3650,7 @@ const app = createApp({
       activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, setPage,
       // Theme
       themeMode, themeLabel, themeMenuLabel, toggleTheme,
+      currentPageTitle, currentPageSubtitle, currentEngineLabel, currentRuleCount, runPrimaryAction,
       // DDL
       sourceDb, targetDb, inputDdl, outputDdl,
       sourceLabel, targetLabel, inputLineCount, outputMeta,

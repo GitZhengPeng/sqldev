@@ -32,6 +32,7 @@
   var authModalDesc = document.getElementById('auth-modal-desc');
 
   var splashAuthBtn = document.getElementById('sp-auth-top-btn');
+  var splashAuthHeroBtn = document.getElementById('sp-auth-hero-btn');
   var splashEnterBtn = document.getElementById('sp-enter-btn');
   var appAuthBtn = document.getElementById('app-auth-btn');
   var appUserPop = document.getElementById('app-user-pop');
@@ -806,8 +807,8 @@
     });
   }
 
-  if (splashAuthBtn) {
-    splashAuthBtn.addEventListener('click', async function () {
+  function handleSplashAuthClick() {
+    return async function () {
       if (user) {
         if (window.splashApi && typeof window.splashApi.enterWorkbench === 'function') {
           window.splashApi.enterWorkbench();
@@ -815,7 +816,14 @@
         return;
       }
       openAuthModal('请选择登录方式并继续');
-    });
+    };
+  }
+
+  if (splashAuthBtn) {
+    splashAuthBtn.addEventListener('click', handleSplashAuthClick());
+  }
+  if (splashAuthHeroBtn) {
+    splashAuthHeroBtn.addEventListener('click', handleSplashAuthClick());
   }
 
   document.addEventListener('click', async function (e) {

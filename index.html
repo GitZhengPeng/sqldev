@@ -18,67 +18,165 @@
 <title>SQL 翻译工作台</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;700&display=swap"/>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet" media="print" id="gfonts-async"/>
-<noscript><link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet"/></noscript>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" media="print" id="gfonts-async"/>
+<noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet"/></noscript>
 <link rel="stylesheet" href="vendor/codemirror.min.css"/>
-<link rel="stylesheet" href="style.css?v=20260407d"/>
+<link rel="stylesheet" href="style.css?v=20260409a"/>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"SQL 翻译工作台","url":"https://gitzhengpeng.github.io/sqldev/","description":"Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转","applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
 </script>
 </head>
-<body class="splash-active">
+<body>
 
 <!-- ====== Splash Poster ====== -->
-<div id="splash-poster">
+<section id="splash-poster" aria-labelledby="splash-title">
+  <div class="sp-ambient" aria-hidden="true">
+    <div class="sp-orb sp-orb-1"></div>
+    <div class="sp-orb sp-orb-2"></div>
+    <div class="sp-orb sp-orb-3"></div>
+  </div>
   <button class="sp-auth-top-btn" id="sp-auth-top-btn" type="button">注册 / 登录</button>
   <canvas class="sp-canvas"></canvas>
   <div class="sp-grid"></div>
   <div class="sp-tokens"></div>
   <div class="sp-vignette"></div>
-  <div class="sp-content">
-    <div class="sp-badge">SQL Translation Workbench</div>
-    <h1 class="sp-title">SQL <em>翻译</em>工作台</h1>
-    <p class="sp-sub">Oracle / MySQL / PostgreSQL — DDL · 函数 · 存储过程<br><strong class="sp-sub-em">在线互转</strong></p>
-    <div class="sp-triad">
-      <div class="sp-db"><div class="sp-db-icon oracle">ORA</div><span class="sp-db-label">Oracle</span></div>
-      <div class="sp-arrow-bi"><span>&#8594;</span><span>&#8592;</span></div>
-      <div class="sp-db"><div class="sp-db-icon mysql">MY</div><span class="sp-db-label">MySQL</span></div>
-      <div class="sp-arrow-bi"><span>&#8594;</span><span>&#8592;</span></div>
-      <div class="sp-db"><div class="sp-db-icon pg">PG</div><span class="sp-db-label">PostgreSQL</span></div>
+  <div class="sp-shell">
+    <div class="sp-content">
+      <div class="sp-badge">
+        <span class="sp-badge-dot"></span>
+        <span>SQL Translation Workbench · v2.0</span>
+      </div>
+      <h1 class="sp-title" id="splash-title">跨数据库 <em>SQL 翻译</em></h1>
+      <p class="sp-sub">Oracle / MySQL / PostgreSQL 之间的 DDL、函数与存储过程转换工作台，支持在线体验、规则编辑与结果校正。</p>
+
+      <div class="sp-stage">
+        <div class="sp-hero-copy">
+          <div class="sp-copy-strip">
+            <span>六向互转</span>
+            <span>规则可调</span>
+            <span>在线工作台</span>
+          </div>
+          <div class="sp-triad">
+            <svg viewBox="0 0 380 280" aria-hidden="true">
+              <defs>
+                <linearGradient id="sp-line-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="rgba(79,125,249,.55)"></stop>
+                  <stop offset="50%" stop-color="rgba(139,92,246,.6)"></stop>
+                  <stop offset="100%" stop-color="rgba(34,211,238,.55)"></stop>
+                </linearGradient>
+              </defs>
+              <path class="sp-line" d="M190 42 L78 224"></path>
+              <path class="sp-line" d="M190 42 L302 224"></path>
+              <path class="sp-line" d="M78 224 L302 224"></path>
+            </svg>
+            <div class="sp-particle sp-particle-1"></div>
+            <div class="sp-particle sp-particle-2"></div>
+            <div class="sp-particle sp-particle-3"></div>
+            <div class="sp-db sp-db-oracle">
+              <div class="sp-db-icon oracle">ORA</div>
+              <span class="sp-db-label">Oracle</span>
+            </div>
+            <div class="sp-db sp-db-mysql">
+              <div class="sp-db-icon mysql">MY</div>
+              <span class="sp-db-label">MySQL</span>
+            </div>
+            <div class="sp-db sp-db-pg">
+              <div class="sp-db-icon pg">PG</div>
+              <span class="sp-db-label">PostgreSQL</span>
+            </div>
+          </div>
+          <div class="sp-features">
+            <span class="sp-feat">DDL 建表语句</span>
+            <span class="sp-feat">函数转换</span>
+            <span class="sp-feat">存储过程迁移</span>
+            <span class="sp-feat">类型映射规则</span>
+            <span class="sp-feat">索引 / 主外键 / 分区</span>
+            <span class="sp-feat">异常处理转换</span>
+          </div>
+          <div class="sp-cta-group">
+            <button class="sp-cta sp-cta-primary" id="sp-enter-btn" type="button">立即体验
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </button>
+            <button class="sp-cta sp-cta-secondary" id="sp-auth-hero-btn" type="button">注册 / 登录</button>
+          </div>
+        </div>
+
+        <div class="sp-preview" aria-label="SQL 实时翻译预览">
+          <div class="sp-preview-head">
+            <span>实时翻译预览</span>
+            <small>Oracle → PostgreSQL</small>
+          </div>
+          <div class="sp-preview-grid">
+            <article class="sp-preview-panel">
+              <header class="sp-preview-panel-head">
+                <div class="sp-preview-db">
+                  <span class="sp-preview-dot oracle"></span>
+                  <span>Oracle</span>
+                </div>
+                <span class="sp-preview-meta">12 lines</span>
+              </header>
+              <pre class="sp-preview-code"><span class="kw">CREATE TABLE</span> orders (
+  order_id <span class="type">NUMBER</span>(18) <span class="kw">NOT NULL</span>,
+  order_no <span class="type">VARCHAR2</span>(64) <span class="kw">NOT NULL</span>,
+  amount   <span class="type">NUMBER</span>(18,2) <span class="kw">DEFAULT</span> <span class="num">0</span>,
+  created_at <span class="type">DATE</span> <span class="kw">DEFAULT</span> <span class="fn">SYSDATE</span>,
+  <span class="kw">CONSTRAINT</span> pk_orders <span class="kw">PRIMARY KEY</span> (order_id)
+);
+
+<span class="kw">COMMENT ON TABLE</span> orders <span class="kw">IS</span> <span class="str">'订单表'</span>;</pre>
+            </article>
+            <div class="sp-preview-divider">
+              <span class="sp-preview-arrow">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </span>
+            </div>
+            <article class="sp-preview-panel">
+              <header class="sp-preview-panel-head">
+                <div class="sp-preview-db">
+                  <span class="sp-preview-dot pg"></span>
+                  <span>PostgreSQL</span>
+                </div>
+                <span class="sp-preview-meta">13 lines</span>
+              </header>
+              <pre class="sp-preview-code"><span class="kw">CREATE TABLE</span> orders (
+  order_id <span class="type">NUMERIC</span>(18) <span class="kw">NOT NULL</span>,
+  order_no <span class="type">VARCHAR</span>(64) <span class="kw">NOT NULL</span>,
+  amount   <span class="type">NUMERIC</span>(18,2) <span class="kw">DEFAULT</span> <span class="num">0</span>,
+  created_at <span class="type">TIMESTAMP</span> <span class="kw">DEFAULT</span> <span class="fn">NOW()</span>,
+  <span class="kw">CONSTRAINT</span> pk_orders <span class="kw">PRIMARY KEY</span> (order_id)
+);
+
+<span class="kw">COMMENT ON TABLE</span> orders <span class="kw">IS</span> <span class="str">'订单表'</span>;</pre>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-stats">
+        <div class="sp-stat">
+          <span class="sp-stat-num">6</span>
+          <span class="sp-stat-label">转换方向</span>
+          <span class="sp-stat-detail">任意两库互转</span>
+        </div>
+        <div class="sp-stat">
+          <span class="sp-stat-num">400<small>+</small></span>
+          <span class="sp-stat-label">规则映射</span>
+          <span class="sp-stat-detail">DDL + 程序块双规则集</span>
+        </div>
+        <div class="sp-stat">
+          <span class="sp-stat-num">160<small>+</small></span>
+          <span class="sp-stat-label">SQL 语法</span>
+          <span class="sp-stat-detail">函数 / 语句 / 类型兼容</span>
+        </div>
+      </div>
     </div>
-    <div class="sp-features">
-      <div class="sp-feat-row">
-        <span class="sp-feat">DDL 建表语句</span>
-        <span class="sp-feat">函数转换</span>
-        <span class="sp-feat">存储过程迁移</span>
-      </div>
-      <div class="sp-feat-row">
-        <span class="sp-feat">类型映射规则</span>
-        <span class="sp-feat">分区 / 索引 / 外键</span>
-        <span class="sp-feat">异常处理转换</span>
-      </div>
-    </div>
-    <div class="sp-stats">
-      <div class="sp-stat">
-        <span class="sp-stat-num">6</span>
-        <span class="sp-stat-label">转换方向</span>
-        <span class="sp-stat-detail">任意两库互转</span>
-      </div>
-      <div class="sp-stat">
-        <span class="sp-stat-num">400<small>+</small></span>
-        <span class="sp-stat-label">条转换规则</span>
-        <span class="sp-stat-detail">DDL 199 + 程序块 212</span>
-      </div>
-      <div class="sp-stat">
-        <span class="sp-stat-num">160<small>+</small></span>
-        <span class="sp-stat-label">种 SQL 语法</span>
-        <span class="sp-stat-detail">函数 / 语句 / 类型</span>
-      </div>
-    </div>
-    <button class="sp-cta" id="sp-enter-btn" type="button">登录后进入工作台 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
-  <div class="sp-scroll"><span>向下滚动</span><div class="sp-scroll-line"></div></div>
+  <div class="sp-transition" id="sp-transition">
+    <span>向下滚动进入工作台</span>
+    <div class="sp-scroll-line"></div>
+  </div>
+  <div class="sp-scroll"><span>查看工作台</span><div class="sp-scroll-line"></div></div>
 
   <div class="auth-modal-mask" id="auth-modal-mask" hidden>
     <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title" aria-describedby="auth-modal-desc">
@@ -155,7 +253,7 @@
       </div>
     </div>
   </div>
-</div>
+</section>
 
 <a href="#main-content" class="skip-link">跳转到主要内容</a>
 <div id="app" v-cloak>
@@ -167,25 +265,24 @@
     <aside class="sidebar" :class="{open: sidebarOpen, collapsed: sidebarCollapsed}">
       <div class="sidebar-brand">
         <div class="sidebar-logo">SQL</div>
-        <span class="sidebar-title">SQL &#24037;&#20316;&#21488;</span>
+        <span class="sidebar-title">SQL 工作台</span>
       </div>
       <nav class="sidebar-nav" aria-label="主导航">
-        <button class="nav-item" :aria-current="activePage==='ddl'?'page':null" :class="{active: activePage==='ddl'}" @click="setPage('ddl')">
+        <button class="nav-item" :aria-current="activePage==='ddl'?'page':null" :class="{active: activePage==='ddl'}" @click="setPage('ddl')" title="DDL 语句">
           <span class="nav-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/></svg></span>
-          DDL &#35821;&#21477;
+          <span class="nav-text">DDL 语句</span>
         </button>
-        <button class="nav-item" :aria-current="activePage==='func'?'page':null" :class="{active: activePage==='func'}" @click="setPage('func')">
+        <button class="nav-item" :aria-current="activePage==='func'?'page':null" :class="{active: activePage==='func'}" @click="setPage('func')" title="函数">
           <span class="nav-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3C3 2 4 1 5.5 1C7 1 8 2 8 3C8 5 5 5 5 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 8h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 8c0 3 3 3 3 5c0 1-1 2-2.5 2S3 14 3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="5" r="1" fill="currentColor"/><path d="M10 9l2-2 2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          &#20989;&#25968;
+          <span class="nav-text">函数</span>
         </button>
-        <button class="nav-item" :aria-current="activePage==='proc'?'page':null" :class="{active: activePage==='proc'}" @click="setPage('proc')">
+        <button class="nav-item" :aria-current="activePage==='proc'?'page':null" :class="{active: activePage==='proc'}" @click="setPage('proc')" title="存储过程">
           <span class="nav-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="10" y="2" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="5.5" y="10" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 6v2h4.5M12.5 6v2h-4.5M8 8v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          &#23384;&#20648;&#36807;&#31243;
+          <span class="nav-text">存储过程</span>
         </button>
       </nav>
       <div class="sidebar-footer">v2.0.0</div>
     </aside>
-    <button class="sidebar-toggle" @click="toggleSidebar" :title="sidebarCollapsed?'展开侧边栏':'收起侧边栏'"><svg viewBox="0 0 10 10" fill="none"><path d="M7 2L3 5l4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 
     <!-- ======== MAIN CONTENT ======== -->
     <div class="main-content" id="main-content">
@@ -194,13 +291,69 @@
         <div class="header-left">
           <button class="menu-toggle" @click="sidebarOpen=!sidebarOpen"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
           <div>
-            <h1 class="title">SQL &#32763;&#35793;&#24037;&#20316;&#21488;</h1>
-            <p class="subtitle">Oracle / MySQL / PostgreSQL &mdash; DDL&#12289;&#20989;&#25968;&#12289;&#23384;&#20648;&#36807;&#31243;&#22312;&#32447;&#20114;&#36716;</p>
+            <h1 class="title">{{ currentPageTitle }}</h1>
+            <p class="subtitle">{{ currentPageSubtitle }}</p>
           </div>
         </div>
+        <div class="header-center" v-if="activePage==='ddl'">
+          <label class="db-pill">
+            <span class="db-pill-dot" :class="sourceDb"></span>
+            <select v-model="sourceDb" aria-label="源数据库">
+              <option value="oracle">Oracle</option>
+              <option value="mysql">MySQL</option>
+              <option value="postgresql">PostgreSQL</option>
+            </select>
+          </label>
+          <button class="swap-btn workbench-swap-btn" @click="swapDbs" title="交换源和目标">&#8646;</button>
+          <label class="db-pill">
+            <span class="db-pill-dot" :class="targetDb"></span>
+            <select v-model="targetDb" aria-label="目标数据库">
+              <option value="oracle">Oracle</option>
+              <option value="mysql">MySQL</option>
+              <option value="postgresql">PostgreSQL</option>
+            </select>
+          </label>
+        </div>
+        <div class="header-center" v-else-if="activePage==='func'">
+          <label class="db-pill">
+            <span class="db-pill-dot" :class="funcSourceDb"></span>
+            <select v-model="funcSourceDb" aria-label="源数据库">
+              <option value="oracle">Oracle</option>
+              <option value="mysql">MySQL</option>
+              <option value="postgresql">PostgreSQL</option>
+            </select>
+          </label>
+          <button class="swap-btn workbench-swap-btn" @click="swapFuncDbs" title="交换源和目标">&#8646;</button>
+          <label class="db-pill">
+            <span class="db-pill-dot" :class="funcTargetDb"></span>
+            <select v-model="funcTargetDb" aria-label="目标数据库">
+              <option value="oracle">Oracle</option>
+              <option value="mysql">MySQL</option>
+              <option value="postgresql">PostgreSQL</option>
+            </select>
+          </label>
+        </div>
+        <div class="header-center" v-else-if="activePage==='proc'">
+          <label class="db-pill">
+            <span class="db-pill-dot" :class="procSourceDb"></span>
+            <select v-model="procSourceDb" aria-label="源数据库">
+              <option value="oracle">Oracle</option>
+              <option value="mysql">MySQL</option>
+              <option value="postgresql">PostgreSQL</option>
+            </select>
+          </label>
+          <button class="swap-btn workbench-swap-btn" @click="swapProcDbs" title="交换源和目标">&#8646;</button>
+          <label class="db-pill">
+            <span class="db-pill-dot" :class="procTargetDb"></span>
+            <select v-model="procTargetDb" aria-label="目标数据库">
+              <option value="oracle">Oracle</option>
+              <option value="mysql">MySQL</option>
+              <option value="postgresql">PostgreSQL</option>
+            </select>
+          </label>
+        </div>
         <div class="version-box">
-          <span class="version">v2.0.0</span>
-          <span class="build">Vue 3</span>
+          <button v-if="isWorkbenchPage" class="btn-translate" @click="runPrimaryAction">开始翻译 <span class="kbd">Ctrl+Enter</span></button>
           <div class="settings-dropdown">
             <button class="theme-toggle" id="settings-trigger" aria-haspopup="true" :aria-expanded="String(showRulesMenu)" @click="showRulesMenu=!showRulesMenu" title="高级设置">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -258,6 +411,35 @@
           </div>
         </div>
       </section>
+      <div class="action-bar-wrap" v-if="isWorkbenchPage">
+        <div class="action-bar" role="toolbar" aria-label="工作台操作">
+          <button class="action-btn" type="button" @click="runWorkbenchAction('sample')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5h10v11H3z" stroke="currentColor" stroke-width="1.3"></path><path d="M5 5.5h6M5 8h6M5 10.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            示例
+          </button>
+          <button class="action-btn" type="button" @click="runWorkbenchAction('upload')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 11V3M8 3 5.5 5.5M8 3l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 11.5v1h10v-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            上传
+          </button>
+          <button class="action-btn" type="button" @click="runWorkbenchAction('format')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            格式化
+          </button>
+          <div class="action-divider"></div>
+          <button class="action-btn" type="button" @click="runWorkbenchAction('copy')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="3" width="8" height="10" rx="1" stroke="currentColor" stroke-width="1.3"></rect><path d="M3 11V4.5A1.5 1.5 0 0 1 4.5 3H10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            复制
+          </button>
+          <button class="action-btn" type="button" @click="runWorkbenchAction('save')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5h8l2 2v9H3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"></path><path d="M5 2.5v3h5v-3M5 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            保存
+          </button>
+          <button class="action-btn action-btn-danger" type="button" @click="runWorkbenchAction('clear')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 2.5h4M5 4v8.5h6V4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            清空
+          </button>
+        </div>
+      </div>
 
       <!-- ==================== DDL PAGE ==================== -->
       <template v-if="activePage==='ddl'">
@@ -285,8 +467,9 @@
         <div class="status-bar" :class="'status-' + outputStatus.type" v-if="statusText">
           <span class="status-text">{{statusText}}</span>
           <div class="status-info">
-            <span>&#26041;&#21521;: <strong>{{sourceLabel}} &rarr; {{targetLabel}}</strong></span>
-            <span>&#24341;&#25806;: <strong>DDL Parser v2.0</strong></span>
+            <span>方向: <strong>{{sourceLabel}} → {{targetLabel}}</strong></span>
+            <span>引擎: <strong>{{currentEngineLabel}}</strong></span>
+            <span>规则: <strong>{{currentRuleCount}}</strong></span>
           </div>
         </div>
 
@@ -317,12 +500,34 @@
         </section>
 
         <!-- DDL Reference -->
-        <section class="ref-wrapper">
-          <div class="ref-header">
-            <h2>&#31867;&#22411;&#26144;&#23556;&#21442;&#32771;</h2>
-            <span class="ref-badge">Quick Reference</span>
+        <section class="ref-wrapper" :class="{expanded: !refCollapsed}">
+          <button class="ref-toggle" type="button" @click="toggleRef" :aria-expanded="String(!refCollapsed)">
+            <span class="ref-toggle-left">
+              <span class="ref-toggle-label">类型映射参考</span>
+              <span class="ref-badge">Quick Reference</span>
+            </span>
+            <span class="ref-chevron" :class="{expanded: !refCollapsed}">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <div class="ref-peek" v-if="refCollapsed">
+            <div class="ref-card">
+              <h4><span class="dot"></span> 数值类型</h4>
+              <div class="ref-row"><span class="src">NUMBER(p,s)</span><span class="arrow">→</span><span class="tgt">DECIMAL / NUMERIC</span></div>
+              <div class="ref-row"><span class="src">BINARY_FLOAT</span><span class="arrow">→</span><span class="tgt">FLOAT / REAL</span></div>
+            </div>
+            <div class="ref-card">
+              <h4><span class="dot"></span> 字符与日期</h4>
+              <div class="ref-row"><span class="src">VARCHAR2(n)</span><span class="arrow">→</span><span class="tgt">VARCHAR(n)</span></div>
+              <div class="ref-row"><span class="src">DATE</span><span class="arrow">→</span><span class="tgt">DATETIME / TIMESTAMP</span></div>
+            </div>
+            <div class="ref-card">
+              <h4><span class="dot"></span> 特殊类型</h4>
+              <div class="ref-row"><span class="src">BLOB / RAW</span><span class="arrow">→</span><span class="tgt">BYTEA / VARBINARY</span></div>
+              <div class="ref-more">点击展开查看完整规则</div>
+            </div>
           </div>
-          <div class="ref-section">
+          <div class="ref-section" v-show="!refCollapsed">
             <div class="ref-card">
               <h3><span class="ci">&#9638;</span> &#25968;&#20540;&#31867;&#22411;</h3>
               <table class="ref-table">
@@ -390,8 +595,9 @@
         <div class="status-bar" :class="'status-' + outputStatus.type" v-if="statusText">
           <span class="status-text">{{statusText}}</span>
           <div class="status-info">
-            <span>&#26041;&#21521;: <strong>{{funcSourceLabel}} &rarr; {{funcTargetLabel}}</strong></span>
-            <span>&#24341;&#25806;: <strong>Function Parser v2.0</strong></span>
+            <span>方向: <strong>{{funcSourceLabel}} → {{funcTargetLabel}}</strong></span>
+            <span>引擎: <strong>{{currentEngineLabel}}</strong></span>
+            <span>规则: <strong>{{currentRuleCount}}</strong></span>
           </div>
         </div>
 
@@ -422,12 +628,32 @@
         </section>
 
         <!-- Function Reference -->
-        <section class="ref-wrapper">
-          <div class="ref-header">
-            <h2>&#20989;&#25968;&#35821;&#27861;&#21442;&#32771;</h2>
-            <span class="ref-badge">Syntax Reference</span>
+        <section class="ref-wrapper" :class="{expanded: !refCollapsed}">
+          <button class="ref-toggle" type="button" @click="toggleRef" :aria-expanded="String(!refCollapsed)">
+            <span class="ref-toggle-left">
+              <span class="ref-toggle-label">函数语法参考</span>
+              <span class="ref-badge">Syntax Reference</span>
+            </span>
+            <span class="ref-chevron" :class="{expanded: !refCollapsed}">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <div class="ref-peek" v-if="refCollapsed">
+            <div class="ref-card">
+              <h4><span class="dot"></span> Oracle</h4>
+              <div class="ref-row"><span class="src">RETURN / IS</span><span class="arrow">→</span><span class="tgt">声明 + 返回值</span></div>
+            </div>
+            <div class="ref-card">
+              <h4><span class="dot"></span> MySQL</h4>
+              <div class="ref-row"><span class="src">RETURNS / DELIMITER</span><span class="arrow">→</span><span class="tgt">函数块包装</span></div>
+            </div>
+            <div class="ref-card">
+              <h4><span class="dot"></span> PostgreSQL</h4>
+              <div class="ref-row"><span class="src">LANGUAGE plpgsql</span><span class="arrow">→</span><span class="tgt">AS $$ ... $$;</span></div>
+              <div class="ref-more">点击展开查看三库示例</div>
+            </div>
           </div>
-          <div class="ref-section">
+          <div class="ref-section" v-show="!refCollapsed">
             <div class="ref-card">
               <h3><span class="ci">&#9670;</span> Oracle</h3>
               <pre class="ref-code">CREATE OR REPLACE FUNCTION func_name (
@@ -506,8 +732,9 @@ $$;</pre>
         <div class="status-bar" :class="'status-' + outputStatus.type" v-if="statusText">
           <span class="status-text">{{statusText}}</span>
           <div class="status-info">
-            <span>&#26041;&#21521;: <strong>{{procSourceLabel}} &rarr; {{procTargetLabel}}</strong></span>
-            <span>&#24341;&#25806;: <strong>Procedure Parser v2.0</strong></span>
+            <span>方向: <strong>{{procSourceLabel}} → {{procTargetLabel}}</strong></span>
+            <span>引擎: <strong>{{currentEngineLabel}}</strong></span>
+            <span>规则: <strong>{{currentRuleCount}}</strong></span>
           </div>
         </div>
 
@@ -538,12 +765,32 @@ $$;</pre>
         </section>
 
         <!-- Procedure Reference -->
-        <section class="ref-wrapper">
-          <div class="ref-header">
-            <h2>&#23384;&#20648;&#36807;&#31243;&#35821;&#27861;&#21442;&#32771;</h2>
-            <span class="ref-badge">Syntax Reference</span>
+        <section class="ref-wrapper" :class="{expanded: !refCollapsed}">
+          <button class="ref-toggle" type="button" @click="toggleRef" :aria-expanded="String(!refCollapsed)">
+            <span class="ref-toggle-left">
+              <span class="ref-toggle-label">存储过程语法参考</span>
+              <span class="ref-badge">Syntax Reference</span>
+            </span>
+            <span class="ref-chevron" :class="{expanded: !refCollapsed}">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+          <div class="ref-peek" v-if="refCollapsed">
+            <div class="ref-card">
+              <h4><span class="dot"></span> Oracle</h4>
+              <div class="ref-row"><span class="src">IN / OUT / EXCEPTION</span><span class="arrow">→</span><span class="tgt">过程签名</span></div>
+            </div>
+            <div class="ref-card">
+              <h4><span class="dot"></span> MySQL</h4>
+              <div class="ref-row"><span class="src">DECLARE HANDLER</span><span class="arrow">→</span><span class="tgt">异常分支</span></div>
+            </div>
+            <div class="ref-card">
+              <h4><span class="dot"></span> PostgreSQL</h4>
+              <div class="ref-row"><span class="src">LANGUAGE plpgsql</span><span class="arrow">→</span><span class="tgt">过程块定义</span></div>
+              <div class="ref-more">点击展开查看完整语法</div>
+            </div>
           </div>
-          <div class="ref-section">
+          <div class="ref-section" v-show="!refCollapsed">
             <div class="ref-card">
               <h3><span class="ci">&#9670;</span> Oracle</h3>
               <pre class="ref-code">CREATE OR REPLACE PROCEDURE proc_name (
@@ -747,10 +994,10 @@ $$;</pre>
 </div>
 
 <!-- Critical path: splash + auth -->
-<script defer src="splash.js"></script>
+<script defer src="splash.js?v=20260409a"></script>
 <script defer src="vendor/supabase.js"></script>
 <script defer src="supabase-config.js"></script>
-<script defer src="auth.js?v=20260408b"></script>
+<script defer src="auth.js?v=20260409a"></script>
 <!-- Non-critical heavy modules are loaded in idle time by bootstrap.js -->
-<script defer src="bootstrap.js?v=20260408a"></script>
+<script defer src="bootstrap.js?v=20260409a"></script>
 </body></html>
