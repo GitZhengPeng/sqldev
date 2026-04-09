@@ -507,8 +507,11 @@
     if (!sb.functions || typeof sb.functions.invoke !== 'function') {
       throw new Error('当前 Supabase SDK 不支持 functions.invoke');
     }
+    var requestBody = Object.assign({}, body || {}, {
+      accessToken: token
+    });
     var invokeOptions = {
-      body: body,
+      body: requestBody,
       headers: {
         Authorization: 'Bearer ' + token,
         apikey: anonKey
@@ -530,7 +533,7 @@
         Authorization: 'Bearer ' + token,
         apikey: anonKey
       },
-      body: JSON.stringify(body || {})
+      body: JSON.stringify(requestBody)
     });
     var text = await fetchRes.text().catch(function () { return ''; });
     var parsed = null;

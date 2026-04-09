@@ -1,3 +1,5 @@
+import { createClient } from 'npm:@supabase/supabase-js@2'
+
 const PRIMARY_WEB_ORIGIN = 'https://gitzhengpeng.github.io'
 const ALLOWED_ORIGINS = new Set([PRIMARY_WEB_ORIGIN])
 const LOCAL_ORIGIN_RE = /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i
@@ -8,6 +10,9 @@ const corsBaseHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
+const supabaseAuthClient = (SUPABASE_URL && SUPABASE_ANON_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null
 
 type DdlRuleItem = { source?: string; target?: string }
 type BodyRuleItem = { s?: string; t?: string }
@@ -233,36 +238,15 @@ function validateUserToken(token: string): boolean {
   return /^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(t)
 }
 
-type JwtPayload = {
-  sub?: unknown
-  exp?: unknown
-  aud?: unknown
-  role?: unknown
-}
-
-function parseJwtPayload(token: string): JwtPayload | null {
-  const t = (token || '').trim()
-  if (!validateUserToken(t)) return null
-  const parts = t.split('.')
-  if (parts.length !== 3) return null
+async function validateUserSession(token: string): Promise<boolean> {
+  if (!validateUserToken(token) || !supabaseAuthClient) return false
   try {
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-    const normalized = base64 + '='.repeat((4 - (base64.length % 4)) % 4)
-    const json = atob(normalized)
-    const payload = JSON.parse(json) as JwtPayload
-    return payload && typeof payload === 'object' ? payload : null
+    const { data, error } = await supabaseAuthClient.auth.getUser(token)
+    if (error) return false
+    return !!(data && data.user && typeof data.user.id === 'string' && data.user.id.length > 0)
   } catch {
-    return null
+    return false
   }
-}
-
-function validateJwtClaims(payload: JwtPayload | null): boolean {
-  if (!payload || typeof payload.sub !== 'string' || payload.sub.length === 0) return false
-  if (typeof payload.exp === 'number' && Number.isFinite(payload.exp)) {
-    if (Date.now() >= payload.exp * 1000) return false
-  }
-  if (typeof payload.aud === 'string' && payload.aud !== 'authenticated') return false
-  return true
 }
 
 Deno.serve(async (req) => {
@@ -281,12 +265,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const token = bearerToken(req)
-    if (!validateUserToken(token)) return json({ error: 'Unauthorized' }, 401, corsHeaders)
-    const payload = parseJwtPayload(token)
-    if (!validateJwtClaims(payload)) return json({ error: 'Unauthorized' }, 401, corsHeaders)
-
     const body = await req.json().catch(() => null)
+    const token = bearerToken(req) || String(body?.accessToken || '').trim()
+    if (!validateUserToken(token)) return json({ error: 'Unauthorized' }, 401, corsHeaders)
+    const isValidUser = await validateUserSession(token)
+    if (!isValidUser) return json({ error: 'Unauthorized' }, 401, corsHeaders)
     const kind = String(body?.kind || '')
     const fromDb = String(body?.fromDb || '')
     const toDb = String(body?.toDb || '')
