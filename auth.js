@@ -41,6 +41,7 @@
   var authMode = 'password';
   var authView = 'login';
   var passwordRegistering = false;
+  var passwordResetting = false;
   var resetCodeSent = false;
   var resetCompleted = false;
 
@@ -158,7 +159,10 @@
     var resetMode = authView === 'reset';
     var passwordMode = authMode === 'password';
 
-    if (authModeSwitch) authModeSwitch.hidden = resetMode;
+    if (authModeSwitch) {
+      authModeSwitch.hidden = resetMode;
+      authModeSwitch.style.display = resetMode ? 'none' : 'grid';
+    }
     if (authEmail) authEmail.readOnly = resetMode;
 
     if (authModePasswordBtn) {
@@ -409,6 +413,7 @@
       var token = normalizeToken(authResetCode && authResetCode.value);
       if (!token) throw new Error('请输入验证码');
       setBusy(true);
+      passwordResetting = true;
       setStatus('正在校验验证码并重置密码...');
       var verifyRes = await verifyEmailCode(resetInfo.email, token);
       if (verifyRes.error) throw verifyRes.error;
@@ -428,6 +433,7 @@
     } catch (err) {
       setStatus(localizeAuthError(err, '重置密码失败'), true);
     } finally {
+      passwordResetting = false;
       setBusy(false);
     }
   }
@@ -450,6 +456,7 @@
     }
     user = null;
     accessToken = '';
+    if (authView === 'reset') exitResetPasswordMode('');
     if (authCode) authCode.value = '';
     closeAuthModal();
     updatePosterCta();
@@ -526,7 +533,7 @@
       updatePosterCta();
       emit();
 
-      if (user && !passwordRegistering) {
+      if (user && !passwordRegistering && !passwordResetting) {
         if (authCode) authCode.value = '';
         closeAuthModal();
         window.dispatchEvent(new CustomEvent('auth:login-success', { detail: { user: user } }));
