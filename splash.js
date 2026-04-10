@@ -14,7 +14,7 @@
 
   var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   var enterBtn = document.getElementById('sp-enter-btn');
-  var finalEnterBtn = document.querySelector('.sp-final-enter');
+  var finalEnterBtn = null;
 
   function enterWorkbench() {
     document.documentElement.setAttribute('data-theme', 'dark');
@@ -107,6 +107,5 @@
   }
 
   if (enterBtn) enterBtn.addEventListener('click', enterWorkbench);
-  if (finalEnterBtn) finalEnterBtn.addEventListener('click', enterWorkbench);
   window.addEventListener('auth:login-success', enterWorkbench);
 })();
