@@ -53,7 +53,7 @@
 .theme-toggle svg{width:16px;height:16px}
 
 /* ===== CODEMIRROR INTEGRATION ===== */
-.CodeMirror{font-family:var(--font-code);font-size:13px;line-height:1.7;height:auto;min-height:400px;background:var(--bg);color:var(--text);border:none;padding:6px 0}
+.CodeMirror{font-family:var(--font-code);font-size:13px;line-height:1.7;height:100%;min-height:400px;background:var(--bg);color:var(--text);border:none;padding:6px 0}
 .CodeMirror-focused{background:var(--bg)}
 .panel .CodeMirror{flex:1}
 .output-editor .CodeMirror{background:var(--bg-secondary)}
@@ -64,10 +64,11 @@
 .CodeMirror-selected{background:var(--accent-light) !important}
 .CodeMirror-activeline-background{background:var(--accent-bg)}
 .CodeMirror-scroll{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
-.CodeMirror-scroll::-webkit-scrollbar{width:5px;height:5px}
+.CodeMirror-scroll::-webkit-scrollbar{width:5px;height:0}
 .CodeMirror-scroll::-webkit-scrollbar-track{background:transparent}
 .CodeMirror-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
 .CodeMirror-scroll::-webkit-scrollbar-button{display:none}
+.CodeMirror-hscrollbar{display:none !important}
 /* SQL syntax colors — light */
 .cm-s-default .cm-keyword{color:#7c3aed;font-weight:600}
 .cm-s-default .cm-def{color:#2563eb}
@@ -1298,15 +1299,9 @@ body{
 }
 .panel .CodeMirror-wrap{
   flex:1;
-  overflow-y:auto;
+  overflow:hidden;
   min-height:0;
-  scrollbar-width:thin;
-  scrollbar-color:rgba(255,255,255,.15) transparent;
 }
-.panel .CodeMirror-wrap::-webkit-scrollbar{width:5px}
-.panel .CodeMirror-wrap::-webkit-scrollbar-track{background:transparent}
-.panel .CodeMirror-wrap::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
-.panel .CodeMirror-wrap::-webkit-scrollbar-button{display:none}
 .panel-head{
   padding:12px 16px;
   border-bottom:1px solid rgba(99,135,241,.08);
@@ -1334,12 +1329,12 @@ body{
   font-size:11px;
 }
 .CodeMirror{
-  min-height:200px;
-  max-height:calc(100vh - 260px);
+  min-height:100%;
+  max-height:none;
   padding:8px 0;
   background:transparent;
   flex:1;
-  overflow:auto;
+  overflow:hidden;
 }
 .panel:last-child .CodeMirror,
 .output-editor .CodeMirror,
@@ -1797,12 +1792,14 @@ body:not(.splash-active) #app{
   justify-content:center;
   align-self:center;
   border-radius:6px;
+  gap:0;
 }
 .sidebar:hover .nav-item{
   width:auto;
   align-self:stretch;
   justify-content:flex-start;
   padding:0 12px;
+  gap:12px;
 }
 .nav-icon{
   flex-shrink:0;
