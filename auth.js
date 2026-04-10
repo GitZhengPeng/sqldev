@@ -329,6 +329,8 @@
     stopAuthModalDrag();
     authModalMask.hidden = true;
     setStatus('', false);
+    authView = 'login';
+    authMode = 'password';
   }
 
   function returnToSplashHome() {
