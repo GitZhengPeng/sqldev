@@ -3725,7 +3725,7 @@ app.component('sql-editor', {
     ariaLabel: { type: String, default: '' }
   },
   emits: ['update:modelValue'],
-  template: '<div ref="wrap"></div>',
+  template: '<div ref="wrap" class="sql-editor-wrap"></div>',
   setup(props, { emit, attrs }) {
     const wrap = Vue.ref(null);
     let cm = null;

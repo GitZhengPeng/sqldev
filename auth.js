@@ -290,7 +290,15 @@
     if (splashAuthHeroBtn) splashAuthHeroBtn.hidden = loggedIn;
     if (splashEnterBtn) splashEnterBtn.textContent = '立即体验';
     if (appUserPop) appUserPop.hidden = !loggedIn;
-    if (appAuthBtn) appAuthBtn.textContent = '退出登录';
+    if (appAuthBtn) {
+      var svgEl = appAuthBtn.querySelector('svg');
+      if (svgEl) {
+        while (appAuthBtn.lastChild && appAuthBtn.lastChild !== svgEl) appAuthBtn.removeChild(appAuthBtn.lastChild);
+        appAuthBtn.appendChild(document.createTextNode(' 退出登录'));
+      } else {
+        appAuthBtn.textContent = '退出登录';
+      }
+    }
     if (appUserEmail) appUserEmail.textContent = getEmail();
   }
 
