@@ -23,7 +23,7 @@
 <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet"/></noscript>
 <link rel="stylesheet" href="vendor/codemirror.min.css"/>
 <link rel="icon" href="favicon.svg" type="image/svg+xml"/>
-<link rel="stylesheet" href="style.css?v=20260409a"/>
+<link rel="stylesheet" href="style.css?v=20260410a"/>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"SQL 翻译工作台","url":"https://gitzhengpeng.github.io/sqldev/","description":"Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转","applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
 </script>
@@ -237,7 +237,7 @@
 
       <!-- FINAL CTA -->
       <section class="sp-final-cta">
-        <h2>开始你的 SQL 迁移之旅</h2>
+        <h2>开始你的<em> SQL 迁移</em>之旅</h2>
         <p>无需安装，打开即用。免费开源。</p>
         <div class="sp-hero-cta sp-hero-cta-center">
           <button class="sp-btn-primary sp-final-enter" type="button">
@@ -492,12 +492,13 @@
         <div class="action-bar" role="toolbar" aria-label="工作台操作">
           <button class="action-btn" type="button" @click="runWorkbenchAction('sample')">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5h10v11H3z" stroke="currentColor" stroke-width="1.3"></path><path d="M5 5.5h6M5 8h6M5 10.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
-            示例
+            加载示例
           </button>
           <button class="action-btn" type="button" @click="runWorkbenchAction('upload')">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 11V3M8 3 5.5 5.5M8 3l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 11.5v1h10v-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
-            上传
+            上传文件
           </button>
+          <div class="action-divider"></div>
           <button class="action-btn" type="button" @click="runWorkbenchAction('format')">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
             格式化
@@ -505,12 +506,13 @@
           <div class="action-divider"></div>
           <button class="action-btn" type="button" @click="runWorkbenchAction('copy')">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="3" width="8" height="10" rx="1" stroke="currentColor" stroke-width="1.3"></rect><path d="M3 11V4.5A1.5 1.5 0 0 1 4.5 3H10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
-            复制
+            复制输出
           </button>
           <button class="action-btn" type="button" @click="runWorkbenchAction('save')">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2.5h8l2 2v9H3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"></path><path d="M5 2.5v3h5v-3M5 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
-            保存
+            保存文件
           </button>
+          <div class="action-divider"></div>
           <button class="action-btn action-btn-danger" type="button" @click="runWorkbenchAction('clear')">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 2.5h4M5 4v8.5h6V4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
             清空
@@ -541,6 +543,32 @@
           </div>
         </section>
 
+        <section class="workspace">
+          <article class="panel">
+            <div class="panel-head">
+              <div class="panel-head-left">
+                <span class="panel-dot" :class="sourceDb"></span>
+                <h2 class="panel-title">{{sourceLabel}} &#36755;&#20837;</h2>
+              </div>
+              <span class="panel-meta">{{inputLineCount}} &#34892;</span>
+            </div>
+            <p class="panel-desc">&#31896;&#36148; {{sourceLabel}} &#24314;&#34920;&#35821;&#21477;&#65288;CREATE TABLE&#12289;COMMENT&#12289;CREATE INDEX&#12289;&#20998;&#21306;&#31561;&#65289;</p>
+            <sql-editor v-model="inputDdl" :placeholder="'在此粘贴 ' + sourceLabel + ' DDL ...'" aria-label="SQL输入"></sql-editor>
+          </article>
+          <article class="panel">
+            <div class="panel-head">
+              <div class="panel-head-left">
+                <span class="panel-dot" :class="targetDb"></span>
+                <h2 class="panel-title">{{targetLabel}} &#36755;&#20986;</h2>
+              </div>
+              <span class="edit-hint">&#21487;&#30452;&#25509;&#32534;&#36753;</span>
+              <span class="panel-meta">{{outputMeta}}</span>
+            </div>
+            <p class="panel-desc">&#36755;&#20986; {{targetLabel}} &#20860;&#23481;&#30340; DDL&#65292;&#21253;&#21547;&#24314;&#34920;&#12289;&#27880;&#37322;&#12289;&#32034;&#24341;&#12289;&#20027;&#38190;&#12289;&#22806;&#38190;&#12289;&#20998;&#21306;</p>
+            <sql-editor v-model="outputDdl" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+          </article>
+        </section>
+
         <div class="status-bar" :class="'status-' + outputStatus.type" v-if="statusText">
           <span class="status-text">{{statusText}}</span>
           <div class="status-info">
@@ -549,32 +577,6 @@
             <span>规则: <strong>{{currentRuleCount}}</strong></span>
           </div>
         </div>
-
-        <section class="workspace">
-          <article class="panel">
-            <div class="panel-head">
-              <h2 class="panel-title">
-                <span class="terminal-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></span>
-                {{sourceLabel}} &#36755;&#20837;
-              </h2>
-              <span class="panel-meta">{{inputLineCount}} &#34892;</span>
-            </div>
-            <p class="panel-desc">&#31896;&#36148; {{sourceLabel}} &#24314;&#34920;&#35821;&#21477;&#65288;CREATE TABLE&#12289;COMMENT&#12289;CREATE INDEX&#12289;&#20998;&#21306;&#31561;&#65289;</p>
-            <sql-editor v-model="inputDdl" :placeholder="'在此粘贴 ' + sourceLabel + ' DDL ...'" aria-label="SQL输入"></sql-editor>
-          </article>
-          <article class="panel">
-            <div class="panel-head">
-              <h2 class="panel-title">
-                <span class="terminal-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></span>
-                {{targetLabel}} &#36755;&#20986;
-              </h2>
-              <span class="edit-hint">&#21487;&#30452;&#25509;&#32534;&#36753;</span>
-              <span class="panel-meta">{{outputMeta}}</span>
-            </div>
-            <p class="panel-desc">&#36755;&#20986; {{targetLabel}} &#20860;&#23481;&#30340; DDL&#65292;&#21253;&#21547;&#24314;&#34920;&#12289;&#27880;&#37322;&#12289;&#32034;&#24341;&#12289;&#20027;&#38190;&#12289;&#22806;&#38190;&#12289;&#20998;&#21306;</p>
-            <sql-editor v-model="outputDdl" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
-          </article>
-        </section>
 
         <!-- DDL Reference -->
         <section class="ref-wrapper" :class="{expanded: !refCollapsed}">
@@ -669,6 +671,32 @@
           </div>
         </section>
 
+        <section class="workspace">
+          <article class="panel">
+            <div class="panel-head">
+              <div class="panel-head-left">
+                <span class="panel-dot" :class="funcSourceDb"></span>
+                <h2 class="panel-title">{{funcSourceLabel}} &#20989;&#25968;&#36755;&#20837;</h2>
+              </div>
+              <span class="panel-meta">{{funcInputLineCount}} &#34892;</span>
+            </div>
+            <p class="panel-desc">&#31896;&#36148; {{funcSourceLabel}} &#20989;&#25968;&#23450;&#20041;&#65288;CREATE FUNCTION / CREATE OR REPLACE FUNCTION&#65289;</p>
+            <sql-editor v-model="funcInput" :placeholder="'在此粘贴 ' + funcSourceLabel + ' 函数 ...'" aria-label="SQL输入"></sql-editor>
+          </article>
+          <article class="panel">
+            <div class="panel-head">
+              <div class="panel-head-left">
+                <span class="panel-dot" :class="funcTargetDb"></span>
+                <h2 class="panel-title">{{funcTargetLabel}} &#36755;&#20986;</h2>
+              </div>
+              <span class="edit-hint">&#21487;&#30452;&#25509;&#32534;&#36753;</span>
+              <span class="panel-meta">{{funcOutputMeta}}</span>
+            </div>
+            <p class="panel-desc">&#36755;&#20986; {{funcTargetLabel}} &#20860;&#23481;&#30340;&#20989;&#25968;&#23450;&#20041;</p>
+            <sql-editor v-model="funcOutput" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+          </article>
+        </section>
+
         <div class="status-bar" :class="'status-' + outputStatus.type" v-if="statusText">
           <span class="status-text">{{statusText}}</span>
           <div class="status-info">
@@ -677,32 +705,6 @@
             <span>规则: <strong>{{currentRuleCount}}</strong></span>
           </div>
         </div>
-
-        <section class="workspace">
-          <article class="panel">
-            <div class="panel-head">
-              <h2 class="panel-title">
-                <span class="terminal-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></span>
-                {{funcSourceLabel}} &#20989;&#25968;&#36755;&#20837;
-              </h2>
-              <span class="panel-meta">{{funcInputLineCount}} &#34892;</span>
-            </div>
-            <p class="panel-desc">&#31896;&#36148; {{funcSourceLabel}} &#20989;&#25968;&#23450;&#20041;&#65288;CREATE FUNCTION / CREATE OR REPLACE FUNCTION&#65289;</p>
-            <sql-editor v-model="funcInput" :placeholder="'在此粘贴 ' + funcSourceLabel + ' 函数 ...'" aria-label="SQL输入"></sql-editor>
-          </article>
-          <article class="panel">
-            <div class="panel-head">
-              <h2 class="panel-title">
-                <span class="terminal-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></span>
-                {{funcTargetLabel}} &#36755;&#20986;
-              </h2>
-              <span class="edit-hint">&#21487;&#30452;&#25509;&#32534;&#36753;</span>
-              <span class="panel-meta">{{funcOutputMeta}}</span>
-            </div>
-            <p class="panel-desc">&#36755;&#20986; {{funcTargetLabel}} &#20860;&#23481;&#30340;&#20989;&#25968;&#23450;&#20041;</p>
-            <sql-editor v-model="funcOutput" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
-          </article>
-        </section>
 
         <!-- Function Reference -->
         <section class="ref-wrapper" :class="{expanded: !refCollapsed}">
@@ -806,6 +808,32 @@ $$;</pre>
           </div>
         </section>
 
+        <section class="workspace">
+          <article class="panel">
+            <div class="panel-head">
+              <div class="panel-head-left">
+                <span class="panel-dot" :class="procSourceDb"></span>
+                <h2 class="panel-title">{{procSourceLabel}} &#23384;&#20648;&#36807;&#31243;&#36755;&#20837;</h2>
+              </div>
+              <span class="panel-meta">{{procInputLineCount}} &#34892;</span>
+            </div>
+            <p class="panel-desc">&#31896;&#36148; {{procSourceLabel}} &#23384;&#20648;&#36807;&#31243;&#65288;CREATE PROCEDURE / CREATE OR REPLACE PROCEDURE&#65289;</p>
+            <sql-editor v-model="procInput" :placeholder="'在此粘贴 ' + procSourceLabel + ' 存储过程 ...'" aria-label="SQL输入"></sql-editor>
+          </article>
+          <article class="panel">
+            <div class="panel-head">
+              <div class="panel-head-left">
+                <span class="panel-dot" :class="procTargetDb"></span>
+                <h2 class="panel-title">{{procTargetLabel}} &#36755;&#20986;</h2>
+              </div>
+              <span class="edit-hint">&#21487;&#30452;&#25509;&#32534;&#36753;</span>
+              <span class="panel-meta">{{procOutputMeta}}</span>
+            </div>
+            <p class="panel-desc">&#36755;&#20986; {{procTargetLabel}} &#20860;&#23481;&#30340;&#23384;&#20648;&#36807;&#31243;&#23450;&#20041;</p>
+            <sql-editor v-model="procOutput" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+          </article>
+        </section>
+
         <div class="status-bar" :class="'status-' + outputStatus.type" v-if="statusText">
           <span class="status-text">{{statusText}}</span>
           <div class="status-info">
@@ -814,32 +842,6 @@ $$;</pre>
             <span>规则: <strong>{{currentRuleCount}}</strong></span>
           </div>
         </div>
-
-        <section class="workspace">
-          <article class="panel">
-            <div class="panel-head">
-              <h2 class="panel-title">
-                <span class="terminal-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></span>
-                {{procSourceLabel}} &#23384;&#20648;&#36807;&#31243;&#36755;&#20837;
-              </h2>
-              <span class="panel-meta">{{procInputLineCount}} &#34892;</span>
-            </div>
-            <p class="panel-desc">&#31896;&#36148; {{procSourceLabel}} &#23384;&#20648;&#36807;&#31243;&#65288;CREATE PROCEDURE / CREATE OR REPLACE PROCEDURE&#65289;</p>
-            <sql-editor v-model="procInput" :placeholder="'在此粘贴 ' + procSourceLabel + ' 存储过程 ...'" aria-label="SQL输入"></sql-editor>
-          </article>
-          <article class="panel">
-            <div class="panel-head">
-              <h2 class="panel-title">
-                <span class="terminal-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></span>
-                {{procTargetLabel}} &#36755;&#20986;
-              </h2>
-              <span class="edit-hint">&#21487;&#30452;&#25509;&#32534;&#36753;</span>
-              <span class="panel-meta">{{procOutputMeta}}</span>
-            </div>
-            <p class="panel-desc">&#36755;&#20986; {{procTargetLabel}} &#20860;&#23481;&#30340;&#23384;&#20648;&#36807;&#31243;&#23450;&#20041;</p>
-            <sql-editor v-model="procOutput" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
-          </article>
-        </section>
 
         <!-- Procedure Reference -->
         <section class="ref-wrapper" :class="{expanded: !refCollapsed}">

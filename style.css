@@ -1223,12 +1223,13 @@ body{
 
 /* Editors */
 .status-bar{
-  margin:14px 20px 0;
+  margin:0 20px;
   padding:0 16px;
-  min-height:32px;
+  min-height:28px;
   border:1px solid rgba(99,135,241,.1);
-  border-radius:14px;
+  border-radius:0 0 14px 14px;
   background:rgba(11,16,29,.66);
+  border-top:1px solid rgba(99,135,241,.08);
 }
 .status-text{
   font-size:11px;
@@ -1276,6 +1277,11 @@ body{
   border-bottom:1px solid rgba(99,135,241,.08);
   background:rgba(255,255,255,.015);
 }
+.panel-head-left{display:flex;align-items:center;gap:8px}
+.panel-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.panel-dot.oracle{background:var(--oracle)}
+.panel-dot.mysql{background:var(--mysql)}
+.panel-dot.postgresql{background:var(--postgresql)}
 .panel-title{
   font-size:12px;
   gap:10px;
