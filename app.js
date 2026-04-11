@@ -3378,10 +3378,43 @@ const app = createApp({
       statusText.value = '\u5DF2\u6E05\u7A7A';
     }
 
+    // ========== Free trial gate: 1 free local conversion per type ==========
+    var _trialUsed = JSON.parse(sessionStorage.getItem('_trialUsed') || '{}');
+    function _hasSignedUser() {
+      return !!(window.authApi &&
+        typeof window.authApi.getUserSync === 'function' &&
+        window.authApi.getUserSync());
+    }
+    function _checkTrialOrLogin(kind) {
+      // Logged-in users have unlimited access
+      if (_hasSignedUser()) return true;
+      // Anonymous users get 1 free conversion per type
+      if (_trialUsed[kind]) {
+        // Already used free trial — show login modal
+        if (window.authApi && typeof window.authApi.openAuthModal === 'function') {
+          window.authApi.openAuthModal('免费体验次数已用完，请注册/登录后继续使用');
+        } else {
+          _showAlert('需要登录', '每种翻译类型仅提供 1 次免费体验，请注册或登录后继续使用完整功能。');
+        }
+        return false;
+      }
+      return true;
+    }
+    function _markTrialUsed(kind) {
+      if (!_hasSignedUser()) {
+        _trialUsed[kind] = true;
+        try { sessionStorage.setItem('_trialUsed', JSON.stringify(_trialUsed)); } catch(e) {}
+      }
+    }
+
     async function convert() {
       try {
         if (!inputDdl.value.trim()) {
           statusText.value = '请输入待转换的 DDL SQL';
+          return;
+        }
+        if (!_checkTrialOrLogin('ddl')) {
+          statusText.value = '请登录后继续使用翻译功能';
           return;
         }
         statusText.value = 'DDL 转换中，请稍候...';
@@ -3395,6 +3428,7 @@ const app = createApp({
           isLocal = true;
         }
         outputDdl.value = result;
+        _markTrialUsed('ddl');
         var cls = _classifyResult(result);
         var suffix = isLocal ? '（本地引擎）' : '';
         statusText.value = cls.level === 'error'   ? cls.summary
@@ -3440,6 +3474,10 @@ const app = createApp({
           statusText.value = '请输入待转换的函数 SQL';
           return;
         }
+        if (!_checkTrialOrLogin('func')) {
+          statusText.value = '请登录后继续使用翻译功能';
+          return;
+        }
         statusText.value = '函数转换中，请稍候...';
         var result;
         var isLocal = false;
@@ -3450,6 +3488,7 @@ const app = createApp({
           isLocal = true;
         }
         funcOutput.value = result;
+        _markTrialUsed('func');
         var cls = _classifyResult(result);
         var suffix = isLocal ? '（本地引擎）' : '';
         statusText.value = cls.level === 'error'   ? cls.summary
@@ -3495,6 +3534,10 @@ const app = createApp({
           statusText.value = '请输入待转换的存储过程 SQL';
           return;
         }
+        if (!_checkTrialOrLogin('proc')) {
+          statusText.value = '请登录后继续使用翻译功能';
+          return;
+        }
         statusText.value = '存储过程转换中，请稍候...';
         var result;
         var isLocal = false;
@@ -3505,6 +3548,7 @@ const app = createApp({
           isLocal = true;
         }
         procOutput.value = result;
+        _markTrialUsed('proc');
         var cls = _classifyResult(result);
         var suffix = isLocal ? '（本地引擎）' : '';
         statusText.value = cls.level === 'error'   ? cls.summary
@@ -3536,14 +3580,15 @@ const app = createApp({
     }
 
     function runWorkbenchAction(action) {
-      var page = activePage.value;
-      if (page !== 'ddl' && page !== 'func' && page !== 'proc') {
-        statusText.value = '当前页面暂无此操作';
+      // Theme toggle works on all pages
+      if (action === 'theme') {
+        toggleTheme();
         closeSettingsMenu();
         return;
       }
-      if (action === 'theme') {
-        toggleTheme();
+      var page = activePage.value;
+      if (page !== 'ddl' && page !== 'func' && page !== 'proc') {
+        statusText.value = '当前页面暂无此操作';
         closeSettingsMenu();
         return;
       }

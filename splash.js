@@ -1,12 +1,6 @@
 /* ===== splash.js — Splash Motion & Workbench Scrolling ===== */
 
-/* Non-blocking font activation (replaces inline onload handler for CSP compliance) */
-(function () {
-  var link = document.getElementById('gfonts-async');
-  if (!link) return;
-  if (link.sheet) link.media = 'all';
-  else link.addEventListener('load', function () { link.media = 'all'; });
-})();
+/* Font activation no longer needed — fonts load synchronously via <link rel="stylesheet"> */
 
 (function () {
   var poster = document.getElementById('splash-poster');
@@ -17,9 +11,16 @@
   var finalEnterBtn = null;
 
   function enterWorkbench() {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    localStorage.setItem('theme', 'dark');
-    window.dispatchEvent(new CustomEvent('sp-theme-sync', { detail: 'dark' }));
+    /* Restore user's saved theme preference instead of forcing dark */
+    var savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (savedTheme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    window.dispatchEvent(new CustomEvent('sp-theme-sync', { detail: savedTheme }));
     poster.classList.add('leaving');
     if (prefersReducedMotion) {
       poster.style.display = 'none';
