@@ -2539,6 +2539,10 @@ const app = createApp({
     const activePage = ref('ddl');
     const sidebarOpen = ref(false);
     const sidebarCollapsed = ref(false);
+    function handleSidebarRailClick() {
+      if (window.innerWidth <= 1024) return;
+      if (!sidebarOpen.value) sidebarOpen.value = true;
+    }
     function toggleSidebar() {
       sidebarCollapsed.value = !sidebarCollapsed.value;
       localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value ? '1' : '0');
@@ -3746,7 +3750,7 @@ const app = createApp({
     });
 
     return {
-      activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, setPage,
+      activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, handleSidebarRailClick, setPage,
       sidebarSettingsOpen, actionBarCollapsed,
       // DB Picker
       dbDropdown, dbAbbr, dbOptions, pickDb,
