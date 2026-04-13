@@ -1849,6 +1849,39 @@ body:not(.splash-active) #app{
 .sp-final-cta{text-align:center;padding:0 24px 80px}
 .sp-final-cta h2{font-family:"Instrument Serif","Noto Sans SC",serif;font-size:clamp(28px,4vw,44px);font-style:normal;color:#d6dced;margin-bottom:12px;letter-spacing:-.01em}
 .sp-final-cta p{font-size:15px;color:#6b7a99;margin-bottom:28px}
+.sp-site-footer{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:0 24px 48px;
+  color:#7d8eae;
+  font-size:12px;
+}
+.sp-site-footer-link,
+.app-footer-link{
+  color:#9dbcff;
+  text-decoration:none;
+  font-weight:600;
+}
+.sp-site-footer-link:hover,
+.app-footer-link:hover{
+  color:#dce7fb;
+}
+.sp-site-footer-meta,
+.app-footer-meta{
+  font-family:var(--font-code);
+  font-size:11px;
+  color:#7d8eae;
+}
+.sp-site-footer-divider,
+.app-footer-sep{
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:rgba(99,135,241,.26);
+}
 
 /* — Transition Zone — */
 .sp-transition-zone{display:none}
@@ -2161,6 +2194,23 @@ body:not(.splash-active) #app{
 .workspace{
   flex:1;
 }
+.app-footer{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  padding:10px 20px 14px;
+  border-top:1px solid rgba(99,135,241,.08);
+  background:rgba(9,13,24,.78);
+  flex-shrink:0;
+}
+.app-footer-links{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:10px;
+}
 
 @media (max-width: 1180px){
   .sp-features-grid{
@@ -2279,6 +2329,12 @@ body:not(.splash-active) #app{
   }
   .sp-final-cta{
     padding:0 12px 48px;
+  }
+  .sp-site-footer,
+  .app-footer,
+  .app-footer-links{
+    justify-content:center;
+    text-align:center;
   }
   .sp-db-viz{
     width:240px;
@@ -2496,6 +2552,22 @@ body:not(.splash-active) #app{
   background:rgba(37,99,235,.06);
   border-color:rgba(37,99,235,.12);
 }
+[data-theme="light"] .sp-site-footer-link,
+[data-theme="light"] .app-footer-link{
+  color:#1d4ed8;
+}
+[data-theme="light"] .sp-site-footer-link:hover,
+[data-theme="light"] .app-footer-link:hover{
+  color:#1e3a8a;
+}
+[data-theme="light"] .sp-site-footer-meta,
+[data-theme="light"] .app-footer-meta{
+  color:#64748b;
+}
+[data-theme="light"] .sp-site-footer-divider,
+[data-theme="light"] .app-footer-sep{
+  background:rgba(37,99,235,.24);
+}
 [data-theme="light"] .sp-feat-title{
   color:#0f172a;
 }
@@ -2588,6 +2660,10 @@ body:not(.splash-active) #app{
 }
 [data-theme="light"] .settings-menu{
   box-shadow:0 18px 42px rgba(148,163,184,.16);
+}
+[data-theme="light"] .app-footer{
+  background:rgba(255,255,255,.92);
+  border-top-color:#e2e8f0;
 }
 [data-theme="light"] .auth-modal-mask{
   background:rgba(226,232,240,.42);

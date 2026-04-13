@@ -233,6 +233,14 @@
         </div>
       </section>
 
+      <footer class="sp-site-footer" aria-label="站点信息">
+        <a class="sp-site-footer-link" href="https://github.com/gitzhengpeng/sqldev" target="_blank" rel="noreferrer">GitHub</a>
+        <span class="sp-site-footer-divider" aria-hidden="true"></span>
+        <span class="sp-site-footer-meta">Version 2026.04.13 / 95a8f3c</span>
+        <span class="sp-site-footer-divider" aria-hidden="true"></span>
+        <span class="sp-site-footer-meta">License 未配置</span>
+      </footer>
+
     </div>
   </div>
   <div class="auth-modal-mask" id="auth-modal-mask" hidden>
@@ -1095,6 +1103,16 @@ $$;</pre>
 
       <!-- Shared hidden file input (outside v-if sections so it always exists in DOM) -->
       <input type="file" ref="fileInput" accept=".sql,.txt,.ddl,.ora,.pgsql,.mysql" class="u-hidden-input" @change="handleFileUpload" aria-label="上传SQL文件"/>
+
+      <footer class="app-footer" aria-label="工作台信息">
+        <div class="app-footer-links">
+          <a class="app-footer-link" href="https://github.com/gitzhengpeng/sqldev" target="_blank" rel="noreferrer">GitHub</a>
+          <span class="app-footer-sep" aria-hidden="true"></span>
+          <span class="app-footer-meta">Version 2026.04.13 / 95a8f3c</span>
+          <span class="app-footer-sep" aria-hidden="true"></span>
+          <span class="app-footer-meta">License 未配置</span>
+        </div>
+      </footer>
 
       <!-- Scroll to top button -->
       <button class="scroll-top" :class="{visible: showScrollTop}" @click="scrollToTop" title="&#22238;&#21040;&#39030;&#37096;">&#8593;</button>
