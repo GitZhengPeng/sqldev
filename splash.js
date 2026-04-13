@@ -1,6 +1,6 @@
 /* ===== splash.js — Splash Motion & Workbench Scrolling ===== */
 
-/* Font activation no longer needed — fonts load synchronously via <link rel="stylesheet"> */
+/* Latin brand fonts load in <head>; Noto Sans SC is injected asynchronously to reduce first paint cost. */
 
 (function () {
   var poster = document.getElementById('splash-poster');
