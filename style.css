@@ -1718,20 +1718,20 @@ body:not(.splash-active) #app{
   align-items:center;
   justify-content:space-between;
   padding:0 40px;
-  height:64px;
+  height:56px;
   background:rgba(8,11,22,.7);
   backdrop-filter:blur(16px);
   border-bottom:1px solid rgba(99,135,241,.1);
 }
 .sp-nav-logo{display:flex;align-items:center;gap:10px}
-.sp-nav-logo-mark{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#4f7df9,#8b5cf6);display:grid;place-items:center;font-family:var(--font-code);font-size:9px;font-weight:700;color:#fff;letter-spacing:.5px}
-.sp-nav-logo-text{font-family:"DM Sans","Noto Sans SC",sans-serif;font-size:15px;font-weight:600;color:#d6dced;letter-spacing:-.2px}
-.sp-nav-actions{display:flex;align-items:center;gap:10px}
+.sp-nav-logo-mark{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#4f7df9,#8b5cf6);display:grid;place-items:center;font-family:var(--font-code);font-size:8px;font-weight:700;color:#fff;letter-spacing:.5px}
+.sp-nav-logo-text{font-family:"DM Sans","Noto Sans SC",sans-serif;font-size:14px;font-weight:600;color:#d6dced;letter-spacing:-.2px}
+.sp-nav-actions{display:flex;align-items:center;gap:8px}
 .sp-nav-theme{
-  width:34px;
-  height:34px;
+  width:32px;
+  height:32px;
   margin-left:0;
-  border-radius:10px;
+  border-radius:9px;
   border:1px solid rgba(99,135,241,.18);
   background:rgba(12,18,34,.82);
   color:#9fb1d1;
@@ -1746,7 +1746,7 @@ body:not(.splash-active) #app{
 .sp-nav-right{display:flex;align-items:center;gap:20px}
 .sp-nav-link{font-size:13px;color:#6b7a99;text-decoration:none;transition:color .2s}
 .sp-nav-link:hover{color:#d6dced}
-.sp-nav-login{font-size:12px;font-weight:600;color:#4f7df9;border:1px solid rgba(79,125,249,.3);padding:6px 16px;border-radius:8px;background:rgba(79,125,249,.06);cursor:pointer;transition:all .2s}
+.sp-nav-login{font-size:12px;font-weight:600;color:#4f7df9;border:1px solid rgba(79,125,249,.3);padding:5px 14px;border-radius:8px;background:rgba(79,125,249,.06);cursor:pointer;transition:all .2s}
 .sp-nav-login:hover{background:rgba(79,125,249,.12);border-color:rgba(79,125,249,.5)}
 
 /* — Hero (centered vertical) — */
