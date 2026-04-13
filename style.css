@@ -528,7 +528,18 @@ body.auth-dragging{user-select:none}
 .u-btn-disabled{opacity:.4;cursor:not-allowed}
 
 /* ===== 2026-04 Redesign Overrides ===== */
+/* Theme-neutral: layout, fonts, brand colors */
 :root{
+  --oracle:#c74634;
+  --mysql:#00758f;
+  --postgresql:#336791;
+  --font-body:"DM Sans","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-code:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,monospace;
+  --sidebar-w:56px;
+  --header-h:48px;
+}
+/* Dark theme: redesigned color palette */
+[data-theme="dark"]{
   --bg:#0c1021;
   --bg-secondary:#10172b;
   --bg-tertiary:#182038;
@@ -547,13 +558,6 @@ body.auth-dragging{user-select:none}
   --amber:#f59e0b;
   --blue:#60a5fa;
   --red:#ef4444;
-  --oracle:#c74634;
-  --mysql:#00758f;
-  --postgresql:#336791;
-  --font-body:"DM Sans","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  --font-code:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,monospace;
-  --sidebar-w:56px;
-  --header-h:48px;
 }
 
 body{
