@@ -480,7 +480,7 @@
           </div>
         </div>
         <div class="version-box">
-          <button v-if="isWorkbenchPage" class="btn-translate" @click="runPrimaryAction">开始翻译 <span class="kbd">⌘↵</span></button>
+          <button v-if="isWorkbenchPage" class="btn-translate" @click="runPrimaryAction">开始翻译 <span class="kbd">{{ primaryShortcutLabel }}</span></button>
           <div class="settings-dropdown">
             <button class="theme-toggle" id="settings-trigger" aria-haspopup="true" :aria-expanded="String(showRulesMenu)" @click="showRulesMenu=!showRulesMenu">
               <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
@@ -568,7 +568,7 @@
             <button class="swap-btn" @click="swapDbs" title="交换源和目标">&#8646;</button>
           </div>
           <div class="actions">
-            <button class="btn primary" @click="convert">&#24320;&#22987;&#32763;&#35793; <span class="kbd">Ctrl+Enter</span></button>
+            <button class="btn primary" @click="convert">&#24320;&#22987;&#32763;&#35793; <span class="kbd">{{ primaryShortcutLabel }}</span></button>
           </div>
         </section>
 
@@ -698,7 +698,7 @@
             <button class="swap-btn" @click="swapFuncDbs" title="交换源和目标">&#8646;</button>
           </div>
           <div class="actions">
-            <button class="btn primary" @click="convertFunc">&#24320;&#22987;&#32763;&#35793; <span class="kbd">Ctrl+Enter</span></button>
+            <button class="btn primary" @click="convertFunc">&#24320;&#22987;&#32763;&#35793; <span class="kbd">{{ primaryShortcutLabel }}</span></button>
           </div>
         </section>
 
@@ -837,7 +837,7 @@ $$;</pre>
             <button class="swap-btn" @click="swapProcDbs" title="交换源和目标">&#8646;</button>
           </div>
           <div class="actions">
-            <button class="btn primary" @click="convertProc">&#24320;&#22987;&#32763;&#35793; <span class="kbd">Ctrl+Enter</span></button>
+            <button class="btn primary" @click="convertProc">&#24320;&#22987;&#32763;&#35793; <span class="kbd">{{ primaryShortcutLabel }}</span></button>
           </div>
         </section>
 

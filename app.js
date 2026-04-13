@@ -2575,6 +2575,16 @@ const app = createApp({
 
     // Theme: 'system' | 'light' | 'dark'
     const themeMode = ref(localStorage.getItem('theme') || 'system');
+    const isMacPlatform = computed(() => {
+      try {
+        if (navigator.userAgentData && typeof navigator.userAgentData.platform === 'string') {
+          return /mac/i.test(navigator.userAgentData.platform);
+        }
+      } catch (_err) {}
+      var platform = String(navigator.platform || navigator.userAgent || '');
+      return /mac|iphone|ipad|ipod/i.test(platform);
+    });
+    const primaryShortcutLabel = computed(() => isMacPlatform.value ? '⌘+Enter' : 'Ctrl+Enter');
     const themeLabel = computed(() => {
       if (themeMode.value === 'dark') return '切换到亮色模式';
       if (themeMode.value === 'light') return '切换到跟随系统';
@@ -3756,7 +3766,7 @@ const app = createApp({
       // DB Picker
       dbDropdown, dbAbbr, dbOptions, pickDb,
       // Theme
-      themeMode, themeLabel, themeMenuLabel, toggleTheme,
+      themeMode, themeLabel, themeMenuLabel, primaryShortcutLabel, toggleTheme,
       currentPageTitle, currentPageSubtitle, currentEngineLabel, currentRuleCount, runPrimaryAction,
       // DDL
       sourceDb, targetDb, inputDdl, outputDdl,
