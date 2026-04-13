@@ -290,6 +290,10 @@
     if (splashAuthHeroBtn) splashAuthHeroBtn.hidden = loggedIn;
     if (splashEnterBtn) splashEnterBtn.textContent = '立即体验';
     if (appUserPop) appUserPop.hidden = !loggedIn;
+    var sidebarLogout = document.getElementById('sidebar-logout-btn');
+    var sidebarLogoutArea = document.getElementById('sidebar-logout-area');
+    if (sidebarLogout) sidebarLogout.hidden = !loggedIn;
+    if (sidebarLogoutArea) sidebarLogoutArea.hidden = !loggedIn;
     if (appAuthBtn) {
       var svgEl = appAuthBtn.querySelector('svg');
       if (svgEl) {
@@ -839,7 +843,7 @@
 
   document.addEventListener('click', async function (e) {
     refreshHeaderRefs();
-    var logoutBtn = e.target && e.target.closest ? e.target.closest('#app-auth-btn') : null;
+    var logoutBtn = e.target && e.target.closest ? (e.target.closest('#app-auth-btn') || e.target.closest('#sidebar-logout-btn')) : null;
     if (logoutBtn) {
       e.preventDefault();
       e.stopPropagation();

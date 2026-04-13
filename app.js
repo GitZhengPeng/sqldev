@@ -2550,6 +2550,8 @@ const app = createApp({
     }
     /* navKeydown removed: sidebar is now role="navigation" with aria-current, not tablist */
     const showRulesMenu = ref(false);
+    const sidebarSettingsOpen = ref(false);
+    const actionBarCollapsed = ref(true);
     const isWorkbenchPage = computed(() => NAV_PAGES.indexOf(activePage.value) >= 0);
     /* ARIA menu keyboard: arrow cycle, Home/End, Escape, auto-focus first item */
     function handleMenuKey(e) {
@@ -3744,6 +3746,7 @@ const app = createApp({
 
     return {
       activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, setPage,
+      sidebarSettingsOpen, actionBarCollapsed,
       // DB Picker
       dbDropdown, dbAbbr, dbOptions, pickDb,
       // Theme
