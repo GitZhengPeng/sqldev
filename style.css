@@ -47,18 +47,22 @@
 .CodeMirror-cursor{border-left:1.5px solid var(--text)}
 .CodeMirror-selected{background:var(--accent-light) !important}
 .CodeMirror-activeline-background{background:var(--accent-bg)}
-.CodeMirror-scroll{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.28) transparent}
-.CodeMirror-scroll::-webkit-scrollbar{width:6px;height:0}
-.CodeMirror-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.04)}
-.CodeMirror-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25);border-radius:3px}
-.CodeMirror-scroll::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.38)}
+.CodeMirror-scroll{scrollbar-width:thin;scrollbar-color:rgba(99,135,241,.35) rgba(15,22,40,.35)}
+.CodeMirror-scroll::-webkit-scrollbar{width:8px;height:8px}
+.CodeMirror-scroll::-webkit-scrollbar-track{background:rgba(15,22,40,.35)}
+.CodeMirror-scroll::-webkit-scrollbar-thumb{background:rgba(99,135,241,.3);border-radius:4px}
+.CodeMirror-scroll::-webkit-scrollbar-thumb:hover{background:rgba(99,135,241,.5)}
 .CodeMirror-vscrollbar{scrollbar-width:thin;scrollbar-color:rgba(99,135,241,.35) rgba(15,22,40,.95);visibility:visible !important}
 .CodeMirror-vscrollbar::-webkit-scrollbar{width:8px}
 .CodeMirror-vscrollbar::-webkit-scrollbar-track{background:rgba(15,22,40,.95)}
 .CodeMirror-vscrollbar::-webkit-scrollbar-thumb{background:rgba(99,135,241,.3);border-radius:4px;border:1px solid rgba(15,22,40,.95)}
 .CodeMirror-vscrollbar::-webkit-scrollbar-thumb:hover{background:rgba(99,135,241,.5)}
 .CodeMirror-vscrollbar::-webkit-scrollbar-button{display:none}
-.CodeMirror-hscrollbar{display:none !important}
+.CodeMirror-hscrollbar{scrollbar-width:thin;scrollbar-color:rgba(99,135,241,.35) rgba(15,22,40,.35)}
+.CodeMirror-hscrollbar::-webkit-scrollbar{height:8px}
+.CodeMirror-hscrollbar::-webkit-scrollbar-track{background:rgba(15,22,40,.35)}
+.CodeMirror-hscrollbar::-webkit-scrollbar-thumb{background:rgba(99,135,241,.3);border-radius:4px}
+.CodeMirror-hscrollbar::-webkit-scrollbar-thumb:hover{background:rgba(99,135,241,.5)}
 /* SQL syntax colors — light */
 .cm-s-default .cm-keyword{color:#7c3aed;font-weight:600}
 .cm-s-default .cm-def{color:#2563eb}
@@ -1358,14 +1362,14 @@ body{
 }
 .panel .CodeMirror-scroll{
   overflow-y:auto !important;
-  overflow-x:hidden !important;
+  overflow-x:auto !important;
   scrollbar-width:thin;
-  scrollbar-color:rgba(255,255,255,.28) transparent;
+  scrollbar-color:rgba(99,135,241,.35) rgba(15,22,40,.35);
 }
-.panel .CodeMirror-scroll::-webkit-scrollbar{width:6px}
-.panel .CodeMirror-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.04)}
-.panel .CodeMirror-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25);border-radius:3px}
-.panel .CodeMirror-scroll::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.38)}
+.panel .CodeMirror-scroll::-webkit-scrollbar{width:8px;height:8px}
+.panel .CodeMirror-scroll::-webkit-scrollbar-track{background:rgba(15,22,40,.35)}
+.panel .CodeMirror-scroll::-webkit-scrollbar-thumb{background:rgba(99,135,241,.3);border-radius:4px}
+.panel .CodeMirror-scroll::-webkit-scrollbar-thumb:hover{background:rgba(99,135,241,.5)}
 .panel .CodeMirror-vscrollbar{scrollbar-width:thin;scrollbar-color:rgba(99,135,241,.35) rgba(15,22,40,.95);visibility:visible !important}
 .panel .CodeMirror-vscrollbar::-webkit-scrollbar{width:8px}
 .panel .CodeMirror-vscrollbar::-webkit-scrollbar-track{background:rgba(15,22,40,.95)}
@@ -1955,7 +1959,11 @@ body:not(.splash-active) #app{
 [data-theme="light"] .CodeMirror{background:#fff;color:#0f172a}
 [data-theme="light"] .CodeMirror-gutters{background:#f8fafc;border-right-color:#e2e8f0}
 [data-theme="light"] .output-editor .CodeMirror{background:#f8fafc}
-[data-theme="light"] .CodeMirror-scroll{scrollbar-color:rgba(0,0,0,.2) transparent}
+[data-theme="light"] .CodeMirror-scroll{scrollbar-color:rgba(37,99,235,.2) rgba(226,232,240,.75)}
+[data-theme="light"] .CodeMirror-hscrollbar{scrollbar-color:rgba(37,99,235,.2) rgba(226,232,240,.75)}
+[data-theme="light"] .CodeMirror-hscrollbar::-webkit-scrollbar-track{background:rgba(226,232,240,.75)}
+[data-theme="light"] .CodeMirror-hscrollbar::-webkit-scrollbar-thumb{background:rgba(37,99,235,.18);border-radius:4px}
+[data-theme="light"] .CodeMirror-hscrollbar::-webkit-scrollbar-thumb:hover{background:rgba(37,99,235,.3)}
 [data-theme="light"] .CodeMirror-vscrollbar{scrollbar-color:rgba(37,99,235,.3) rgba(248,250,252,.95)}
 [data-theme="light"] .cm-s-default .cm-keyword{color:#7c3aed;font-weight:600}
 [data-theme="light"] .cm-s-default .cm-def{color:#2563eb}
@@ -2034,9 +2042,9 @@ body:not(.splash-active) #app{
 [data-theme="light"] .ref-more{color:#94a3b8}
 /* Light: CodeMirror cursor & scrollbars */
 [data-theme="light"] .CodeMirror-cursor{border-left-color:#0f172a}
-[data-theme="light"] .panel .CodeMirror-scroll::-webkit-scrollbar-track{background:rgba(0,0,0,.02)}
-[data-theme="light"] .panel .CodeMirror-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
-[data-theme="light"] .panel .CodeMirror-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25)}
+[data-theme="light"] .panel .CodeMirror-scroll::-webkit-scrollbar-track{background:rgba(226,232,240,.75)}
+[data-theme="light"] .panel .CodeMirror-scroll::-webkit-scrollbar-thumb{background:rgba(37,99,235,.18);border-radius:4px}
+[data-theme="light"] .panel .CodeMirror-scroll::-webkit-scrollbar-thumb:hover{background:rgba(37,99,235,.3)}
 [data-theme="light"] .panel .CodeMirror-vscrollbar{scrollbar-color:rgba(37,99,235,.2) rgba(248,250,252,.95)}
 [data-theme="light"] .panel .CodeMirror-vscrollbar::-webkit-scrollbar-track{background:rgba(248,250,252,.95)}
 [data-theme="light"] .panel .CodeMirror-vscrollbar::-webkit-scrollbar-thumb{background:rgba(37,99,235,.2);border-color:rgba(248,250,252,.95)}
