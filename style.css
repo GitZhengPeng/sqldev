@@ -281,25 +281,26 @@ textarea::placeholder{color:var(--text-muted)}
   .build{display:none}
   .settings-menu{min-width:210px}
   .settings-account-email{max-width:150px}
-  .toolbar{padding:8px 12px;gap:8px}
-  .tool-left{gap:6px;width:100%}
-  .tool-label{font-size:12px}
-  .db-select{padding:5px 10px;font-size:12px;padding-right:24px;flex:1;min-width:0}
+  .toolbar{display:none}
   .actions{width:100%;gap:6px;display:grid;grid-template-columns:1fr}
   .actions .btn{padding:6px 8px;font-size:12px;text-align:center}
   .kbd{display:none}
   .status-bar{padding:4px 12px}
   .status-info{display:none}
   .panel-head{padding:6px 12px}
-  .panel-desc{padding:4px 12px;font-size:11px}
-  textarea{padding:10px 12px;min-height:220px;font-size:12px}
-  .CodeMirror{min-height:220px;font-size:12px}
-  .ref-wrapper{padding:12px}
+  .panel-desc{display:none}
+  textarea{padding:10px 12px;min-height:35vh;font-size:12px}
+  .CodeMirror{min-height:35vh;font-size:12px}
+  .ref-wrapper{padding:8px 12px}
+  .ref-toggle-bar{padding:6px 0}
+  .ref-toggle-label{font-size:12px}
   .ref-section{grid-template-columns:1fr;gap:8px}
   .ref-card{padding:10px 12px}
   .ref-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .ref-code{font-size:10px;padding:8px 10px;line-height:1.45;overflow-x:auto}
   .ref-note{font-size:10px;padding:5px 8px}
+  .ref-peek .ref-card{padding:8px 10px}
+  .ref-peek .ref-row{font-size:11px}
   .sidebar{width:280px;min-width:280px}
   .sidebar-brand{height:48px;padding:12px 16px}
   .scroll-top{bottom:12px;right:12px;width:32px;height:32px;font-size:14px}
@@ -1767,14 +1768,7 @@ body:not(.splash-active) #app{
 .sp-db-node-pg{bottom:0;right:8%;--node-glow:rgba(51,103,145,.25)}
 .sp-db-node-pg .sp-db-node-icon{background:linear-gradient(135deg,#336791,#1f4060)}
 .sp-db-node-label{font-size:12px;color:#6b7a99;font-weight:500}
-/* Particles */
-.sp-particle{position:absolute;width:4px;height:4px;border-radius:50%;background:#22d3ee;box-shadow:0 0 8px #22d3ee;opacity:0;animation:particleFlow 4s ease-in-out infinite}
-.sp-particle:nth-child(2){animation-delay:1.3s;background:#4f7df9;box-shadow:0 0 8px #4f7df9}
-.sp-particle:nth-child(3){animation-delay:2.6s;background:#8b5cf6;box-shadow:0 0 8px #8b5cf6}
-@keyframes particleFlow{0%{opacity:0;offset-distance:0%}10%{opacity:1}90%{opacity:1}100%{opacity:0;offset-distance:100%}}
-.sp-particle-1{offset-path:path('M190 55 L310 250');animation-duration:3.5s}
-.sp-particle-2{offset-path:path('M310 250 L70 250');animation-duration:4s;animation-delay:1.2s}
-.sp-particle-3{offset-path:path('M70 250 L190 55');animation-duration:3.5s;animation-delay:2.4s}
+/* Particles now rendered as SVG <circle> with <animateMotion> — no CSS needed */
 
 /* — CTA Buttons — */
 .sp-hero-cta{display:flex;gap:12px;animation:spFadeUp .8s .8s both}
@@ -1798,7 +1792,7 @@ body:not(.splash-active) #app{
 .sp-preview-dot.pg{background:#336791}
 .sp-preview-db-name{font-family:var(--font-code);font-size:11px;font-weight:600;color:#6b7a99}
 .sp-preview-lines{font-family:var(--font-code);font-size:10px;color:#3d4a65}
-.sp-preview-code{padding:16px;font-family:var(--font-code);font-size:12px;line-height:1.75;color:#6b7a99;min-height:220px;overflow-x:auto;white-space:pre}
+.sp-preview-code{padding:16px;font-family:var(--font-code);font-size:12px;line-height:1.75;color:#6b7a99;min-height:220px;overflow:hidden;white-space:pre}
 .sp-preview-code .kw{color:#c084fc;font-weight:600}
 .sp-preview-code .fn{color:#60a5fa}
 .sp-preview-code .str{color:#4ade80}
@@ -2074,6 +2068,9 @@ body:not(.splash-active) #app{
 .sidebar-bottom-actions{
   display:none;
 }
+/* Mobile-only sidebar nav items */
+.nav-item-mobile{display:none}
+.sidebar-nav-divider{display:none;height:1px;background:var(--border);margin:6px 4px}
 .main-content{
   min-height:100vh;
   margin-left:56px;
@@ -2129,6 +2126,11 @@ body:not(.splash-active) #app{
   .main-content{
     margin-left:0 !important;
   }
+  /* Show mobile nav items in sidebar */
+  .nav-item-mobile{display:flex}
+  .sidebar-nav-divider{display:block}
+  /* Hide three-dot settings from header on mobile */
+  .settings-dropdown{display:none}
 }
 @media (max-width: 768px){
   .sp-features-grid{grid-template-columns:1fr 1fr;gap:12px}
@@ -2256,12 +2258,12 @@ body:not(.splash-active) #app{
   .sp-db-node-icon{width:36px;height:36px;font-size:9px;border-radius:8px}
   .sp-preview-header{padding:8px 12px}
   .sp-preview-db-name{font-size:10px}
-  .sp-preview-code{font-size:10px;padding:10px;min-height:160px}
+  .sp-preview-code{font-size:10px;padding:10px;min-height:160px;white-space:pre-wrap;word-break:break-all}
   .sp-preview-arrow{width:32px;height:32px;border-radius:8px}
   .sp-preview-arrow svg{width:14px;height:14px}
   .sp-stat-num{font-size:28px}
   .sp-final-cta h2{font-size:clamp(22px,6vw,32px)}
   .header-center{gap:4px}
-  .db-picker-name{display:none}
+  .db-picker-name{max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .db-picker-trigger{padding:4px 6px 4px 4px}
 }
