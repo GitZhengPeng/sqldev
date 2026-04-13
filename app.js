@@ -2528,6 +2528,14 @@ const { createApp, ref, computed, watch, nextTick, onMounted, onUnmounted, trigg
 
 const app = createApp({
   setup() {
+    // ===== DB Picker state =====
+    const dbDropdown = ref('');
+    const dbAbbr = { oracle: 'ORA', mysql: 'MY', postgresql: 'PG' };
+    const dbOptions = [
+      { value: 'oracle', label: 'Oracle', abbr: 'ORA' },
+      { value: 'mysql', label: 'MySQL', abbr: 'MY' },
+      { value: 'postgresql', label: 'PostgreSQL', abbr: 'PG' }
+    ];
     const activePage = ref('ddl');
     const sidebarOpen = ref(false);
     const sidebarCollapsed = ref(false);
@@ -2623,6 +2631,12 @@ const app = createApp({
     const procTargetDb = ref('postgresql');
     const procInput = ref('');
     const procOutput = ref('');
+
+    function pickDb(refName, val) {
+      var refs = {sourceDb:sourceDb, targetDb:targetDb, funcSourceDb:funcSourceDb, funcTargetDb:funcTargetDb, procSourceDb:procSourceDb, procTargetDb:procTargetDb};
+      if (refs[refName]) refs[refName].value = val;
+      dbDropdown.value = '';
+    }
 
     const statusText = ref('工作台已就绪');
     var _persistWarnShown = false;
@@ -3730,6 +3744,8 @@ const app = createApp({
 
     return {
       activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, setPage,
+      // DB Picker
+      dbDropdown, dbAbbr, dbOptions, pickDb,
       // Theme
       themeMode, themeLabel, themeMenuLabel, toggleTheme,
       currentPageTitle, currentPageSubtitle, currentEngineLabel, currentRuleCount, runPrimaryAction,
@@ -3824,6 +3840,19 @@ app.component('sql-editor', {
       }
     });
     return { wrap };
+  }
+});
+
+// v-click-outside directive for closing dropdowns
+app.directive('click-outside', {
+  mounted(el, binding) {
+    el._clickOutside = (e) => {
+      if (!el.contains(e.target)) binding.value(e);
+    };
+    document.addEventListener('click', el._clickOutside, true);
+  },
+  unmounted(el) {
+    document.removeEventListener('click', el._clickOutside, true);
   }
 });
 

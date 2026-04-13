@@ -356,61 +356,103 @@
           </div>
         </div>
         <div class="header-center" v-if="activePage==='ddl'">
-          <label class="db-pill">
-            <span class="db-pill-dot" :class="sourceDb"></span>
-            <select v-model="sourceDb" aria-label="源数据库">
-              <option value="oracle">Oracle</option>
-              <option value="mysql">MySQL</option>
-              <option value="postgresql">PostgreSQL</option>
-            </select>
-          </label>
-          <button class="swap-btn workbench-swap-btn" @click="swapDbs" title="交换源和目标">&#8646;</button>
-          <label class="db-pill">
-            <span class="db-pill-dot" :class="targetDb"></span>
-            <select v-model="targetDb" aria-label="目标数据库">
-              <option value="oracle">Oracle</option>
-              <option value="mysql">MySQL</option>
-              <option value="postgresql">PostgreSQL</option>
-            </select>
-          </label>
+          <div class="db-picker" :class="{open: dbDropdown==='ddl-src'}" v-click-outside="()=>dbDropdown=''">
+            <button class="db-picker-trigger" @click="dbDropdown=dbDropdown==='ddl-src'?'':'ddl-src'" aria-label="源数据库">
+              <span class="db-picker-icon" :class="sourceDb">{{dbAbbr[sourceDb]}}</span>
+              <span class="db-picker-name">{{sourceLabel}}</span>
+              <svg class="db-picker-chevron" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </button>
+            <div class="db-picker-dropdown" v-show="dbDropdown==='ddl-src'">
+              <button v-for="db in dbOptions" :key="db.value" class="db-picker-option" :class="{selected: sourceDb===db.value}" @click="pickDb('sourceDb',db.value)">
+                <span class="db-picker-icon" :class="db.value">{{db.abbr}}</span>
+                <span>{{db.label}}</span>
+                <svg v-if="sourceDb===db.value" class="db-picker-check" width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.5L5.5 10L11 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="swap-btn workbench-swap-btn" @click="swapDbs" title="交换源和目标">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L1 9L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 9H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 4L15 7L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 7H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <div class="db-picker" :class="{open: dbDropdown==='ddl-tgt'}" v-click-outside="()=>dbDropdown=''">
+            <button class="db-picker-trigger" @click="dbDropdown=dbDropdown==='ddl-tgt'?'':'ddl-tgt'" aria-label="目标数据库">
+              <span class="db-picker-icon" :class="targetDb">{{dbAbbr[targetDb]}}</span>
+              <span class="db-picker-name">{{targetLabel}}</span>
+              <svg class="db-picker-chevron" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </button>
+            <div class="db-picker-dropdown" v-show="dbDropdown==='ddl-tgt'">
+              <button v-for="db in dbOptions" :key="db.value" class="db-picker-option" :class="{selected: targetDb===db.value}" @click="pickDb('targetDb',db.value)">
+                <span class="db-picker-icon" :class="db.value">{{db.abbr}}</span>
+                <span>{{db.label}}</span>
+                <svg v-if="targetDb===db.value" class="db-picker-check" width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.5L5.5 10L11 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="header-center" v-else-if="activePage==='func'">
-          <label class="db-pill">
-            <span class="db-pill-dot" :class="funcSourceDb"></span>
-            <select v-model="funcSourceDb" aria-label="源数据库">
-              <option value="oracle">Oracle</option>
-              <option value="mysql">MySQL</option>
-              <option value="postgresql">PostgreSQL</option>
-            </select>
-          </label>
-          <button class="swap-btn workbench-swap-btn" @click="swapFuncDbs" title="交换源和目标">&#8646;</button>
-          <label class="db-pill">
-            <span class="db-pill-dot" :class="funcTargetDb"></span>
-            <select v-model="funcTargetDb" aria-label="目标数据库">
-              <option value="oracle">Oracle</option>
-              <option value="mysql">MySQL</option>
-              <option value="postgresql">PostgreSQL</option>
-            </select>
-          </label>
+          <div class="db-picker" :class="{open: dbDropdown==='func-src'}" v-click-outside="()=>dbDropdown=''">
+            <button class="db-picker-trigger" @click="dbDropdown=dbDropdown==='func-src'?'':'func-src'" aria-label="源数据库">
+              <span class="db-picker-icon" :class="funcSourceDb">{{dbAbbr[funcSourceDb]}}</span>
+              <span class="db-picker-name">{{funcSourceLabel}}</span>
+              <svg class="db-picker-chevron" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </button>
+            <div class="db-picker-dropdown" v-show="dbDropdown==='func-src'">
+              <button v-for="db in dbOptions" :key="db.value" class="db-picker-option" :class="{selected: funcSourceDb===db.value}" @click="pickDb('funcSourceDb',db.value)">
+                <span class="db-picker-icon" :class="db.value">{{db.abbr}}</span>
+                <span>{{db.label}}</span>
+                <svg v-if="funcSourceDb===db.value" class="db-picker-check" width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.5L5.5 10L11 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="swap-btn workbench-swap-btn" @click="swapFuncDbs" title="交换源和目标">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L1 9L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 9H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 4L15 7L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 7H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <div class="db-picker" :class="{open: dbDropdown==='func-tgt'}" v-click-outside="()=>dbDropdown=''">
+            <button class="db-picker-trigger" @click="dbDropdown=dbDropdown==='func-tgt'?'':'func-tgt'" aria-label="目标数据库">
+              <span class="db-picker-icon" :class="funcTargetDb">{{dbAbbr[funcTargetDb]}}</span>
+              <span class="db-picker-name">{{funcTargetLabel}}</span>
+              <svg class="db-picker-chevron" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </button>
+            <div class="db-picker-dropdown" v-show="dbDropdown==='func-tgt'">
+              <button v-for="db in dbOptions" :key="db.value" class="db-picker-option" :class="{selected: funcTargetDb===db.value}" @click="pickDb('funcTargetDb',db.value)">
+                <span class="db-picker-icon" :class="db.value">{{db.abbr}}</span>
+                <span>{{db.label}}</span>
+                <svg v-if="funcTargetDb===db.value" class="db-picker-check" width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.5L5.5 10L11 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="header-center" v-else-if="activePage==='proc'">
-          <label class="db-pill">
-            <span class="db-pill-dot" :class="procSourceDb"></span>
-            <select v-model="procSourceDb" aria-label="源数据库">
-              <option value="oracle">Oracle</option>
-              <option value="mysql">MySQL</option>
-              <option value="postgresql">PostgreSQL</option>
-            </select>
-          </label>
-          <button class="swap-btn workbench-swap-btn" @click="swapProcDbs" title="交换源和目标">&#8646;</button>
-          <label class="db-pill">
-            <span class="db-pill-dot" :class="procTargetDb"></span>
-            <select v-model="procTargetDb" aria-label="目标数据库">
-              <option value="oracle">Oracle</option>
-              <option value="mysql">MySQL</option>
-              <option value="postgresql">PostgreSQL</option>
-            </select>
-          </label>
+          <div class="db-picker" :class="{open: dbDropdown==='proc-src'}" v-click-outside="()=>dbDropdown=''">
+            <button class="db-picker-trigger" @click="dbDropdown=dbDropdown==='proc-src'?'':'proc-src'" aria-label="源数据库">
+              <span class="db-picker-icon" :class="procSourceDb">{{dbAbbr[procSourceDb]}}</span>
+              <span class="db-picker-name">{{procSourceLabel}}</span>
+              <svg class="db-picker-chevron" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </button>
+            <div class="db-picker-dropdown" v-show="dbDropdown==='proc-src'">
+              <button v-for="db in dbOptions" :key="db.value" class="db-picker-option" :class="{selected: procSourceDb===db.value}" @click="pickDb('procSourceDb',db.value)">
+                <span class="db-picker-icon" :class="db.value">{{db.abbr}}</span>
+                <span>{{db.label}}</span>
+                <svg v-if="procSourceDb===db.value" class="db-picker-check" width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.5L5.5 10L11 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="swap-btn workbench-swap-btn" @click="swapProcDbs" title="交换源和目标">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L1 9L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 9H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 4L15 7L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 7H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <div class="db-picker" :class="{open: dbDropdown==='proc-tgt'}" v-click-outside="()=>dbDropdown=''">
+            <button class="db-picker-trigger" @click="dbDropdown=dbDropdown==='proc-tgt'?'':'proc-tgt'" aria-label="目标数据库">
+              <span class="db-picker-icon" :class="procTargetDb">{{dbAbbr[procTargetDb]}}</span>
+              <span class="db-picker-name">{{procTargetLabel}}</span>
+              <svg class="db-picker-chevron" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </button>
+            <div class="db-picker-dropdown" v-show="dbDropdown==='proc-tgt'">
+              <button v-for="db in dbOptions" :key="db.value" class="db-picker-option" :class="{selected: procTargetDb===db.value}" @click="pickDb('procTargetDb',db.value)">
+                <span class="db-picker-icon" :class="db.value">{{db.abbr}}</span>
+                <span>{{db.label}}</span>
+                <svg v-if="procTargetDb===db.value" class="db-picker-check" width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.5L5.5 10L11 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="version-box">
           <button v-if="isWorkbenchPage" class="btn-translate" @click="runPrimaryAction">开始翻译 <span class="kbd">⌘↵</span></button>

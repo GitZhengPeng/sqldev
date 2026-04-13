@@ -1154,6 +1154,144 @@ body{
   border-color:rgba(99,135,241,.36);
   transform:rotate(180deg);
 }
+
+/* ===== Custom DB Picker ===== */
+.db-picker{position:relative;z-index:20}
+.db-picker-trigger{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:4px 12px 4px 4px;
+  border:1px solid rgba(99,135,241,.15);
+  border-radius:10px;
+  background:rgba(11,16,29,.85);
+  backdrop-filter:blur(12px);
+  cursor:pointer;
+  transition:all .2s cubic-bezier(.4,0,.2,1);
+  font-family:var(--font-body);
+  color:#dce7fb;
+  min-width:142px;
+}
+.db-picker-trigger:hover{
+  border-color:rgba(99,135,241,.35);
+  background:rgba(16,22,40,.95);
+  box-shadow:0 0 0 3px rgba(79,125,249,.08);
+}
+.db-picker.open .db-picker-trigger{
+  border-color:rgba(99,135,241,.45);
+  background:rgba(16,22,40,.98);
+  box-shadow:0 0 0 3px rgba(79,125,249,.12);
+}
+.db-picker-icon{
+  width:30px;
+  height:30px;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--font-code);
+  font-size:9px;
+  font-weight:700;
+  color:#fff;
+  letter-spacing:.3px;
+  flex-shrink:0;
+  transition:transform .2s;
+}
+.db-picker-icon.oracle{background:linear-gradient(135deg,#e8553d,#c74634)}
+.db-picker-icon.mysql{background:linear-gradient(135deg,#00a0c0,#00758f)}
+.db-picker-icon.postgresql{background:linear-gradient(135deg,#4a82a8,#336791)}
+.db-picker-name{
+  font-size:13px;
+  font-weight:600;
+  white-space:nowrap;
+}
+.db-picker-chevron{
+  margin-left:auto;
+  color:#7186aa;
+  transition:transform .2s;
+  flex-shrink:0;
+}
+.db-picker.open .db-picker-chevron{transform:rotate(180deg)}
+.db-picker-dropdown{
+  position:absolute;
+  top:calc(100% + 6px);
+  left:0;
+  min-width:100%;
+  padding:4px;
+  border:1px solid rgba(99,135,241,.16);
+  border-radius:12px;
+  background:rgba(12,18,34,.96);
+  backdrop-filter:blur(20px);
+  box-shadow:0 12px 40px rgba(0,0,0,.4),0 0 0 1px rgba(99,135,241,.06);
+  animation:dbPickerIn .15s ease-out;
+}
+@keyframes dbPickerIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.db-picker-option{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  padding:6px 10px 6px 6px;
+  border:none;
+  border-radius:8px;
+  background:transparent;
+  color:#9ab0d3;
+  font:500 13px var(--font-body);
+  cursor:pointer;
+  transition:all .12s;
+  text-align:left;
+}
+.db-picker-option:hover{
+  background:rgba(79,125,249,.1);
+  color:#dce7fb;
+}
+.db-picker-option.selected{
+  background:rgba(79,125,249,.14);
+  color:#a5c4ff;
+}
+.db-picker-option .db-picker-icon{width:28px;height:28px;border-radius:7px;font-size:8px}
+.db-picker-check{
+  margin-left:auto;
+  color:#4f7df9;
+  flex-shrink:0;
+}
+/* Swap button with svg icon */
+.workbench-swap-btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.workbench-swap-btn svg{transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.workbench-swap-btn:hover svg{transform:rotate(180deg)}
+
+/* Light theme DB Picker */
+[data-theme="light"] .db-picker-trigger{
+  background:rgba(255,255,255,.95);
+  border-color:#e2e8f0;
+  color:#0f172a;
+}
+[data-theme="light"] .db-picker-trigger:hover{
+  border-color:#93c5fd;
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(37,99,235,.06);
+}
+[data-theme="light"] .db-picker.open .db-picker-trigger{
+  border-color:#60a5fa;
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(37,99,235,.1);
+}
+[data-theme="light"] .db-picker-name{color:#0f172a}
+[data-theme="light"] .db-picker-chevron{color:#94a3b8}
+[data-theme="light"] .db-picker-dropdown{
+  background:rgba(255,255,255,.98);
+  border-color:#e2e8f0;
+  box-shadow:0 12px 40px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.04);
+}
+[data-theme="light"] .db-picker-option{color:#475569}
+[data-theme="light"] .db-picker-option:hover{background:rgba(37,99,235,.06);color:#0f172a}
+[data-theme="light"] .db-picker-option.selected{background:rgba(37,99,235,.08);color:#2563eb}
+[data-theme="light"] .db-picker-check{color:#2563eb}
+
 .version-box{
   gap:8px;
   margin-left:8px;
