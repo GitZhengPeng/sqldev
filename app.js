@@ -2574,7 +2574,12 @@ const app = createApp({
       const root = document.documentElement;
       if (mode === 'dark') root.setAttribute('data-theme', 'dark');
       else if (mode === 'light') root.setAttribute('data-theme', 'light');
-      else root.removeAttribute('data-theme');
+      else {
+        /* system mode: detect OS preference and set data-theme accordingly
+           so all [data-theme="light"] / [data-theme="dark"] CSS rules apply */
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+      }
     }
     function toggleTheme() {
       const order = ['system', 'dark', 'light'];

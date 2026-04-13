@@ -18,7 +18,9 @@
     } else if (savedTheme === 'light') {
       document.documentElement.setAttribute('data-theme', 'light');
     } else {
-      document.documentElement.removeAttribute('data-theme');
+      /* system mode: detect OS preference */
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
     }
     window.dispatchEvent(new CustomEvent('sp-theme-sync', { detail: savedTheme }));
     poster.classList.add('leaving');
