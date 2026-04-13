@@ -2539,9 +2539,10 @@ const app = createApp({
     const activePage = ref('ddl');
     const sidebarOpen = ref(false);
     const sidebarCollapsed = ref(false);
-    function handleSidebarRailClick() {
+    function handleSidebarHover(open) {
       if (window.innerWidth <= 1024) return;
-      if (!sidebarOpen.value) sidebarOpen.value = true;
+      sidebarOpen.value = !!open;
+      if (!open) sidebarSettingsOpen.value = false;
     }
     function toggleSidebar() {
       sidebarCollapsed.value = !sidebarCollapsed.value;
@@ -2550,7 +2551,7 @@ const app = createApp({
     const NAV_PAGES = ['ddl', 'func', 'proc'];
     function setPage(page) {
       activePage.value = page;
-      sidebarOpen.value = false;
+      if (window.innerWidth <= 1024) sidebarOpen.value = false;
     }
     /* navKeydown removed: sidebar is now role="navigation" with aria-current, not tablist */
     const showRulesMenu = ref(false);
@@ -3750,7 +3751,7 @@ const app = createApp({
     });
 
     return {
-      activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, handleSidebarRailClick, setPage,
+      activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, handleSidebarHover, setPage,
       sidebarSettingsOpen, actionBarCollapsed,
       // DB Picker
       dbDropdown, dbAbbr, dbOptions, pickDb,

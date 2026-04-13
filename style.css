@@ -2154,12 +2154,6 @@ body:not(.splash-active) #app{
   margin-left:56px;
   overflow:hidden;
 }
-.sidebar:not(.open){
-  cursor:pointer;
-}
-.sidebar.open{
-  cursor:default;
-}
 .header{
   position:sticky;
   top:0;
@@ -2221,9 +2215,6 @@ body:not(.splash-active) #app{
     align-items:center;
     justify-content:center;
     flex-shrink:0;
-  }
-  .sidebar{
-    cursor:default;
   }
   /* Show sidebar settings area */
   .sidebar-settings-area{display:block}
