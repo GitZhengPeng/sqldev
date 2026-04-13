@@ -491,7 +491,7 @@ body{
   z-index:120;
   min-height:100svh;
   display:block;
-  overflow:hidden;
+  overflow-y:auto;
   background:linear-gradient(180deg,#060a14 0%,#08101f 48%,#0c1021 100%);
   opacity:1;
   transform:none;
