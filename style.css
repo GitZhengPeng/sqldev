@@ -1926,6 +1926,8 @@ body:not(.splash-active) #app{
 /* Light: misc redesign elements */
 [data-theme="light"] .panel:last-child{background:#ffffff}
 [data-theme="light"] .CodeMirror-activeline-background{background:rgba(37,99,235,.04)}
+[data-theme="light"] .main-content{background:#ffffff}
+[data-theme="light"] .rules-page{background:#ffffff}
 /* System theme now handled by JS: applyTheme('system') detects OS preference
    and sets data-theme="light" or data-theme="dark" accordingly.
    The old @media(prefers-color-scheme:light){:root:not([data-theme])} block
