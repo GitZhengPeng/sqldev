@@ -11,9 +11,10 @@ Security must rely on proper Row Level Security (RLS) policies and restricted Ed
    - no application table appears in the "RLS disabled" result
    - every table intended for client access has explicit policies
    - policy inventory matches your expected read/write scope
+   - default audit scope is `public` + `app`
 4. If result sets are empty, first check the baseline table list in the script output:
    - no user table means "nothing to audit yet" (normal for early projects)
-   - tables may live outside `public` schema
+   - tables may live outside `public/app` (edit `target_schemas` in the SQL file)
 
 ## Deployment Guardrails
 
