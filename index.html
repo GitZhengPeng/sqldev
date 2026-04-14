@@ -596,6 +596,7 @@
                   <div class="panel-empty-eyebrow">Ready for Source SQL</div>
                   <h3 class="panel-empty-title">从 {{ sourceLabel }} DDL 开始</h3>
                   <p class="panel-empty-copy">先贴入建表语句，或直接加载示例。我们会保留字段、索引、注释和分区结构。</p>
+                  <p class="panel-empty-tip">提示：可直接粘贴 SQL（Ctrl / ⌘ + V）</p>
                   <div class="panel-empty-actions">
                     <button class="panel-empty-btn panel-empty-btn-primary" type="button" @click="loadSample">加载示例</button>
                     <button class="panel-empty-btn" type="button" @click="uploadFile">上传 SQL</button>
@@ -759,6 +760,7 @@
                   <div class="panel-empty-eyebrow">Function Draft</div>
                   <h3 class="panel-empty-title">先放入 {{ funcSourceLabel }} 函数定义</h3>
                   <p class="panel-empty-copy">支持 CREATE FUNCTION / CREATE OR REPLACE FUNCTION，示例会带上参数、返回值和函数体骨架。</p>
+                  <p class="panel-empty-tip">提示：可直接粘贴 SQL（Ctrl / ⌘ + V）</p>
                   <div class="panel-empty-actions">
                     <button class="panel-empty-btn panel-empty-btn-primary" type="button" @click="loadFuncSample">加载示例</button>
                     <button class="panel-empty-btn" type="button" @click="uploadFile">上传 SQL</button>
@@ -931,6 +933,7 @@ $$;</pre>
                   <div class="panel-empty-eyebrow">Procedure Draft</div>
                   <h3 class="panel-empty-title">从 {{ procSourceLabel }} 存储过程开始</h3>
                   <p class="panel-empty-copy">把过程签名、变量和异常处理粘贴进来，或者先加载示例查看推荐结构。</p>
+                  <p class="panel-empty-tip">提示：可直接粘贴 SQL（Ctrl / ⌘ + V）</p>
                   <div class="panel-empty-actions">
                     <button class="panel-empty-btn panel-empty-btn-primary" type="button" @click="loadProcSample">加载示例</button>
                     <button class="panel-empty-btn" type="button" @click="uploadFile">上传 SQL</button>

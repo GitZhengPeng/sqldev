@@ -1457,6 +1457,13 @@ body{
   font-size:13px;
   line-height:1.75;
 }
+.panel-empty-tip{
+  margin:10px 0 0;
+  color:#c7d8f4;
+  font-size:11px;
+  line-height:1.6;
+  opacity:.9;
+}
 .panel-empty-steps{
   display:flex;
   justify-content:center;
@@ -2104,6 +2111,7 @@ body:not(.splash-active) #app{
 }
 [data-theme="light"] .panel-empty-title{color:#0f172a}
 [data-theme="light"] .panel-empty-copy{color:#475569}
+[data-theme="light"] .panel-empty-tip{color:#3b82f6;opacity:.85}
 [data-theme="light"] .panel-empty-steps span{
   border-color:rgba(37,99,235,.14);
   background:rgba(255,255,255,.85);
