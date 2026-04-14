@@ -257,12 +257,12 @@
         <button class="auth-mode-btn active" id="auth-mode-password-btn" type="button" role="tab" aria-selected="true">密码登录</button>
         <button class="auth-mode-btn" id="auth-mode-code-btn" type="button" role="tab" aria-selected="false">验证码登录</button>
       </div>
-      <label class="auth-label" for="auth-email">邮箱</label>
-      <input class="auth-input" id="auth-email" type="email" autocomplete="email" placeholder="you@example.com"/>
-      <div id="auth-password-wrap">
+      <form id="auth-password-form" class="auth-form" autocomplete="on">
+        <label class="auth-label" for="auth-email-password">邮箱</label>
+        <input class="auth-input" id="auth-email-password" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required/>
         <label class="auth-label" for="auth-password">密码</label>
         <div class="auth-password-field">
-          <input class="auth-input auth-input-password" id="auth-password" type="password" autocomplete="current-password" placeholder="至少 6 位"/>
+          <input class="auth-input auth-input-password" id="auth-password" name="password" type="password" autocomplete="current-password" placeholder="至少 6 位" required/>
           <button class="auth-password-toggle" type="button" data-target="auth-password" aria-label="显示或隐藏密码">
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M1.5 10s3-5.5 8.5-5.5S18.5 10 18.5 10s-3 5.5-8.5 5.5S1.5 10 1.5 10Z" stroke="currentColor" stroke-width="1.5"/>
@@ -275,15 +275,27 @@
         <div class="auth-inline-actions" id="auth-password-actions">
           <button class="auth-text-btn" id="auth-forgot-btn" type="button">忘记密码？</button>
         </div>
-      </div>
-      <div id="auth-code-wrap" hidden>
+        <div class="auth-actions">
+          <button class="auth-btn" id="auth-register-btn" type="button">密码注册</button>
+          <button class="auth-btn primary" id="auth-login-btn" type="submit">密码登录</button>
+        </div>
+      </form>
+      <form id="auth-code-form" class="auth-form" autocomplete="on" hidden>
+        <label class="auth-label" for="auth-email-code">邮箱</label>
+        <input class="auth-input" id="auth-email-code" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required/>
         <label class="auth-label" for="auth-code">验证码</label>
-        <input class="auth-input" id="auth-code" type="text" autocomplete="one-time-code" placeholder="请输入邮箱收到的验证码"/>
-      </div>
-      <div id="auth-reset-wrap" hidden>
+        <input class="auth-input" id="auth-code" name="otp" type="text" autocomplete="one-time-code" inputmode="numeric" placeholder="请输入邮箱收到的验证码" required/>
+        <div class="auth-actions">
+          <button class="auth-btn" id="auth-code-send-btn" type="button">发送验证码</button>
+          <button class="auth-btn primary" id="auth-code-login-btn" type="submit">验证码登录</button>
+        </div>
+      </form>
+      <form id="auth-reset-form" class="auth-form" autocomplete="on" hidden>
+        <label class="auth-label" for="auth-email-reset">邮箱</label>
+        <input class="auth-input" id="auth-email-reset" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required/>
         <label class="auth-label" for="auth-reset-password">新密码</label>
         <div class="auth-password-field">
-          <input class="auth-input auth-input-password" id="auth-reset-password" type="password" autocomplete="new-password" placeholder="请输入新密码"/>
+          <input class="auth-input auth-input-password" id="auth-reset-password" name="new-password" type="password" autocomplete="new-password" placeholder="请输入新密码" required/>
           <button class="auth-password-toggle" type="button" data-target="auth-reset-password" aria-label="显示或隐藏新密码">
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M1.5 10s3-5.5 8.5-5.5S18.5 10 18.5 10s-3 5.5-8.5 5.5S1.5 10 1.5 10Z" stroke="currentColor" stroke-width="1.5"/>
@@ -294,7 +306,7 @@
         </div>
         <label class="auth-label" for="auth-reset-confirm">确认新密码</label>
         <div class="auth-password-field">
-          <input class="auth-input auth-input-password" id="auth-reset-confirm" type="password" autocomplete="new-password" placeholder="请再次输入新密码"/>
+          <input class="auth-input auth-input-password" id="auth-reset-confirm" name="confirm-password" type="password" autocomplete="new-password" placeholder="请再次输入新密码" required/>
           <button class="auth-password-toggle" type="button" data-target="auth-reset-confirm" aria-label="显示或隐藏确认密码">
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M1.5 10s3-5.5 8.5-5.5S18.5 10 18.5 10s-3 5.5-8.5 5.5S1.5 10 1.5 10Z" stroke="currentColor" stroke-width="1.5"/>
@@ -305,20 +317,16 @@
         </div>
         <p class="auth-input-hint">密码需同时包含大写字母、小写字母、数字和特殊字符</p>
         <label class="auth-label" for="auth-reset-code">验证码</label>
-        <input class="auth-input" id="auth-reset-code" type="text" autocomplete="one-time-code" placeholder="请输入邮箱收到的验证码"/>
+        <input class="auth-input" id="auth-reset-code" name="otp" type="text" autocomplete="one-time-code" inputmode="numeric" placeholder="请输入邮箱收到的验证码" required/>
         <div class="auth-actions auth-reset-actions">
           <button class="auth-btn" id="auth-reset-send-btn" type="button">发送验证码</button>
-          <button class="auth-btn primary" id="auth-reset-btn" type="button">确定重置</button>
+          <button class="auth-btn primary" id="auth-reset-btn" type="submit">确定重置</button>
         </div>
         <div class="auth-inline-actions auth-reset-footer">
           <button class="auth-text-btn" id="auth-reset-back-btn" type="button">重新登录</button>
         </div>
-      </div>
+      </form>
       <p class="auth-status" id="auth-status" aria-live="polite"></p>
-      <div class="auth-actions">
-        <button class="auth-btn" id="auth-register-btn" type="button">密码注册</button>
-        <button class="auth-btn primary" id="auth-login-btn" type="button">密码登录</button>
-      </div>
     </div>
   </div>
 </section>

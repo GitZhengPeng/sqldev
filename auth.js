@@ -7,7 +7,12 @@
   var authModal = authModalMask ? authModalMask.querySelector('.auth-modal') : null;
   var authModalHead = authModalMask ? authModalMask.querySelector('.auth-modal-head') : null;
   var authStatus = document.getElementById('auth-status');
-  var authEmail = document.getElementById('auth-email');
+  var authPasswordForm = document.getElementById('auth-password-form');
+  var authCodeForm = document.getElementById('auth-code-form');
+  var authResetForm = document.getElementById('auth-reset-form');
+  var authPasswordEmail = document.getElementById('auth-email-password');
+  var authCodeEmail = document.getElementById('auth-email-code');
+  var authResetEmail = document.getElementById('auth-email-reset');
   var authPassword = document.getElementById('auth-password');
   var authCode = document.getElementById('auth-code');
   var authResetPassword = document.getElementById('auth-reset-password');
@@ -15,6 +20,8 @@
   var authResetCode = document.getElementById('auth-reset-code');
   var authLoginBtn = document.getElementById('auth-login-btn');
   var authRegisterBtn = document.getElementById('auth-register-btn');
+  var authCodeLoginBtn = document.getElementById('auth-code-login-btn');
+  var authCodeSendBtn = document.getElementById('auth-code-send-btn');
   var authResetBtn = document.getElementById('auth-reset-btn');
   var authResetSendBtn = document.getElementById('auth-reset-send-btn');
   var authCloseBtn = document.getElementById('auth-close-btn');
@@ -24,9 +31,6 @@
   var authModeCodeBtn = document.getElementById('auth-mode-code-btn');
   var authPasswordToggles = document.querySelectorAll('.auth-password-toggle');
   var authModeSwitch = document.querySelector('.auth-mode-switch');
-  var authPasswordWrap = document.getElementById('auth-password-wrap');
-  var authCodeWrap = document.getElementById('auth-code-wrap');
-  var authResetWrap = document.getElementById('auth-reset-wrap');
   var authPasswordActions = document.getElementById('auth-password-actions');
   var authModalTitle = document.getElementById('auth-modal-title');
   var authModalDesc = document.getElementById('auth-modal-desc');
@@ -108,6 +112,37 @@
     authStatus.classList.toggle('error', !!isError);
   }
 
+  function getAuthEmailInputs() {
+    return [authPasswordEmail, authCodeEmail, authResetEmail];
+  }
+
+  function setAuthEmailValue(value, sourceInput) {
+    var next = String(value || '').trim();
+    var inputs = getAuthEmailInputs();
+    for (var i = 0; i < inputs.length; i++) {
+      var input = inputs[i];
+      if (!input || input === sourceInput) continue;
+      input.value = next;
+    }
+  }
+
+  function getActiveAuthEmailInput() {
+    if (authView === 'reset') return authResetEmail;
+    return authMode === 'code' ? authCodeEmail : authPasswordEmail;
+  }
+
+  function getAuthEmailValue() {
+    var active = getActiveAuthEmailInput();
+    var value = (active && active.value || '').trim();
+    if (value) return value;
+    var inputs = getAuthEmailInputs();
+    for (var i = 0; i < inputs.length; i++) {
+      var fallback = (inputs[i] && inputs[i].value || '').trim();
+      if (fallback) return fallback;
+    }
+    return '';
+  }
+
   function normalizeToken(token) {
     return (token || '').replace(/\s+/g, '').trim();
   }
@@ -179,9 +214,13 @@
   function setBusy(busy) {
     if (authLoginBtn) authLoginBtn.disabled = busy;
     if (authRegisterBtn) authRegisterBtn.disabled = busy;
+    if (authCodeLoginBtn) authCodeLoginBtn.disabled = busy;
+    if (authCodeSendBtn) authCodeSendBtn.disabled = busy;
     if (authResetBtn) authResetBtn.disabled = busy;
     if (authResetSendBtn) authResetSendBtn.disabled = busy;
-    if (authEmail) authEmail.disabled = busy;
+    if (authPasswordEmail) authPasswordEmail.disabled = busy;
+    if (authCodeEmail) authCodeEmail.disabled = busy;
+    if (authResetEmail) authResetEmail.disabled = busy;
     if (authPassword) authPassword.disabled = busy;
     if (authCode) authCode.disabled = busy;
     if (authResetPassword) authResetPassword.disabled = busy;
@@ -201,7 +240,9 @@
       authModeSwitch.hidden = resetMode;
       authModeSwitch.style.display = resetMode ? 'none' : 'grid';
     }
-    if (authEmail) authEmail.readOnly = resetMode;
+    if (authResetEmail) authResetEmail.readOnly = resetMode;
+    if (authPasswordEmail) authPasswordEmail.readOnly = false;
+    if (authCodeEmail) authCodeEmail.readOnly = false;
 
     if (authModePasswordBtn) {
       authModePasswordBtn.classList.toggle('active', passwordMode);
@@ -212,18 +253,26 @@
       authModeCodeBtn.setAttribute('aria-selected', passwordMode ? 'false' : 'true');
     }
 
-    if (authPasswordWrap) authPasswordWrap.hidden = resetMode || !passwordMode;
-    if (authCodeWrap) authCodeWrap.hidden = resetMode || passwordMode;
-    if (authResetWrap) authResetWrap.hidden = !resetMode;
+    if (authPasswordForm) authPasswordForm.hidden = resetMode || !passwordMode;
+    if (authCodeForm) authCodeForm.hidden = resetMode || passwordMode;
+    if (authResetForm) authResetForm.hidden = !resetMode;
     if (authPasswordActions) authPasswordActions.hidden = resetMode || !passwordMode;
 
     if (authRegisterBtn) {
-      authRegisterBtn.hidden = resetMode;
-      authRegisterBtn.textContent = passwordMode ? '密码注册' : '发送验证码';
+      authRegisterBtn.hidden = resetMode || !passwordMode;
+      authRegisterBtn.textContent = '密码注册';
     }
     if (authLoginBtn) {
-      authLoginBtn.hidden = resetMode;
-      authLoginBtn.textContent = passwordMode ? '密码登录' : '验证码登录';
+      authLoginBtn.hidden = resetMode || !passwordMode;
+      authLoginBtn.textContent = '密码登录';
+    }
+    if (authCodeSendBtn) {
+      authCodeSendBtn.hidden = resetMode || passwordMode;
+      authCodeSendBtn.textContent = '发送验证码';
+    }
+    if (authCodeLoginBtn) {
+      authCodeLoginBtn.hidden = resetMode || passwordMode;
+      authCodeLoginBtn.textContent = '验证码登录';
     }
     if (authResetBtn) {
       authResetBtn.hidden = !resetMode || resetCompleted;
@@ -248,6 +297,7 @@
   function setAuthMode(mode) {
     authMode = mode === 'code' ? 'code' : 'password';
     authView = 'login';
+    setAuthEmailValue(getAuthEmailValue());
     resetCodeSent = false;
     resetCompleted = false;
     if (authResetPassword) authResetPassword.value = '';
@@ -259,6 +309,7 @@
 
   function enterResetPasswordMode(message) {
     authView = 'reset';
+    setAuthEmailValue(getAuthEmailValue());
     resetCodeSent = false;
     resetCompleted = false;
     if (authResetPassword) authResetPassword.value = '';
@@ -271,6 +322,7 @@
   function exitResetPasswordMode(message) {
     authView = 'login';
     authMode = 'password';
+    setAuthEmailValue(getAuthEmailValue());
     resetCodeSent = false;
     resetCompleted = false;
     if (authResetPassword) authResetPassword.value = '';
@@ -319,14 +371,16 @@
     if (!authModalMask) return;
     authModalMask.hidden = false;
     resetAuthModalPosition();
+    setAuthEmailValue(getAuthEmailValue());
     setStatus(message || '', false);
     renderAuthForm();
+    var activeEmailInput = getActiveAuthEmailInput();
     if (authView === 'reset' && authResetPassword) {
       authResetPassword.focus();
       return;
     }
-    if (authEmail && !authEmail.value) {
-      authEmail.focus();
+    if (activeEmailInput && !activeEmailInput.value) {
+      activeEmailInput.focus();
       return;
     }
     if (authMode === 'password' && authPassword) {
@@ -422,7 +476,7 @@
   }
 
   function validateResetForm() {
-    var email = (authEmail && authEmail.value || '').trim();
+    var email = getAuthEmailValue();
     var nextPassword = (authResetPassword && authResetPassword.value || '').trim();
     var confirmPassword = (authResetConfirm && authResetConfirm.value || '').trim();
     if (!email) throw new Error('请先输入邮箱');
@@ -437,7 +491,7 @@
 
   async function submitPasswordResetRequest() {
     if (!sb) return setStatus('认证未初始化，请检查 Supabase 配置', true);
-    var email = (authEmail && authEmail.value || '').trim();
+    var email = getAuthEmailValue();
     if (!email) return setStatus('请先输入邮箱，再进入密码重置', true);
     enterResetPasswordMode('请先输入新密码，然后发送验证码。');
   }
@@ -617,7 +671,7 @@
 
   async function submitRegister() {
     if (!sb) return setStatus('认证未初始化，请检查 Supabase 配置', true);
-    var email = (authEmail && authEmail.value || '').trim();
+    var email = getAuthEmailValue();
     if (!email) return setStatus('请输入邮箱', true);
 
     if (authMode === 'password') {
@@ -671,7 +725,7 @@
 
   async function submitLogin() {
     if (!sb) return setStatus('认证未初始化，请检查 Supabase 配置', true);
-    var email = (authEmail && authEmail.value || '').trim();
+    var email = getAuthEmailValue();
     if (!email) return setStatus('请输入邮箱', true);
 
     setBusy(true);
@@ -852,37 +906,51 @@
     }
   });
 
-  if (authRegisterBtn) authRegisterBtn.addEventListener('click', submitRegister);
-  if (authLoginBtn) authLoginBtn.addEventListener('click', submitLogin);
-  if (authResetBtn) authResetBtn.addEventListener('click', submitResetPassword);
-
-  if (authEmail) {
-    authEmail.addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      if (authView === 'reset' && authResetPassword) {
-        authResetPassword.focus();
-        return;
-      }
-      if (authMode === 'password' && authPassword) authPassword.focus();
-      if (authMode === 'code' && authCode) authCode.focus();
+  if (authRegisterBtn) {
+    authRegisterBtn.addEventListener('click', function () {
+      authMode = 'password';
+      submitRegister();
+    });
+  }
+  if (authCodeSendBtn) {
+    authCodeSendBtn.addEventListener('click', function () {
+      authMode = 'code';
+      submitRegister();
     });
   }
 
-  if (authPassword) {
-    authPassword.addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter' || authMode !== 'password') return;
+  if (authPasswordForm) {
+    authPasswordForm.addEventListener('submit', function (e) {
       e.preventDefault();
+      authMode = 'password';
       submitLogin();
     });
   }
-
-  if (authCode) {
-    authCode.addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter' || authMode !== 'code') return;
+  if (authCodeForm) {
+    authCodeForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      setStatus('请点击“验证码登录”按钮完成登录。', false);
+      authMode = 'code';
+      submitLogin();
     });
+  }
+  if (authResetForm) {
+    authResetForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      submitResetPassword();
+    });
+  }
+
+  var emailInputs = getAuthEmailInputs();
+  for (var emailIndex = 0; emailIndex < emailInputs.length; emailIndex++) {
+    (function (emailInput) {
+      if (!emailInput) return;
+      emailInput.addEventListener('input', function () {
+        setAuthEmailValue(emailInput.value, emailInput);
+      });
+      emailInput.addEventListener('change', function () {
+        setAuthEmailValue(emailInput.value, emailInput);
+      });
+    })(emailInputs[emailIndex]);
   }
 
   if (authResetConfirm) {
