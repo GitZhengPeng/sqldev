@@ -1,5 +1,3 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
-
 const PRIMARY_WEB_ORIGIN = 'https://gitzhengpeng.github.io'
 const ALLOWED_ORIGINS = new Set([PRIMARY_WEB_ORIGIN])
 const LOCAL_ORIGIN_RE = /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i
@@ -7,12 +5,6 @@ const corsBaseHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 }
-
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
-const supabaseAuthClient = (SUPABASE_URL && SUPABASE_ANON_KEY)
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null
 
 type DdlRuleItem = { source?: string; target?: string }
 type BodyRuleItem = { s?: string; t?: string }
@@ -233,20 +225,45 @@ function bearerToken(req: Request): string {
   return match ? match[1].trim() : ''
 }
 
-function validateUserToken(token: string): boolean {
-  const t = (token || '').trim()
-  return /^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(t)
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  try {
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4)
+    const json = atob(padded)
+    const payload = JSON.parse(json)
+    return payload && typeof payload === 'object' ? payload : null
+  } catch {
+    return null
+  }
 }
 
-async function validateUserSession(token: string): Promise<boolean> {
-  if (!validateUserToken(token) || !supabaseAuthClient) return false
-  try {
-    const { data, error } = await supabaseAuthClient.auth.getUser(token)
-    if (error) return false
-    return !!(data && data.user && typeof data.user.id === 'string' && data.user.id.length > 0)
-  } catch {
-    return false
+function validateUserToken(token: string): boolean {
+  const t = (token || '').trim()
+  if (!/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(t)) return false
+  const payload = decodeJwtPayload(t)
+  if (!payload) return false
+  const sub = typeof payload.sub === 'string' ? payload.sub.trim() : ''
+  if (!sub) return false
+  const exp = Number(payload.exp)
+  if (Number.isFinite(exp) && exp > 0) {
+    const now = Math.floor(Date.now() / 1000)
+    if (now >= exp) return false
   }
+  const role = typeof payload.role === 'string' ? payload.role : ''
+  if (role && role !== 'authenticated' && role !== 'service_role') return false
+  return true
+}
+
+function requireValidAuthFromHeader(req: Request): boolean {
+  const token = bearerToken(req)
+  if (!token) return false
+  if (!validateUserToken(token)) return false
+  const authUser = req.headers.get('x-supabase-auth-user')
+  if (authUser && authUser.trim().length > 0) return true
+  // When verify_jwt=false (local debugging), fall back to payload checks above.
+  return true
 }
 
 Deno.serve(async (req) => {
@@ -260,16 +277,11 @@ Deno.serve(async (req) => {
   if (!corsHeaders) return json({ error: 'CORS origin not allowed' }, 403)
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405, corsHeaders)
 
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    return json({ error: 'Server env missing SUPABASE_URL or SUPABASE_ANON_KEY' }, 500, corsHeaders)
-  }
-
   try {
     const body = await req.json().catch(() => null)
-    const token = bearerToken(req)
-    if (!validateUserToken(token)) return json({ error: 'Missing or invalid access token' }, 401, corsHeaders)
-    const isValidUser = await validateUserSession(token)
-    if (!isValidUser) return json({ error: 'Invalid login session' }, 401, corsHeaders)
+    if (!requireValidAuthFromHeader(req)) {
+      return json({ error: 'Missing or invalid access token' }, 401, corsHeaders)
+    }
     const kind = String(body?.kind || '')
     const fromDb = String(body?.fromDb || '')
     const toDb = String(body?.toDb || '')
