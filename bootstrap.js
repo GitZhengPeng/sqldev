@@ -7,7 +7,7 @@
     'vendor/vue.global.prod.js',
     'samples.js',
     'rules.js',
-    'app.js?v=20260413b'
+    'app.js?v=20260414a'
   ];
 
   var started = false;

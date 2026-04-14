@@ -1,3 +1,22 @@
-/* Replace with your own Supabase project settings */
-window.SUPABASE_URL = window.SUPABASE_URL || 'https://ydlvispjdcffqvqhwhuk.supabase.co';
-window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_0AaPGEhFpc4xrAMQesgdbQ_yrQQkE6N';
+/* Public client config: URL + anon key are expected to be public in browser apps.
+   Never put service-role or secret keys in frontend code. */
+(function () {
+  var fallbackUrl = 'https://ydlvispjdcffqvqhwhuk.supabase.co';
+  var fallbackAnonKey = 'sb_publishable_0AaPGEhFpc4xrAMQesgdbQ_yrQQkE6N';
+
+  var runtimeUrl = window.__SQDEV_SUPABASE_URL || '';
+  var runtimeAnonKey = window.__SQDEV_SUPABASE_ANON_KEY || '';
+
+  var url = window.SUPABASE_URL || runtimeUrl || fallbackUrl;
+  var anonKey = window.SUPABASE_ANON_KEY || runtimeAnonKey || fallbackAnonKey;
+
+  var keyLower = String(anonKey || '').toLowerCase();
+  if (keyLower.indexOf('service_role') >= 0 || keyLower.indexOf('sb_secret_') >= 0) {
+    console.error('[supabase-config] Refused to expose a privileged Supabase key in the browser.');
+    anonKey = '';
+  }
+
+  window.SUPABASE_URL = url;
+  window.SUPABASE_ANON_KEY = anonKey;
+  window.SUPABASE_CONFIG_SOURCE = (runtimeUrl || runtimeAnonKey) ? 'runtime' : 'fallback';
+})();

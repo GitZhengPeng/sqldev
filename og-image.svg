@@ -1,0 +1,72 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="80" x2="1080" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#081127"/>
+      <stop offset="1" stop-color="#102244"/>
+    </linearGradient>
+    <radialGradient id="orbA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(250 120) rotate(37) scale(360 260)">
+      <stop stop-color="#4F7DF9" stop-opacity=".52"/>
+      <stop offset="1" stop-color="#4F7DF9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(980 520) rotate(-24) scale(360 250)">
+      <stop stop-color="#22D3EE" stop-opacity=".42"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#4F7DF9"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="chip" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#14284F"/>
+      <stop offset="1" stop-color="#0C1B36"/>
+    </linearGradient>
+    <filter id="blurGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#orbA)"/>
+  <rect width="1200" height="630" fill="url(#orbB)"/>
+
+  <g opacity=".22">
+    <path d="M0 90H1200M0 180H1200M0 270H1200M0 360H1200M0 450H1200M0 540H1200" stroke="#6D8FD0" stroke-width="1"/>
+    <path d="M120 0V630M240 0V630M360 0V630M480 0V630M600 0V630M720 0V630M840 0V630M960 0V630M1080 0V630" stroke="#6D8FD0" stroke-width="1"/>
+  </g>
+
+  <g>
+    <path d="M760 184L650 352M760 184L900 360M650 352L900 360" stroke="url(#line)" stroke-width="4"/>
+    <circle cx="760" cy="184" r="12" fill="#C74634"/>
+    <circle cx="650" cy="352" r="12" fill="#00758F"/>
+    <circle cx="900" cy="360" r="12" fill="#336791"/>
+    <circle cx="760" cy="184" r="26" fill="#C74634" opacity=".22" filter="url(#blurGlow)"/>
+    <circle cx="650" cy="352" r="26" fill="#00758F" opacity=".22" filter="url(#blurGlow)"/>
+    <circle cx="900" cy="360" r="26" fill="#336791" opacity=".22" filter="url(#blurGlow)"/>
+  </g>
+
+  <g>
+    <rect x="84" y="76" width="92" height="36" rx="18" fill="#11305B" stroke="#2D4E82"/>
+    <text x="130" y="100" fill="#B8CEEF" text-anchor="middle" font-size="16" font-family="DM Sans, Arial, sans-serif">SQLDEV</text>
+  </g>
+
+  <g>
+    <text x="84" y="220" fill="#EAF2FF" font-size="64" font-weight="700" font-family="DM Sans, Noto Sans SC, Arial, sans-serif">SQL 翻译工作台</text>
+    <text x="84" y="276" fill="#9FBBE8" font-size="30" font-weight="500" font-family="DM Sans, Noto Sans SC, Arial, sans-serif">Oracle · MySQL · PostgreSQL 实时互转</text>
+    <text x="84" y="332" fill="#85A4D6" font-size="24" font-family="DM Sans, Noto Sans SC, Arial, sans-serif">DDL / 函数 / 存储过程 统一转换体验</text>
+  </g>
+
+  <g>
+    <rect x="84" y="390" width="488" height="164" rx="22" fill="url(#chip)" stroke="#294878"/>
+    <rect x="108" y="424" width="200" height="14" rx="7" fill="#294C83"/>
+    <rect x="108" y="452" width="368" height="14" rx="7" fill="#1E3A6B"/>
+    <rect x="108" y="480" width="420" height="14" rx="7" fill="#1A3360"/>
+    <rect x="108" y="508" width="282" height="14" rx="7" fill="#213E71"/>
+    <text x="108" y="412" fill="#9AB6E4" font-size="16" font-family="JetBrains Mono, Consolas, monospace">TRANSLATION PREVIEW</text>
+  </g>
+
+  <g opacity=".8">
+    <rect x="628" y="454" width="488" height="100" rx="20" fill="#0F203E" stroke="#2A4778"/>
+    <text x="658" y="498" fill="#9FC0ED" font-size="22" font-family="DM Sans, Noto Sans SC, Arial, sans-serif">https://gitzhengpeng.github.io/sqldev/</text>
+    <text x="658" y="528" fill="#7EA2D5" font-size="18" font-family="DM Sans, Arial, sans-serif">Free online SQL conversion workbench</text>
+  </g>
+</svg>

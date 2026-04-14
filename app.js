@@ -3147,7 +3147,22 @@ const app = createApp({
       return ddlCount + ' 条';
     });
 
+    function hasText(value) {
+      return !!String(value || '').trim();
+    }
+
     // --- Computed line counts and meta ---
+    const ddlInputEmpty = computed(() => !hasText(inputDdl.value));
+    const ddlOutputEmpty = computed(() => !hasText(outputDdl.value));
+    const funcInputEmpty = computed(() => !hasText(funcInput.value));
+    const funcOutputEmpty = computed(() => !hasText(funcOutput.value));
+    const procInputEmpty = computed(() => !hasText(procInput.value));
+    const procOutputEmpty = computed(() => !hasText(procOutput.value));
+    const canRunPrimaryAction = computed(() => {
+      if (activePage.value === 'func') return hasText(funcInput.value);
+      if (activePage.value === 'proc') return hasText(procInput.value);
+      return hasText(inputDdl.value);
+    });
     const inputLineCount = computed(() => inputDdl.value ? inputDdl.value.split('\n').length : 0);
     const outputMeta = computed(() => {
       if (!outputDdl.value) return '\u7B49\u5F85\u7FFB\u8BD1';
@@ -3770,19 +3785,19 @@ const app = createApp({
       currentPageTitle, currentPageSubtitle, currentEngineLabel, currentRuleCount, runPrimaryAction,
       // DDL
       sourceDb, targetDb, inputDdl, outputDdl,
-      sourceLabel, targetLabel, inputLineCount, outputMeta,
+      sourceLabel, targetLabel, inputLineCount, outputMeta, ddlInputEmpty, ddlOutputEmpty,
       swapDbs, loadSample, clearAll, convert, copyOutput, saveOutput,
       // Function
       funcSourceDb, funcTargetDb, funcInput, funcOutput,
-      funcSourceLabel, funcTargetLabel, funcInputLineCount, funcOutputMeta,
+      funcSourceLabel, funcTargetLabel, funcInputLineCount, funcOutputMeta, funcInputEmpty, funcOutputEmpty,
       swapFuncDbs, loadFuncSample, clearFunc, convertFunc, copyFuncOutput, saveFuncOutput,
       // Procedure
       procSourceDb, procTargetDb, procInput, procOutput,
-      procSourceLabel, procTargetLabel, procInputLineCount, procOutputMeta,
+      procSourceLabel, procTargetLabel, procInputLineCount, procOutputMeta, procInputEmpty, procOutputEmpty,
       swapProcDbs, loadProcSample, clearProc, convertProc, copyProcOutput, saveProcOutput,
       // Shared
       statusText, fileInput, fileEncoding, ENCODING_OPTIONS, uploadFile, handleFileUpload,
-      isWorkbenchPage, runWorkbenchAction,
+      isWorkbenchPage, runWorkbenchAction, canRunPrimaryAction,
       showScrollTop, scrollToTop,
       // Rules
       ddlRules, addRule, deleteRule, saveRule,
