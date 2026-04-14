@@ -589,7 +589,7 @@
               <span class="panel-meta">{{inputLineCount}} &#34892;</span>
             </div>
             <p class="panel-desc">&#31896;&#36148; {{sourceLabel}} &#24314;&#34920;&#35821;&#21477;&#65288;CREATE TABLE&#12289;COMMENT&#12289;CREATE INDEX&#12289;&#20998;&#21306;&#31561;&#65289;</p>
-            <div class="panel-editor-shell">
+            <div class="panel-editor-shell" :class="{'is-empty': ddlInputEmpty}">
               <div class="panel-empty-state panel-empty-input" v-if="ddlInputEmpty">
                 <div class="panel-empty-backdrop"></div>
                 <div class="panel-empty-content">
@@ -602,7 +602,7 @@
                   </div>
                 </div>
               </div>
-              <sql-editor v-model="inputDdl" :placeholder="'在此粘贴 ' + sourceLabel + ' DDL ...'" aria-label="SQL输入"></sql-editor>
+              <sql-editor v-model="inputDdl" :placeholder="ddlInputEmpty ? '' : ('在此粘贴 ' + sourceLabel + ' DDL ...')" aria-label="SQL输入"></sql-editor>
             </div>
           </article>
           <article class="panel">
@@ -615,7 +615,7 @@
               <span class="panel-meta">{{outputMeta}}</span>
             </div>
             <p class="panel-desc">&#36755;&#20986; {{targetLabel}} &#20860;&#23481;&#30340; DDL&#65292;&#21253;&#21547;&#24314;&#34920;&#12289;&#27880;&#37322;&#12289;&#32034;&#24341;&#12289;&#20027;&#38190;&#12289;&#22806;&#38190;&#12289;&#20998;&#21306;</p>
-            <div class="panel-editor-shell">
+            <div class="panel-editor-shell" :class="{'is-empty': ddlOutputEmpty}">
               <div class="panel-empty-state panel-empty-output" v-if="ddlOutputEmpty">
                 <div class="panel-empty-backdrop"></div>
                 <div class="panel-empty-content">
@@ -633,7 +633,7 @@
                   </div>
                 </div>
               </div>
-              <sql-editor v-model="outputDdl" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+              <sql-editor v-model="outputDdl" class="output-editor" :placeholder="ddlOutputEmpty ? '' : '点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
             </div>
           </article>
         </section>
@@ -752,7 +752,7 @@
               <span class="panel-meta">{{funcInputLineCount}} &#34892;</span>
             </div>
             <p class="panel-desc">&#31896;&#36148; {{funcSourceLabel}} &#20989;&#25968;&#23450;&#20041;&#65288;CREATE FUNCTION / CREATE OR REPLACE FUNCTION&#65289;</p>
-            <div class="panel-editor-shell">
+            <div class="panel-editor-shell" :class="{'is-empty': funcInputEmpty}">
               <div class="panel-empty-state panel-empty-input" v-if="funcInputEmpty">
                 <div class="panel-empty-backdrop"></div>
                 <div class="panel-empty-content">
@@ -765,7 +765,7 @@
                   </div>
                 </div>
               </div>
-              <sql-editor v-model="funcInput" :placeholder="'在此粘贴 ' + funcSourceLabel + ' 函数 ...'" aria-label="SQL输入"></sql-editor>
+              <sql-editor v-model="funcInput" :placeholder="funcInputEmpty ? '' : ('在此粘贴 ' + funcSourceLabel + ' 函数 ...')" aria-label="SQL输入"></sql-editor>
             </div>
           </article>
           <article class="panel">
@@ -778,7 +778,7 @@
               <span class="panel-meta">{{funcOutputMeta}}</span>
             </div>
             <p class="panel-desc">&#36755;&#20986; {{funcTargetLabel}} &#20860;&#23481;&#30340;&#20989;&#25968;&#23450;&#20041;</p>
-            <div class="panel-editor-shell">
+            <div class="panel-editor-shell" :class="{'is-empty': funcOutputEmpty}">
               <div class="panel-empty-state panel-empty-output" v-if="funcOutputEmpty">
                 <div class="panel-empty-backdrop"></div>
                 <div class="panel-empty-content">
@@ -796,7 +796,7 @@
                   </div>
                 </div>
               </div>
-              <sql-editor v-model="funcOutput" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+              <sql-editor v-model="funcOutput" class="output-editor" :placeholder="funcOutputEmpty ? '' : '点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
             </div>
           </article>
         </section>
@@ -924,7 +924,7 @@ $$;</pre>
               <span class="panel-meta">{{procInputLineCount}} &#34892;</span>
             </div>
             <p class="panel-desc">&#31896;&#36148; {{procSourceLabel}} &#23384;&#20648;&#36807;&#31243;&#65288;CREATE PROCEDURE / CREATE OR REPLACE PROCEDURE&#65289;</p>
-            <div class="panel-editor-shell">
+            <div class="panel-editor-shell" :class="{'is-empty': procInputEmpty}">
               <div class="panel-empty-state panel-empty-input" v-if="procInputEmpty">
                 <div class="panel-empty-backdrop"></div>
                 <div class="panel-empty-content">
@@ -937,7 +937,7 @@ $$;</pre>
                   </div>
                 </div>
               </div>
-              <sql-editor v-model="procInput" :placeholder="'在此粘贴 ' + procSourceLabel + ' 存储过程 ...'" aria-label="SQL输入"></sql-editor>
+              <sql-editor v-model="procInput" :placeholder="procInputEmpty ? '' : ('在此粘贴 ' + procSourceLabel + ' 存储过程 ...')" aria-label="SQL输入"></sql-editor>
             </div>
           </article>
           <article class="panel">
@@ -950,7 +950,7 @@ $$;</pre>
               <span class="panel-meta">{{procOutputMeta}}</span>
             </div>
             <p class="panel-desc">&#36755;&#20986; {{procTargetLabel}} &#20860;&#23481;&#30340;&#23384;&#20648;&#36807;&#31243;&#23450;&#20041;</p>
-            <div class="panel-editor-shell">
+            <div class="panel-editor-shell" :class="{'is-empty': procOutputEmpty}">
               <div class="panel-empty-state panel-empty-output" v-if="procOutputEmpty">
                 <div class="panel-empty-backdrop"></div>
                 <div class="panel-empty-content">
@@ -968,7 +968,7 @@ $$;</pre>
                   </div>
                 </div>
               </div>
-              <sql-editor v-model="procOutput" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+              <sql-editor v-model="procOutput" class="output-editor" :placeholder="procOutputEmpty ? '' : '点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
             </div>
           </article>
         </section>
