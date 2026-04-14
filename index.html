@@ -589,7 +589,21 @@
               <span class="panel-meta">{{inputLineCount}} &#34892;</span>
             </div>
             <p class="panel-desc">&#31896;&#36148; {{sourceLabel}} &#24314;&#34920;&#35821;&#21477;&#65288;CREATE TABLE&#12289;COMMENT&#12289;CREATE INDEX&#12289;&#20998;&#21306;&#31561;&#65289;</p>
-            <sql-editor v-model="inputDdl" :placeholder="'在此粘贴 ' + sourceLabel + ' DDL ...'" aria-label="SQL输入"></sql-editor>
+            <div class="panel-editor-shell">
+              <div class="panel-empty-state panel-empty-input" v-if="ddlInputEmpty">
+                <div class="panel-empty-backdrop"></div>
+                <div class="panel-empty-content">
+                  <div class="panel-empty-eyebrow">Ready for Source SQL</div>
+                  <h3 class="panel-empty-title">从 {{ sourceLabel }} DDL 开始</h3>
+                  <p class="panel-empty-copy">先贴入建表语句，或直接加载示例。我们会保留字段、索引、注释和分区结构。</p>
+                  <div class="panel-empty-actions">
+                    <button class="panel-empty-btn panel-empty-btn-primary" type="button" @click="loadSample">加载示例</button>
+                    <button class="panel-empty-btn" type="button" @click="uploadFile">上传 SQL</button>
+                  </div>
+                </div>
+              </div>
+              <sql-editor v-model="inputDdl" :placeholder="'在此粘贴 ' + sourceLabel + ' DDL ...'" aria-label="SQL输入"></sql-editor>
+            </div>
           </article>
           <article class="panel">
             <div class="panel-head">
@@ -601,7 +615,26 @@
               <span class="panel-meta">{{outputMeta}}</span>
             </div>
             <p class="panel-desc">&#36755;&#20986; {{targetLabel}} &#20860;&#23481;&#30340; DDL&#65292;&#21253;&#21547;&#24314;&#34920;&#12289;&#27880;&#37322;&#12289;&#32034;&#24341;&#12289;&#20027;&#38190;&#12289;&#22806;&#38190;&#12289;&#20998;&#21306;</p>
-            <sql-editor v-model="outputDdl" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+            <div class="panel-editor-shell">
+              <div class="panel-empty-state panel-empty-output" v-if="ddlOutputEmpty">
+                <div class="panel-empty-backdrop"></div>
+                <div class="panel-empty-content">
+                  <div class="panel-empty-eyebrow">Translation Preview</div>
+                  <h3 class="panel-empty-title">{{ targetLabel }} 结果会显示在这里</h3>
+                  <p class="panel-empty-copy">{{ ddlInputEmpty ? '先在左侧输入 SQL，或加载示例。' : '输入已经准备好，现在可以开始翻译。' }}</p>
+                  <div class="panel-empty-steps">
+                    <span>1. 准备源 SQL</span>
+                    <span>2. 检查转换方向</span>
+                    <span>3. 开始翻译</span>
+                  </div>
+                  <div class="panel-empty-actions">
+                    <button class="panel-empty-btn panel-empty-btn-primary" type="button" @click="convert" :disabled="!canRunPrimaryAction">开始翻译</button>
+                    <button class="panel-empty-btn" type="button" @click="loadSample" v-if="ddlInputEmpty">加载示例</button>
+                  </div>
+                </div>
+              </div>
+              <sql-editor v-model="outputDdl" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+            </div>
           </article>
         </section>
 
@@ -719,7 +752,21 @@
               <span class="panel-meta">{{funcInputLineCount}} &#34892;</span>
             </div>
             <p class="panel-desc">&#31896;&#36148; {{funcSourceLabel}} &#20989;&#25968;&#23450;&#20041;&#65288;CREATE FUNCTION / CREATE OR REPLACE FUNCTION&#65289;</p>
-            <sql-editor v-model="funcInput" :placeholder="'在此粘贴 ' + funcSourceLabel + ' 函数 ...'" aria-label="SQL输入"></sql-editor>
+            <div class="panel-editor-shell">
+              <div class="panel-empty-state panel-empty-input" v-if="funcInputEmpty">
+                <div class="panel-empty-backdrop"></div>
+                <div class="panel-empty-content">
+                  <div class="panel-empty-eyebrow">Function Draft</div>
+                  <h3 class="panel-empty-title">先放入 {{ funcSourceLabel }} 函数定义</h3>
+                  <p class="panel-empty-copy">支持 CREATE FUNCTION / CREATE OR REPLACE FUNCTION，示例会带上参数、返回值和函数体骨架。</p>
+                  <div class="panel-empty-actions">
+                    <button class="panel-empty-btn panel-empty-btn-primary" type="button" @click="loadFuncSample">加载示例</button>
+                    <button class="panel-empty-btn" type="button" @click="uploadFile">上传 SQL</button>
+                  </div>
+                </div>
+              </div>
+              <sql-editor v-model="funcInput" :placeholder="'在此粘贴 ' + funcSourceLabel + ' 函数 ...'" aria-label="SQL输入"></sql-editor>
+            </div>
           </article>
           <article class="panel">
             <div class="panel-head">
@@ -731,7 +778,26 @@
               <span class="panel-meta">{{funcOutputMeta}}</span>
             </div>
             <p class="panel-desc">&#36755;&#20986; {{funcTargetLabel}} &#20860;&#23481;&#30340;&#20989;&#25968;&#23450;&#20041;</p>
-            <sql-editor v-model="funcOutput" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+            <div class="panel-editor-shell">
+              <div class="panel-empty-state panel-empty-output" v-if="funcOutputEmpty">
+                <div class="panel-empty-backdrop"></div>
+                <div class="panel-empty-content">
+                  <div class="panel-empty-eyebrow">Function Preview</div>
+                  <h3 class="panel-empty-title">{{ funcTargetLabel }} 函数将在此生成</h3>
+                  <p class="panel-empty-copy">{{ funcInputEmpty ? '先准备函数定义，或直接加载示例。' : '结构已就绪，现在可以开始翻译。' }}</p>
+                  <div class="panel-empty-steps">
+                    <span>1. 函数签名</span>
+                    <span>2. 变量与返回值</span>
+                    <span>3. 目标方言输出</span>
+                  </div>
+                  <div class="panel-empty-actions">
+                    <button class="panel-empty-btn panel-empty-btn-primary" type="button" @click="convertFunc" :disabled="!canRunPrimaryAction">开始翻译</button>
+                    <button class="panel-empty-btn" type="button" @click="loadFuncSample" v-if="funcInputEmpty">加载示例</button>
+                  </div>
+                </div>
+              </div>
+              <sql-editor v-model="funcOutput" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+            </div>
           </article>
         </section>
 
@@ -858,7 +924,21 @@ $$;</pre>
               <span class="panel-meta">{{procInputLineCount}} &#34892;</span>
             </div>
             <p class="panel-desc">&#31896;&#36148; {{procSourceLabel}} &#23384;&#20648;&#36807;&#31243;&#65288;CREATE PROCEDURE / CREATE OR REPLACE PROCEDURE&#65289;</p>
-            <sql-editor v-model="procInput" :placeholder="'在此粘贴 ' + procSourceLabel + ' 存储过程 ...'" aria-label="SQL输入"></sql-editor>
+            <div class="panel-editor-shell">
+              <div class="panel-empty-state panel-empty-input" v-if="procInputEmpty">
+                <div class="panel-empty-backdrop"></div>
+                <div class="panel-empty-content">
+                  <div class="panel-empty-eyebrow">Procedure Draft</div>
+                  <h3 class="panel-empty-title">从 {{ procSourceLabel }} 存储过程开始</h3>
+                  <p class="panel-empty-copy">把过程签名、变量和异常处理粘贴进来，或者先加载示例查看推荐结构。</p>
+                  <div class="panel-empty-actions">
+                    <button class="panel-empty-btn panel-empty-btn-primary" type="button" @click="loadProcSample">加载示例</button>
+                    <button class="panel-empty-btn" type="button" @click="uploadFile">上传 SQL</button>
+                  </div>
+                </div>
+              </div>
+              <sql-editor v-model="procInput" :placeholder="'在此粘贴 ' + procSourceLabel + ' 存储过程 ...'" aria-label="SQL输入"></sql-editor>
+            </div>
           </article>
           <article class="panel">
             <div class="panel-head">
@@ -870,7 +950,26 @@ $$;</pre>
               <span class="panel-meta">{{procOutputMeta}}</span>
             </div>
             <p class="panel-desc">&#36755;&#20986; {{procTargetLabel}} &#20860;&#23481;&#30340;&#23384;&#20648;&#36807;&#31243;&#23450;&#20041;</p>
-            <sql-editor v-model="procOutput" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+            <div class="panel-editor-shell">
+              <div class="panel-empty-state panel-empty-output" v-if="procOutputEmpty">
+                <div class="panel-empty-backdrop"></div>
+                <div class="panel-empty-content">
+                  <div class="panel-empty-eyebrow">Procedure Preview</div>
+                  <h3 class="panel-empty-title">{{ procTargetLabel }} 过程输出会出现在这里</h3>
+                  <p class="panel-empty-copy">{{ procInputEmpty ? '先准备过程定义，或直接加载示例。' : '源过程已就绪，现在可以开始翻译。' }}</p>
+                  <div class="panel-empty-steps">
+                    <span>1. 载入过程定义</span>
+                    <span>2. 检查参数与变量</span>
+                    <span>3. 生成目标过程</span>
+                  </div>
+                  <div class="panel-empty-actions">
+                    <button class="panel-empty-btn panel-empty-btn-primary" type="button" @click="convertProc" :disabled="!canRunPrimaryAction">开始翻译</button>
+                    <button class="panel-empty-btn" type="button" @click="loadProcSample" v-if="procInputEmpty">加载示例</button>
+                  </div>
+                </div>
+              </div>
+              <sql-editor v-model="procOutput" class="output-editor" :placeholder="'点击「开始翻译」后输出结果'" aria-label="SQL输出"></sql-editor>
+            </div>
           </article>
         </section>
 
