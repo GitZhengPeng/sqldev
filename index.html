@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="description" content="Oracle / MySQL / PostgreSQL SQL 缈昏瘧宸ヤ綔鍙?鈥?DDL寤鸿〃璇彞銆佸嚱鏁般€佸瓨鍌ㄨ繃绋嬪湪绾夸簰杞?/>
+<meta name="description" content="Oracle / MySQL / PostgreSQL SQL 翻译工作台，支持 DDL 建表语句、函数、存储过程在线互转"/>
 <!-- CSP: 'unsafe-eval' is required by Vue 3 in-DOM template compilation (new Function) and CodeMirror 5 mode parser;
      to remove it, migrate to a build-step with pre-compiled Vue SFCs and CodeMirror 6 -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://github.githubassets.com; connect-src 'self' https://github.com https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'"/>
-<meta property="og:title" content="SQL 缈昏瘧宸ヤ綔鍙?/>
-<meta property="og:description" content="Oracle / MySQL / PostgreSQL SQL 缈昏瘧宸ヤ綔鍙?鈥?DDL寤鸿〃璇彞銆佸嚱鏁般€佸瓨鍌ㄨ繃绋嬪湪绾夸簰杞?/>
+<meta property="og:title" content="SQL 翻译工作台"/>
+<meta property="og:description" content="Oracle / MySQL / PostgreSQL SQL 翻译工作台，支持 DDL、函数、存储过程在线互转"/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://gitzhengpeng.github.io/sqldev/"/>
 <meta property="og:image" content="https://gitzhengpeng.github.io/sqldev/og-image.png"/>
@@ -18,11 +18,11 @@
 <meta property="og:image:height" content="630"/>
 <meta property="og:image:alt" content="SQL 翻译工作台预览图：支持 Oracle / MySQL / PostgreSQL 转换"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="SQL 缈昏瘧宸ヤ綔鍙?/>
-<meta name="twitter:description" content="Oracle / MySQL / PostgreSQL DDL銆佸嚱鏁般€佸瓨鍌ㄨ繃绋嬪湪绾夸簰杞?/>
+<meta name="twitter:title" content="SQL 翻译工作台"/>
+<meta name="twitter:description" content="Oracle / MySQL / PostgreSQL DDL、函数、存储过程在线互转"/>
 <meta name="twitter:image" content="https://gitzhengpeng.github.io/sqldev/og-image.png"/>
 <link rel="canonical" href="https://gitzhengpeng.github.io/sqldev/"/>
-<title>SQL 缈昏瘧宸ヤ綔鍙?/title>
+<title>SQL 翻译工作台</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
@@ -31,7 +31,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml"/>
 <link rel="stylesheet" href="style.css?v=20260414a"/>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"SQL 缈昏瘧宸ヤ綔鍙?,"url":"https://gitzhengpeng.github.io/sqldev/","description":"Oracle / MySQL / PostgreSQL SQL 缈昏瘧宸ヤ綔鍙?鈥?DDL寤鸿〃璇彞銆佸嚱鏁般€佸瓨鍌ㄨ繃绋嬪湪绾夸簰杞?,"applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
+{"@context":"https://schema.org","@type":"WebApplication","name":"SQL 翻译工作台","url":"https://gitzhengpeng.github.io/sqldev/","description":"Oracle / MySQL / PostgreSQL SQL 翻译工作台，支持 DDL、函数、存储过程在线互转","applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
 </script>
 <script defer src="font-loader.js?v=20260413a"></script>
 </head>
@@ -1227,5 +1227,6 @@ $$;</pre>
 <!-- Non-critical heavy modules are loaded in idle time by bootstrap.js -->
 <script defer src="bootstrap.js?v=20260414a"></script>
 </body></html>
+
 
 
