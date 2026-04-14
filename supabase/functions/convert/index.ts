@@ -219,6 +219,41 @@ function json(data: unknown, status = 200, corsHeaders: Record<string, string> =
   })
 }
 
+function bearerToken(req: Request): string {
+  const auth = req.headers.get('authorization') || ''
+  const match = auth.match(/^Bearer\s+(.+)$/i)
+  return match ? match[1].trim() : ''
+}
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  try {
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4)
+    const json = atob(padded)
+    const payload = JSON.parse(json)
+    return payload && typeof payload === 'object' ? payload : null
+  } catch {
+    return null
+  }
+}
+
+function validateBearerUserToken(token: string): boolean {
+  const t = (token || '').trim()
+  if (!/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(t)) return false
+  const payload = decodeJwtPayload(t)
+  if (!payload) return false
+  const sub = typeof payload.sub === 'string' ? payload.sub.trim() : ''
+  if (!sub) return false
+  const exp = Number(payload.exp)
+  if (Number.isFinite(exp) && exp > 0) {
+    const now = Math.floor(Date.now() / 1000)
+    if (now >= exp) return false
+  }
+  return true
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req)
 
@@ -231,7 +266,10 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405, corsHeaders)
 
   try {
-    // Auth is enforced by Supabase Edge Gateway when verify_jwt=true in config.toml.
+    const token = bearerToken(req)
+    if (!validateBearerUserToken(token)) {
+      return json({ error: 'Missing or invalid Authorization bearer token' }, 401, corsHeaders)
+    }
     const body = await req.json().catch(() => null)
     const kind = String(body?.kind || '')
     const fromDb = String(body?.fromDb || '')
