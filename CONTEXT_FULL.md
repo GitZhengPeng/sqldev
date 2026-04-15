@@ -51,6 +51,7 @@ Last updated: 2026-04-15
   - has per-user-or-anon + IP rate limiting in function runtime
   - if endpoint is unavailable, auto-saves draft to `localStorage` (`sqldev_feedback_queue`)
   - client-side error diagnostics now surface likely cause (`not deployed` / `CORS` / `table write failed` / `network`) instead of only generic failure
+  - logged-in submit path now has resilient fallback: if `authApi.invokeFunction('feedback')` throws, client still retries direct endpoint submit
 - New global API for internal integration:
   - `window.openFeedbackModal(source)`
 

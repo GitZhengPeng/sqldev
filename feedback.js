@@ -118,6 +118,8 @@
 
   function buildFriendlyErrorMessage(err) {
     var msg = toErrorText(err).toLowerCase();
+    var origin = String(window.location.origin || '').toLowerCase();
+    var isLocalOrigin = origin.indexOf('127.0.0.1') >= 0 || origin.indexOf('localhost') >= 0;
     if (!msg) return '在线提交失败';
     if (msg.indexOf('feedback_backend_not_configured') >= 0) return '反馈后端未配置';
     if (msg.indexOf('storage_insert_failed') >= 0) return '反馈数据写入失败（请检查 feedback_entries 表）';
@@ -126,7 +128,8 @@
     if (msg.indexOf('403') >= 0 || msg.indexOf('forbidden') >= 0) return '当前域名未被反馈接口允许（CORS）';
     if (msg.indexOf('404') >= 0 || msg.indexOf('not found') >= 0) return '反馈接口未部署（feedback）';
     if (msg.indexOf('failed to fetch') >= 0 || msg.indexOf('networkerror') >= 0 || msg.indexOf('fetch failed') >= 0) {
-      return '网络连接失败（可能是网络或代理问题）';
+      if (isLocalOrigin) return '本地访问被拦截（CORS）。请开启 ALLOW_LOCALHOST_ORIGIN=1 并重新部署 feedback 函数';
+      return '网络连接失败（可能是网络、代理或跨域策略问题）';
     }
     return '在线提交失败';
   }
@@ -137,9 +140,13 @@
     if (authApi && typeof authApi.invokeFunction === 'function' && typeof authApi.getUserSync === 'function') {
       var user = authApi.getUserSync();
       if (user) {
-        var authRes = await authApi.invokeFunction('feedback', payload);
-        if (authRes && !authRes.error && authRes.data && authRes.data.ok) return { channel: 'auth-function' };
-        if (authRes && authRes.error) authInvokeError = toErrorText(authRes.error);
+        try {
+          var authRes = await authApi.invokeFunction('feedback', payload);
+          if (authRes && !authRes.error && authRes.data && authRes.data.ok) return { channel: 'auth-function' };
+          if (authRes && authRes.error) authInvokeError = toErrorText(authRes.error);
+        } catch (invokeErr) {
+          authInvokeError = toErrorText(invokeErr);
+        }
       }
     }
     var endpoint = getFeedbackEndpoint();
