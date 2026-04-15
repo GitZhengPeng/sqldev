@@ -6,7 +6,7 @@
 <meta name="description" content="Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转"/>
 <!-- CSP: 'unsafe-eval' is required by Vue 3 in-DOM template compilation (new Function) and CodeMirror 5 mode parser;
      to remove it, migrate to a build-step with pre-compiled Vue SFCs and CodeMirror 6 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://github.githubassets.com; connect-src 'self' https://github.com https://*.supabase.co https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://raw.githubusercontent.com; object-src 'none'; base-uri 'self'; form-action 'self'"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://github.githubassets.com; connect-src 'self' https://github.com https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'"/>
 <meta property="og:title" content="SQL 翻译工作台"/>
 <meta property="og:description" content="Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转"/>
 <meta property="og:type" content="website"/>
@@ -1151,18 +1151,9 @@ $$;</pre>
         </section>
       </template>
 
-      <!-- ==================== TEST TOOLS PAGE ==================== -->
+      <!-- ==================== TEST TOOLS PAGE (NEW) ==================== -->
       <template v-if="activePage==='idTool'">
-        <section class="idtool-page" id="panel-idtool" role="region" aria-label="测试小工具">
-          <div class="idtool-tabs" role="tablist" aria-label="证件工具切换">
-            <button class="idtool-tab" type="button" :class="{active: idToolTab==='idcard'}" @click="idToolTab='idcard'" role="tab" :aria-selected="String(idToolTab==='idcard')">
-              身份证号码生成
-            </button>
-            <button class="idtool-tab" type="button" :class="{active: idToolTab==='uscc'}" @click="idToolTab='uscc'" role="tab" :aria-selected="String(idToolTab==='uscc')">
-              统一社会信用代码生成
-            </button>
-          </div>
-
+        <section class="idtool-page" id="panel-idtool-new" role="region" aria-label="测试小工具">
           <div class="idtool-loading" v-if="regionLoading && !regionReady">行政区划数据加载中，请稍候...</div>
           <div class="idtool-loading error" v-if="regionLoadError">
             <span>{{ regionLoadError }}</span>
@@ -1170,120 +1161,128 @@ $$;</pre>
           </div>
 
           <div class="idtool-content" v-if="regionReady">
-            <section class="idtool-grid" v-show="idToolTab==='idcard'" role="tabpanel" aria-label="身份证号码生成与校验">
-              <article class="idtool-card">
-                <h3 class="idtool-card-title">身份证号码生成</h3>
-                <p class="idtool-card-desc">按省市区、出生日期和性别生成符合 GB 11643-1999 的 18 位身份证号码。</p>
-                <div class="idtool-form-grid">
-                  <label class="idtool-field">
-                    <span>省份</span>
-                    <select v-model="idProvinceCode">
-                      <option v-for="p in provinces" :key="'id-p-'+p.code" :value="p.code">{{ p.name }} ({{ p.code }})</option>
-                    </select>
-                  </label>
-                  <label class="idtool-field">
-                    <span>城市</span>
-                    <select v-model="idCityCode">
-                      <option v-for="c in idCityOptions" :key="'id-c-'+c.code" :value="c.code">{{ c.name }} ({{ c.code }})</option>
-                    </select>
-                  </label>
-                  <label class="idtool-field">
-                    <span>区 / 县</span>
-                    <select v-model="idCountyCode">
-                      <option v-for="a in idCountyOptions" :key="'id-a-'+a.code" :value="a.code">{{ a.name }} ({{ a.code }})</option>
-                    </select>
-                  </label>
-                  <label class="idtool-field">
-                    <span>出生日期</span>
-                    <input type="date" v-model="idBirthDate" :min="idBirthMin" :max="idBirthMax"/>
-                  </label>
-                </div>
-                <div class="idtool-inline">
-                  <span class="idtool-inline-label">性别</span>
-                  <label class="idtool-radio"><input type="radio" value="male" v-model="idGender"/> 男</label>
-                  <label class="idtool-radio"><input type="radio" value="female" v-model="idGender"/> 女</label>
-                </div>
-                <div class="idtool-actions">
-                  <button class="idtool-btn primary" type="button" @click="generateIdNumber">生成</button>
-                </div>
-                <div class="idtool-output">
-                  <input type="text" :value="idGeneratedNumber" readonly placeholder="生成结果将显示在这里"/>
-                  <button class="idtool-btn ghost" type="button" @click="copyGeneratedIdNumber">复制</button>
-                </div>
-                <p class="idtool-result" :class="idGenerateResult.type" v-if="idGenerateResult.text">{{ idGenerateResult.text }}</p>
-              </article>
+            <section class="idtool-grid idtool-grid--split" aria-label="证件号码生成与校验">
+              <article class="idtool-card idtool-stack-card">
+                <h3 class="idtool-card-title">身份证号码工具</h3>
+                <p class="idtool-card-desc">基于本地行政区划代码、出生日期和性别，生成并校验身份证号码。</p>
 
-              <article class="idtool-card">
-                <h3 class="idtool-card-title">身份证号码校验</h3>
-                <p class="idtool-card-desc">校验格式、行政区划、出生日期和校验位，返回通过或具体失败原因。</p>
-                <label class="idtool-field full">
-                  <span>输入身份证号码</span>
-                  <input type="text" v-model="idVerifyInput" maxlength="18" placeholder="例如：11010119900101567X"/>
-                </label>
-                <div class="idtool-actions">
-                  <button class="idtool-btn primary" type="button" @click="validateIdNumber">校验</button>
+                <div class="idtool-section">
+                  <h4 class="idtool-section-title">生成身份证号码</h4>
+                  <div class="idtool-form-grid">
+                    <label class="idtool-field">
+                      <span>省份</span>
+                      <select v-model="idProvinceCode">
+                        <option v-for="p in provinces" :key="'id-p-'+p.code" :value="p.code">{{ p.name }} ({{ p.code }})</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>城市</span>
+                      <select v-model="idCityCode">
+                        <option v-for="c in idCityOptions" :key="'id-c-'+c.code" :value="c.code">{{ c.name }} ({{ c.code }})</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>区 / 县</span>
+                      <select v-model="idCountyCode">
+                        <option v-for="a in idCountyOptions" :key="'id-a-'+a.code" :value="a.code">{{ a.name }} ({{ a.code }})</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>出生日期</span>
+                      <input type="date" v-model="idBirthDate" :min="idBirthMin" :max="idBirthMax"/>
+                    </label>
+                  </div>
+                  <div class="idtool-inline">
+                    <span class="idtool-inline-label">性别</span>
+                    <label class="idtool-radio"><input type="radio" value="male" v-model="idGender"/> 男</label>
+                    <label class="idtool-radio"><input type="radio" value="female" v-model="idGender"/> 女</label>
+                  </div>
+                  <div class="idtool-actions">
+                    <button class="idtool-btn primary" type="button" @click="generateIdNumber">生成</button>
+                  </div>
+                  <div class="idtool-output">
+                    <input type="text" :value="idGeneratedNumber" readonly placeholder="生成结果将显示在这里"/>
+                    <button class="idtool-btn ghost" type="button" @click="copyGeneratedIdNumber">复制</button>
+                  </div>
+                  <p class="idtool-result" :class="idGenerateResult.type" v-if="idGenerateResult.text">{{ idGenerateResult.text }}</p>
                 </div>
-                <p class="idtool-result" :class="idVerifyResult.type" v-if="idVerifyResult.text">{{ idVerifyResult.text }}</p>
-              </article>
-            </section>
 
-            <section class="idtool-grid" v-show="idToolTab==='uscc'" role="tabpanel" aria-label="统一社会信用代码生成与校验">
-              <article class="idtool-card">
-                <h3 class="idtool-card-title">统一社会信用代码生成</h3>
-                <p class="idtool-card-desc">按 GB 32100-2015 规则生成 18 位统一社会信用代码。</p>
-                <div class="idtool-form-grid">
-                  <label class="idtool-field">
-                    <span>登记管理部门</span>
-                    <select v-model="usccDeptCode">
-                      <option v-for="d in usccDeptOptions" :key="'uscc-d-'+d.value" :value="d.value">{{ d.label }} ({{ d.value }})</option>
-                    </select>
-                  </label>
-                  <label class="idtool-field">
-                    <span>机构类别代码</span>
-                    <select v-model="usccOrgTypeCode">
-                      <option v-for="d in usccOrgTypeOptions" :key="'uscc-o-'+d.value" :value="d.value">{{ d.label }} ({{ d.value }})</option>
-                    </select>
-                  </label>
-                  <label class="idtool-field">
-                    <span>省份</span>
-                    <select v-model="usccProvinceCode">
-                      <option v-for="p in provinces" :key="'uscc-p-'+p.code" :value="p.code">{{ p.name }} ({{ p.code }})</option>
-                    </select>
-                  </label>
-                  <label class="idtool-field">
-                    <span>城市</span>
-                    <select v-model="usccCityCode">
-                      <option v-for="c in usccCityOptions" :key="'uscc-c-'+c.code" :value="c.code">{{ c.name }} ({{ c.code }})</option>
-                    </select>
-                  </label>
+                <div class="idtool-divider" aria-hidden="true"></div>
+
+                <div class="idtool-section">
+                  <h4 class="idtool-section-title">校验身份证号码</h4>
                   <label class="idtool-field full">
-                    <span>区 / 县</span>
-                    <select v-model="usccCountyCode">
-                      <option v-for="a in usccCountyOptions" :key="'uscc-a-'+a.code" :value="a.code">{{ a.name }} ({{ a.code }})</option>
-                    </select>
+                    <span>输入身份证号码</span>
+                    <input type="text" v-model="idVerifyInput" maxlength="18" placeholder="例如：11010119900101567X"/>
                   </label>
+                  <div class="idtool-actions">
+                    <button class="idtool-btn primary" type="button" @click="validateIdNumber">校验</button>
+                  </div>
+                  <p class="idtool-result" :class="idVerifyResult.type" v-if="idVerifyResult.text">{{ idVerifyResult.text }}</p>
                 </div>
-                <div class="idtool-actions">
-                  <button class="idtool-btn primary" type="button" @click="generateUsccCode">生成</button>
-                </div>
-                <div class="idtool-output">
-                  <input type="text" :value="usccGeneratedCode" readonly placeholder="生成结果将显示在这里"/>
-                  <button class="idtool-btn ghost" type="button" @click="copyGeneratedUsccCode">复制</button>
-                </div>
-                <p class="idtool-result" :class="usccGenerateResult.type" v-if="usccGenerateResult.text">{{ usccGenerateResult.text }}</p>
               </article>
 
-              <article class="idtool-card">
-                <h3 class="idtool-card-title">统一社会信用代码校验</h3>
-                <p class="idtool-card-desc">校验格式、分段规范和校验位，返回通过或具体失败原因。</p>
-                <label class="idtool-field full">
-                  <span>输入统一社会信用代码</span>
-                  <input type="text" v-model="usccVerifyInput" maxlength="18" placeholder="例如：91310106MA1FY4BN0X"/>
-                </label>
-                <div class="idtool-actions">
-                  <button class="idtool-btn primary" type="button" @click="validateUsccCode">校验</button>
+              <article class="idtool-card idtool-stack-card">
+                <h3 class="idtool-card-title">统一社会信用代码工具</h3>
+                <p class="idtool-card-desc">按 GB 32100-2015 规则生成与校验统一社会信用代码。</p>
+
+                <div class="idtool-section">
+                  <h4 class="idtool-section-title">生成统一社会信用代码</h4>
+                  <div class="idtool-form-grid">
+                    <label class="idtool-field">
+                      <span>登记管理部门</span>
+                      <select v-model="usccDeptCode">
+                        <option v-for="d in usccDeptOptions" :key="'uscc-d-'+d.value" :value="d.value">{{ d.label }} ({{ d.value }})</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>机构类别代码</span>
+                      <select v-model="usccOrgTypeCode">
+                        <option v-for="d in usccOrgTypeOptions" :key="'uscc-o-'+d.value" :value="d.value">{{ d.label }} ({{ d.value }})</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>省份</span>
+                      <select v-model="usccProvinceCode">
+                        <option v-for="p in provinces" :key="'uscc-p-'+p.code" :value="p.code">{{ p.name }} ({{ p.code }})</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>城市</span>
+                      <select v-model="usccCityCode">
+                        <option v-for="c in usccCityOptions" :key="'uscc-c-'+c.code" :value="c.code">{{ c.name }} ({{ c.code }})</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field full">
+                      <span>区 / 县</span>
+                      <select v-model="usccCountyCode">
+                        <option v-for="a in usccCountyOptions" :key="'uscc-a-'+a.code" :value="a.code">{{ a.name }} ({{ a.code }})</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="idtool-actions">
+                    <button class="idtool-btn primary" type="button" @click="generateUsccCode">生成</button>
+                  </div>
+                  <div class="idtool-output">
+                    <input type="text" :value="usccGeneratedCode" readonly placeholder="生成结果将显示在这里"/>
+                    <button class="idtool-btn ghost" type="button" @click="copyGeneratedUsccCode">复制</button>
+                  </div>
+                  <p class="idtool-result" :class="usccGenerateResult.type" v-if="usccGenerateResult.text">{{ usccGenerateResult.text }}</p>
                 </div>
-                <p class="idtool-result" :class="usccVerifyResult.type" v-if="usccVerifyResult.text">{{ usccVerifyResult.text }}</p>
+
+                <div class="idtool-divider" aria-hidden="true"></div>
+
+                <div class="idtool-section">
+                  <h4 class="idtool-section-title">校验统一社会信用代码</h4>
+                  <label class="idtool-field full">
+                    <span>输入统一社会信用代码</span>
+                    <input type="text" v-model="usccVerifyInput" maxlength="18" placeholder="例如：91310106MA1FY4BN0X"/>
+                  </label>
+                  <div class="idtool-actions">
+                    <button class="idtool-btn primary" type="button" @click="validateUsccCode">校验</button>
+                  </div>
+                  <p class="idtool-result" :class="usccVerifyResult.type" v-if="usccVerifyResult.text">{{ usccVerifyResult.text }}</p>
+                </div>
               </article>
             </section>
           </div>

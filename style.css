@@ -3372,28 +3372,6 @@ body.feedback-open{overflow:hidden}
   flex-direction:column;
   gap:14px;
 }
-.idtool-tabs{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.idtool-tab{
-  border:1px solid rgba(99,135,241,.22);
-  background:rgba(12,18,34,.76);
-  color:#95aad0;
-  border-radius:10px;
-  padding:8px 14px;
-  font:600 12px var(--font-body);
-  cursor:pointer;
-  transition:all .16s ease;
-}
-.idtool-tab:hover{border-color:rgba(99,135,241,.38);color:#dce8ff}
-.idtool-tab.active{
-  color:#edf4ff;
-  border-color:rgba(99,135,241,.5);
-  background:linear-gradient(135deg,rgba(79,125,249,.24),rgba(139,92,246,.2));
-  box-shadow:0 10px 22px rgba(79,125,249,.16);
-}
 .idtool-loading{
   display:flex;
   align-items:center;
@@ -3444,6 +3422,24 @@ body.feedback-open{overflow:hidden}
   color:#8ba0c3;
   font-size:12px;
   line-height:1.6;
+}
+.idtool-stack-card{
+  min-height:100%;
+  gap:12px;
+}
+.idtool-section{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.idtool-section-title{
+  font-size:13px;
+  color:#dbe8ff;
+}
+.idtool-divider{
+  height:1px;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(99,135,241,.02),rgba(99,135,241,.42),rgba(99,135,241,.02));
 }
 .idtool-form-grid{
   display:grid;
@@ -3564,21 +3560,6 @@ body.feedback-open{overflow:hidden}
   color:#1d4ed8;
   background:rgba(37,99,235,.12);
 }
-[data-theme="light"] .idtool-tab{
-  border-color:#dbe6f5;
-  background:#fff;
-  color:#475569;
-}
-[data-theme="light"] .idtool-tab:hover{
-  border-color:#93c5fd;
-  color:#0f172a;
-}
-[data-theme="light"] .idtool-tab.active{
-  color:#1e3a8a;
-  border-color:#93c5fd;
-  background:linear-gradient(135deg,rgba(37,99,235,.14),rgba(99,102,241,.14));
-  box-shadow:0 12px 24px rgba(37,99,235,.12);
-}
 [data-theme="light"] .idtool-loading{
   border-color:#dbe6f5;
   background:#fff;
@@ -3601,6 +3582,10 @@ body.feedback-open{overflow:hidden}
 }
 [data-theme="light"] .idtool-card-title{color:#0f172a}
 [data-theme="light"] .idtool-card-desc{color:#64748b}
+[data-theme="light"] .idtool-section-title{color:#0f172a}
+[data-theme="light"] .idtool-divider{
+  background:linear-gradient(90deg,rgba(148,163,184,.08),rgba(59,130,246,.32),rgba(148,163,184,.08));
+}
 [data-theme="light"] .idtool-field span,
 [data-theme="light"] .idtool-inline-label{color:#475569}
 [data-theme="light"] .idtool-field input,

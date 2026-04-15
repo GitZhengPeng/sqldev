@@ -2550,7 +2550,6 @@ const app = createApp({
     }
     const NAV_PAGES = ['ddl', 'func', 'proc'];
     const testToolsExpanded = ref(false);
-    const idToolTab = ref('idcard');
     function toggleTestToolsMenu() {
       testToolsExpanded.value = !testToolsExpanded.value;
       if (!testToolsExpanded.value && activePage.value === 'idTool') {
@@ -2663,23 +2662,8 @@ const app = createApp({
     const procOutput = ref('');
 
     // Test tools state
-    const REGION_DATA_SOURCE_GROUPS = [
-      {
-        province: 'https://fastly.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/province.json',
-        city: 'https://fastly.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/city.json',
-        area: 'https://fastly.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/area.json'
-      },
-      {
-        province: 'https://cdn.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/province.json',
-        city: 'https://cdn.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/city.json',
-        area: 'https://cdn.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/area.json'
-      },
-      {
-        province: 'https://raw.githubusercontent.com/uiwjs/province-city-china/gh-pages/province.json',
-        city: 'https://raw.githubusercontent.com/uiwjs/province-city-china/gh-pages/city.json',
-        area: 'https://raw.githubusercontent.com/uiwjs/province-city-china/gh-pages/area.json'
-      }
-    ];
+    // Use local administrative region data to avoid online latency.
+    const REGION_DATA_LOCAL_FILE = './行政区划代码_2024.json';
     const regionLoading = ref(false);
     const regionReady = ref(false);
     const regionLoadError = ref('');
@@ -2762,13 +2746,20 @@ const app = createApp({
       });
     }
 
-    function _normalizeRegionData(provinceRows, cityRows, areaRows) {
-      var pRows = Array.isArray(provinceRows) ? provinceRows : [];
-      var cRows = Array.isArray(cityRows) ? cityRows : [];
-      var aRows = Array.isArray(areaRows) ? areaRows : [];
+    function _ensureAddressSelection(provinceRef, cityRef, countyRef) {
+      var cityList = citiesByProvince.value[provinceRef.value] || [];
+      if (!cityList.some(function(c) { return c.code === cityRef.value; })) {
+        cityRef.value = cityList.length ? cityList[0].code : '';
+      }
+      var countyList = countiesByCity.value[cityRef.value] || [];
+      if (!countyList.some(function(c) { return c.code === countyRef.value; })) {
+        countyRef.value = countyList.length ? countyList[0].code : '';
+      }
+    }
 
+    function _normalizeRegionTreeData(treeRows) {
+      var pRows = Array.isArray(treeRows) ? treeRows : [];
       var provs = [];
-      var provNameByCode = {};
       var provSet = new Set();
       var codeSet = new Set();
       var cityMap = {};
@@ -2776,63 +2767,39 @@ const app = createApp({
 
       pRows.forEach(function(p) {
         if (!p || !/^\d{6}$/.test(String(p.code || ''))) return;
-        var code = String(p.code);
-        var name = String(p.name || code);
-        provs.push({ code: code, name: name });
-        provNameByCode[code] = name;
-        provSet.add(code.slice(0, 2));
-        codeSet.add(code);
-        cityMap[code] = [];
-      });
+        var provinceCode = String(p.code);
+        var provinceName = String(p.name || provinceCode);
+        provs.push({ code: provinceCode, name: provinceName });
+        provSet.add(provinceCode.slice(0, 2));
+        codeSet.add(provinceCode);
+        cityMap[provinceCode] = [];
 
-      cRows.forEach(function(c) {
-        if (!c || !/^\d{6}$/.test(String(c.code || ''))) return;
-        var code = String(c.code);
-        var provCode = code.slice(0, 2) + '0000';
-        if (!cityMap[provCode]) cityMap[provCode] = [];
-        cityMap[provCode].push({
-          code: code,
-          name: String(c.name || code),
-          provinceCode: provCode
-        });
-        codeSet.add(code);
-      });
-
-      aRows.forEach(function(a) {
-        if (!a || !/^\d{6}$/.test(String(a.code || ''))) return;
-        var code = String(a.code);
-        var cityCode = code.slice(0, 4) + '00';
-        if (!countyMap[cityCode]) countyMap[cityCode] = [];
-        countyMap[cityCode].push({
-          code: code,
-          name: String(a.name || code),
-          cityCode: cityCode
-        });
-        codeSet.add(code);
-      });
-
-      provs.forEach(function(p) {
-        var currentCities = cityMap[p.code] || [];
-        if (!currentCities.length) {
-          // 直辖市/特别行政区在 city.json 中可能没有独立层级，按区县反推一个“辖区”城市
-          var virtualCodes = {};
-          aRows.forEach(function(a) {
-            var aCode = String((a && a.code) || '');
-            if (!/^\d{6}$/.test(aCode) || aCode.slice(0, 2) !== p.code.slice(0, 2)) return;
-            var cityCode = aCode.slice(0, 4) + '00';
-            virtualCodes[cityCode] = true;
+        var cityRows = Array.isArray(p.cityList) ? p.cityList : [];
+        cityRows.forEach(function(c) {
+          var cityCodeRaw = String((c && c.code) || '');
+          var cityCode = /^\d{6}$/.test(cityCodeRaw) ? cityCodeRaw : provinceCode;
+          var cityName = String((c && c.name) || cityCode);
+          cityMap[provinceCode].push({
+            code: cityCode,
+            name: cityName,
+            provinceCode: provinceCode
           });
-          Object.keys(virtualCodes).sort().forEach(function(cityCode) {
-            currentCities.push({
-              code: cityCode,
-              name: (provNameByCode[p.code] || p.name) + '辖区',
-              provinceCode: p.code
+          codeSet.add(cityCode);
+          if (!countyMap[cityCode]) countyMap[cityCode] = [];
+
+          var areaRows = Array.isArray(c && c.areaList) ? c.areaList : [];
+          areaRows.forEach(function(a) {
+            var areaCode = String((a && a.code) || '');
+            if (!/^\d{6}$/.test(areaCode)) return;
+            countyMap[cityCode].push({
+              code: areaCode,
+              name: String((a && a.name) || areaCode),
+              cityCode: cityCode
             });
-            codeSet.add(cityCode);
+            codeSet.add(areaCode);
           });
-          cityMap[p.code] = currentCities;
-        }
-        cityMap[p.code] = _sortRegionByCode(currentCities);
+        });
+        cityMap[provinceCode] = _sortRegionByCode(cityMap[provinceCode]);
       });
 
       Object.keys(countyMap).forEach(function(cityCode) {
@@ -2848,17 +2815,6 @@ const app = createApp({
       };
     }
 
-    function _ensureAddressSelection(provinceRef, cityRef, countyRef) {
-      var cityList = citiesByProvince.value[provinceRef.value] || [];
-      if (!cityList.some(function(c) { return c.code === cityRef.value; })) {
-        cityRef.value = cityList.length ? cityList[0].code : '';
-      }
-      var countyList = countiesByCity.value[cityRef.value] || [];
-      if (!countyList.some(function(c) { return c.code === countyRef.value; })) {
-        countyRef.value = countyList.length ? countyList[0].code : '';
-      }
-    }
-
     function _initIdToolDefaults() {
       if (!provinces.value.length) return;
       if (!idProvinceCode.value) idProvinceCode.value = provinces.value[0].code;
@@ -2868,57 +2824,31 @@ const app = createApp({
       if (!idBirthDate.value) idBirthDate.value = '1990-01-01';
     }
 
-    async function _fetchJsonWithTimeout(url, timeoutMs) {
-      var controller = new AbortController();
-      var timeout = setTimeout(function() { controller.abort(); }, timeoutMs || 12000);
-      try {
-        var res = await fetch(url, {
-          method: 'GET',
-          signal: controller.signal,
-          cache: 'force-cache',
-          credentials: 'omit'
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status + ' @ ' + url);
-        var data = await res.json();
-        if (!Array.isArray(data)) throw new Error('JSON 结构异常 @ ' + url);
-        return data;
-      } finally {
-        clearTimeout(timeout);
-      }
-    }
-
     async function ensureRegionDataLoaded(forceReload) {
       if (regionLoading.value) return;
       if (regionReady.value && !forceReload) return;
       regionLoading.value = true;
       regionLoadError.value = '';
-      var lastErr = '';
       try {
-        for (var i = 0; i < REGION_DATA_SOURCE_GROUPS.length; i++) {
-          var source = REGION_DATA_SOURCE_GROUPS[i];
-          try {
-            var rows = await Promise.all([
-              _fetchJsonWithTimeout(source.province, 12000),
-              _fetchJsonWithTimeout(source.city, 12000),
-              _fetchJsonWithTimeout(source.area, 12000)
-            ]);
-            var normalized = _normalizeRegionData(rows[0], rows[1], rows[2]);
-            provinces.value = normalized.provinces;
-            citiesByProvince.value = normalized.citiesByProvince;
-            countiesByCity.value = normalized.countiesByCity;
-            regionCodeSet.value = normalized.regionCodeSet;
-            provinceCodeSet.value = normalized.provinceCodeSet;
-            regionReady.value = true;
-            _initIdToolDefaults();
-            return;
-          } catch (err) {
-            lastErr = String((err && err.message) || err || '未知错误');
-          }
-        }
-        throw new Error(lastErr || '行政区划数据源不可用');
+        var res = await fetch(REGION_DATA_LOCAL_FILE, {
+          method: 'GET',
+          cache: 'force-cache',
+          credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' @ ' + REGION_DATA_LOCAL_FILE);
+        var rows = await res.json();
+        var normalized = _normalizeRegionTreeData(rows);
+        if (!normalized.provinces.length) throw new Error('行政区划数据为空');
+        provinces.value = normalized.provinces;
+        citiesByProvince.value = normalized.citiesByProvince;
+        countiesByCity.value = normalized.countiesByCity;
+        regionCodeSet.value = normalized.regionCodeSet;
+        provinceCodeSet.value = normalized.provinceCodeSet;
+        regionReady.value = true;
+        _initIdToolDefaults();
       } catch (err) {
         regionReady.value = false;
-        regionLoadError.value = '行政区划数据加载失败，请检查网络后重试：' + String((err && err.message) || err || '');
+        regionLoadError.value = '行政区划数据加载失败，请检查本地文件后重试：' + String((err && err.message) || err || '');
       } finally {
         regionLoading.value = false;
       }
@@ -3001,10 +2931,13 @@ const app = createApp({
     }
 
     function _randomSeqByGender(gender) {
-      var n = _randomInt(1, 999);
-      if (gender === 'female' && n % 2 !== 0) n = n === 999 ? 998 : n + 1;
-      if (gender !== 'female' && n % 2 === 0) n = n === 999 ? 997 : n + 1;
-      return String(n).padStart(3, '0');
+      // 顺序码: 001-999，第17位(顺序码最后1位)男奇女偶
+      var seqNum = _randomInt(1, 999);
+      if (gender === 'female' && seqNum % 2 !== 0) seqNum += 1;
+      if (gender !== 'female' && seqNum % 2 === 0) seqNum += 1;
+      if (seqNum > 999) seqNum -= 2;
+      if (seqNum < 1) seqNum = gender === 'female' ? 2 : 1;
+      return String(seqNum).padStart(3, '0');
     }
 
     function generateIdNumber() {
@@ -4260,7 +4193,7 @@ const app = createApp({
 
     return {
       activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, handleSidebarHover, setPage,
-      testToolsExpanded, toggleTestToolsMenu, idToolTab,
+      testToolsExpanded, toggleTestToolsMenu,
       sidebarSettingsOpen, actionBarCollapsed,
       // DB Picker
       dbDropdown, dbAbbr, dbOptions, pickDb,

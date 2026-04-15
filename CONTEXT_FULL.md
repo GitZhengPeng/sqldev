@@ -136,3 +136,20 @@ Last updated: 2026-04-15
   - icon rotated 90° + label vertical layout
   - desktop shows label, mobile keeps icon-only compact mode
 - Updated both dark/light theme shadows and hover color to consistent Oracle red accent.
+
+## 2026-04-15: ID Tool Local Data + Two-Card Redesign
+- Replaced online region loading path with local file:
+  - `app.js` now loads `./行政区划代码_2024.json` only.
+  - Removed online fallback fetch logic from runtime path.
+- Region parsing now uses nested tree data structure from local JSON:
+  - `province -> cityList -> areaList`.
+- Updated ID tool page layout to a new two-card design:
+  - Card 1: 身份证号码生成 + 校验
+  - Card 2: 统一社会信用代码生成 + 校验
+  - Desktop two-column split, mobile single-column stacked.
+- Removed old tab-switch template/styles for the ID tool page to simplify maintenance.
+- Refined ID sequence generation logic:
+  - sequence range `001-999`
+  - gender parity enforced on the 17th digit (male odd / female even)
+  - keeps checksum calculation unchanged (GB 11643-1999).
+- Tightened CSP `connect-src` by removing now-unused region data CDN domains.
