@@ -1333,11 +1333,22 @@ $$;</pre>
 
             <div class="ziwei-form-grid">
               <label class="idtool-field full">
+                <span>命例名称（可选）</span>
+                <input type="text" v-model="ziweiProfileName" maxlength="32" placeholder="例如：张三-1993-08-21 上午"/>
+              </label>
+              <label class="idtool-field full">
                 <span>历法输入</span>
                 <div class="ziwei-toggle">
                   <button class="ziwei-toggle-btn" :class="{active: ziweiCalendarType==='solar'}" type="button" @click="ziweiCalendarType='solar'">公历输入</button>
                   <button class="ziwei-toggle-btn" :class="{active: ziweiCalendarType==='lunar'}" type="button" @click="ziweiCalendarType='lunar'">农历输入</button>
                 </div>
+              </label>
+              <label class="idtool-field full">
+                <span>展示模式</span>
+                <label class="idtool-radio">
+                  <input type="checkbox" v-model="ziweiProMode"/>
+                  专业模式（显示宫位详情、摘要解盘、历史命例）
+                </label>
               </label>
 
               <template v-if="ziweiCalendarType==='solar'">
@@ -1437,7 +1448,8 @@ $$;</pre>
                 v-for="cell in ziweiChart.boardCells"
                 :key="'zw-cell-'+cell.branch"
                 class="ziwei-palace"
-                :class="[cell.area, {ming: cell.isMing, shen: cell.isShen}]"
+                :class="[cell.area, {ming: cell.isMing, shen: cell.isShen, active: ziweiFocusBranch===cell.branch}]"
+                @click="focusZiweiBranch(cell.branch)"
               >
                 <header class="ziwei-palace-head">
                   <span class="ziwei-palace-name">{{ cell.palaceName || '—' }}</span>
@@ -1514,6 +1526,68 @@ $$;</pre>
                 </div>
               </div>
             </div>
+
+            <div class="ziwei-pro-grid" v-if="ziweiProMode">
+              <section class="ziwei-pro-card">
+                <header class="ziwei-pro-head">
+                  <h4>宫位详情</h4>
+                  <span v-if="ziweiFocusCell">{{ ziweiFocusCell.palaceName }} · {{ ziweiFocusCell.branch }}</span>
+                </header>
+                <div class="ziwei-pro-body" v-if="ziweiFocusCell">
+                  <p><strong>天干地支：</strong>{{ ziweiFocusCell.stemBranch }}</p>
+                  <p><strong>主星：</strong>{{ ziweiFocusCell.mainStarsText }}</p>
+                  <p><strong>辅星：</strong>{{ ziweiFocusCell.assistStarsText }}</p>
+                  <p><strong>杂曜：</strong>{{ ziweiFocusCell.miscStarsText }}</p>
+                  <p><strong>十二长生：</strong>{{ ziweiFocusCell.changSheng || '--' }}</p>
+                  <p><strong>大限：</strong>{{ ziweiFocusCell.daXian || '--' }}</p>
+                  <p><strong>流年序列：</strong>{{ ziweiFocusCell.liuNianSeriesText || '--' }}</p>
+                  <p><strong>小限序列：</strong>{{ ziweiFocusCell.xiaoXianSeriesText || '--' }}</p>
+                </div>
+                <div class="ziwei-pro-body" v-else>
+                  <p>点击任一宫位查看详细信息。</p>
+                </div>
+              </section>
+
+              <section class="ziwei-pro-card">
+                <header class="ziwei-pro-head">
+                  <h4>摘要解盘</h4>
+                  <span>{{ ziweiAnalysis.length }} 条</span>
+                </header>
+                <div class="ziwei-pro-body">
+                  <article class="ziwei-analysis-item" v-for="item in ziweiAnalysis" :key="'zw-analysis-'+item.key">
+                    <h5>{{ item.title }}</h5>
+                    <p>{{ item.text }}</p>
+                  </article>
+                  <p v-if="!ziweiAnalysis.length">暂无分析内容，请先排盘。</p>
+                </div>
+              </section>
+            </div>
+
+            <section class="ziwei-pro-card ziwei-history-card" v-if="ziweiProMode">
+              <header class="ziwei-pro-head">
+                <h4>命例历史</h4>
+                <div class="ziwei-history-tools">
+                  <span>{{ ziweiHistoryCountText }}</span>
+                  <button class="idtool-btn ghost" type="button" @click="clearZiweiHistory" :disabled="!ziweiHistory.length">清空</button>
+                </div>
+              </header>
+              <div class="ziwei-history-list" v-if="ziweiHistory.length">
+                <article class="ziwei-history-item" v-for="item in ziweiHistory" :key="item.id">
+                  <div class="ziwei-history-main">
+                    <strong>{{ item.label || '未命名命例' }}</strong>
+                    <span>{{ formatZiweiHistoryTime(item.createdAt) }}</span>
+                    <small>{{ item.summary && item.summary.yearGanZhi }} · {{ item.summary && item.summary.bureau }} · 命宫{{ item.summary && item.summary.mingBranch }}</small>
+                  </div>
+                  <div class="ziwei-history-actions">
+                    <button class="idtool-btn ghost" type="button" @click="loadZiweiHistory(item.id)">载入</button>
+                    <button class="idtool-btn ghost" type="button" @click="removeZiweiHistory(item.id)">删除</button>
+                  </div>
+                </article>
+              </div>
+              <div class="ziwei-pro-body" v-else>
+                <p>暂无历史命例。每次排盘会自动保存最近 30 条。</p>
+              </div>
+            </section>
           </article>
         </section>
       </template>

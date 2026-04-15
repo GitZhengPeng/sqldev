@@ -267,3 +267,26 @@ Last updated: 2026-04-15
     - stronger main/assist/misc color separation
     - palace footer shows `长生 + 大限 + 地支`
 - Kept all logic frontend-only and compatible with existing image export / text-copy flow.
+
+## 2026-04-15: ZiWei Pro Upgrade (Professional Tooling Pass)
+- Upgraded ZiWei module toward “professional-grade workflow” in `app.js` + `index.html` + `style.css`:
+  - Added `命例名称` input for case identification.
+  - Added `专业模式` switch to control advanced panels.
+- Added interactive palace focus:
+  - clicking any palace now sets focus state (`ziweiFocusBranch`)
+  - focused palace rendered with clear active outline.
+- Added professional detail panel (宫位详情):
+  - displays focused palace `主星/辅星/杂曜/十二长生/大限/流年序列/小限序列`.
+- Added generated analysis panel (摘要解盘):
+  - auto-builds structured summary sections from key palaces (命宫/官禄/财帛/夫妻/迁移/疾厄 + 四化提示).
+- Added local case history (命例历史):
+  - auto-save latest 30 generated charts to localStorage
+  - supports `载入` / `删除` / `清空`
+  - history item includes timestamp and compact summary (年干支/五行局/命宫).
+  - loading history re-runs chart generation without duplicate history insertion.
+- Added history time formatter and exposed required methods/refs in Vue return:
+  - `loadZiweiHistory`, `removeZiweiHistory`, `clearZiweiHistory`, `formatZiweiHistoryTime`.
+- UI additions for pro workflow:
+  - pro panels grid under timeline
+  - dedicated history card style
+  - light/dark theme adaptation for all newly-added pro components.

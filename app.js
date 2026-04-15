@@ -2844,9 +2844,15 @@ const app = createApp({
     const ziweiBirthHour = ref('12');
     const ziweiBirthMinute = ref('00');
     const ziweiGender = ref('male');
+    const ziweiProfileName = ref('');
+    const ziweiProMode = ref(true);
+    const ziweiFocusBranch = ref('');
     const ziweiChart = ref(null);
+    const ziweiAnalysis = ref([]);
+    const ziweiHistory = ref([]);
     const ziweiStatus = ref({ type: 'info', text: '' });
     const ziweiExporting = ref(false);
+    const ZW_HISTORY_KEY = 'sqldev_ziwei_history_v1';
     const ziweiIntlSupported = typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function';
     const _zwLunarFmt = ziweiIntlSupported ? new Intl.DateTimeFormat('en-u-ca-chinese', { year: 'numeric', month: 'numeric', day: 'numeric' }) : null;
     const _zwSolarToLunarCache = new Map();
@@ -3019,6 +3025,19 @@ const app = createApp({
     });
     const ziweiCalendarTypeLabel = computed(function() {
       return ziweiCalendarType.value === 'lunar' ? '农历输入' : '公历输入';
+    });
+    const ziweiFocusCell = computed(function() {
+      if (!ziweiChart.value || !Array.isArray(ziweiChart.value.boardCells)) return null;
+      var branch = String(ziweiFocusBranch.value || '');
+      if (!branch) return null;
+      for (var i = 0; i < ziweiChart.value.boardCells.length; i++) {
+        if (ziweiChart.value.boardCells[i].branch === branch) return ziweiChart.value.boardCells[i];
+      }
+      return null;
+    });
+    const ziweiHistoryCountText = computed(function() {
+      var count = Array.isArray(ziweiHistory.value) ? ziweiHistory.value.length : 0;
+      return String(count) + ' 条';
     });
     const idCopyButtonLabel = computed(function() {
       return idCopyDone.value ? '\u5df2\u590d\u5236' : '\u590d\u5236';
@@ -3280,6 +3299,18 @@ const app = createApp({
     watch(ziweiCalendarType, function() {
       ziweiStatus.value = { type: 'info', text: '' };
     });
+    watch(ziweiChart, function(next) {
+      if (!next || !Array.isArray(next.boardCells)) {
+        ziweiAnalysis.value = [];
+        ziweiFocusBranch.value = '';
+        return;
+      }
+      ziweiAnalysis.value = _zwBuildAnalysis(next);
+      if (!ziweiFocusBranch.value) {
+        ziweiFocusBranch.value = next.center && next.center.mingBranch ? next.center.mingBranch : next.boardCells[0].branch;
+      }
+    });
+    ziweiHistory.value = _zwLoadHistory();
 
     function _pickBestRegionCode(provinceCode, cityCode, countyCode) {
       var county = String(countyCode || '');
@@ -4004,6 +4035,210 @@ const app = createApp({
       return out;
     }
 
+    function _zwGetCellByPalaceName(chart, palaceName) {
+      if (!chart || !Array.isArray(chart.boardCells)) return null;
+      for (var i = 0; i < chart.boardCells.length; i++) {
+        if (chart.boardCells[i] && chart.boardCells[i].palaceName === palaceName) return chart.boardCells[i];
+      }
+      return null;
+    }
+
+    function _zwGetCellByBranch(chart, branch) {
+      if (!chart || !Array.isArray(chart.boardCells)) return null;
+      for (var i = 0; i < chart.boardCells.length; i++) {
+        if (chart.boardCells[i] && chart.boardCells[i].branch === branch) return chart.boardCells[i];
+      }
+      return null;
+    }
+
+    function _zwStarsBrief(cell, limit) {
+      if (!cell) return '无';
+      var names = [];
+      (cell.mainStars || []).forEach(function(s) { if (s && s.name) names.push(s.name); });
+      if (!names.length) return '无主星';
+      var max = Number(limit || 3);
+      if (!Number.isInteger(max) || max < 1) max = 3;
+      return names.slice(0, max).join('、');
+    }
+
+    function _zwEstimatePalaceScore(cell) {
+      if (!cell) return 0;
+      var score = 0;
+      (cell.mainStars || []).forEach(function(star) {
+        var lv = String((star && star.brightness) || '');
+        if (lv === '庙') score += 3;
+        else if (lv === '旺') score += 2;
+        else if (lv === '得') score += 1;
+        else if (lv === '陷') score -= 2;
+      });
+      return score;
+    }
+
+    function _zwBuildAnalysis(chart) {
+      if (!chart) return [];
+      var sections = [];
+      var ming = _zwGetCellByPalaceName(chart, '命宫');
+      var guan = _zwGetCellByPalaceName(chart, '官禄宫');
+      var cai = _zwGetCellByPalaceName(chart, '财帛宫');
+      var fuqi = _zwGetCellByPalaceName(chart, '夫妻宫');
+      var qianyi = _zwGetCellByPalaceName(chart, '迁移宫');
+      var jiebing = _zwGetCellByPalaceName(chart, '疾厄宫');
+
+      var mingScore = _zwEstimatePalaceScore(ming);
+      var mingTone = mingScore >= 4 ? '主星格局偏强' : mingScore >= 1 ? '主星格局中上' : mingScore >= -1 ? '主星格局中平' : '主星格局偏保守';
+      sections.push({
+        key: 'core',
+        title: '命格总览',
+        text: '命宫位于' + (chart.center.mingBranch || '--') + '，主星为' + _zwStarsBrief(ming, 4) + '，' + mingTone + '。身宫落在' + (chart.center.shenPalaceName || '--') + '，处事倾向会更多体现在该宫位主题上。'
+      });
+
+      sections.push({
+        key: 'career',
+        title: '事业发展',
+        text: '官禄宫主星' + _zwStarsBrief(guan, 3) + '，财帛宫主星' + _zwStarsBrief(cai, 3) + '。建议把职业路径与变现方式联动规划，优先选择能沉淀专业势能的赛道。'
+      });
+      sections.push({
+        key: 'relation',
+        title: '关系与合作',
+        text: '夫妻宫主星' + _zwStarsBrief(fuqi, 3) + '，迁移宫主星' + _zwStarsBrief(qianyi, 3) + '。在人际协作中，先定边界再谈投入，会更稳。'
+      });
+      sections.push({
+        key: 'health',
+        title: '节奏与健康',
+        text: '疾厄宫主星' + _zwStarsBrief(jiebing, 3) + '。建议以“稳定作息 + 持续运动 + 定期体检”作为长期底盘，避免阶段性透支。'
+      });
+      if (chart.center.huaSummary && chart.center.huaSummary.length) {
+        sections.push({
+          key: 'hua',
+          title: '四化提示',
+          text: '本命四化为：' + chart.center.huaSummary.map(function(item) { return item.label; }).join('、') + '。实际判断建议结合大限与流年同宫星曜综合看。'
+        });
+      }
+      return sections;
+    }
+
+    function _zwLoadHistory() {
+      try {
+        var raw = localStorage.getItem(ZW_HISTORY_KEY);
+        if (!raw) return [];
+        var arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return [];
+        return arr.filter(function(item) {
+          return item && typeof item === 'object' && item.id && item.createdAt;
+        }).slice(0, 30);
+      } catch (_err) {
+        return [];
+      }
+    }
+
+    function _zwSaveHistory(historyList) {
+      try {
+        localStorage.setItem(ZW_HISTORY_KEY, JSON.stringify(historyList || []));
+      } catch (_err) {}
+    }
+
+    function _zwBuildHistoryLabel() {
+      var base = String(ziweiProfileName.value || '').trim();
+      if (base) return base;
+      var sex = ziweiGender.value === 'female' ? '女' : '男';
+      var solar = String(ziweiSolarYear.value || '') + '-' + String(ziweiSolarMonth.value || '') + '-' + String(ziweiSolarDay.value || '');
+      return '命例-' + sex + '-' + solar;
+    }
+
+    function _zwPushHistory(chart) {
+      if (!chart || !chart.center) return;
+      var record = {
+        id: 'zw-' + Date.now() + '-' + Math.floor(Math.random() * 100000),
+        createdAt: Date.now(),
+        label: _zwBuildHistoryLabel(),
+        profileName: String(ziweiProfileName.value || '').trim(),
+        calendarType: ziweiCalendarType.value,
+        solarYear: String(ziweiSolarYear.value || ''),
+        solarMonth: String(ziweiSolarMonth.value || ''),
+        solarDay: String(ziweiSolarDay.value || ''),
+        lunarYear: String(ziweiLunarYear.value || ''),
+        lunarMonth: String(ziweiLunarMonth.value || ''),
+        lunarDay: String(ziweiLunarDay.value || ''),
+        lunarLeap: !!ziweiLunarLeap.value,
+        birthHour: String(ziweiBirthHour.value || ''),
+        birthMinute: String(ziweiBirthMinute.value || ''),
+        gender: ziweiGender.value,
+        summary: {
+          yearGanZhi: chart.center.yearGanZhi || '',
+          bureau: chart.center.bureauLabel || '',
+          mingBranch: chart.center.mingBranch || '',
+          shenBranch: chart.center.shenBranch || ''
+        }
+      };
+      var list = _zwLoadHistory();
+      list.unshift(record);
+      if (list.length > 30) list = list.slice(0, 30);
+      ziweiHistory.value = list;
+      _zwSaveHistory(list);
+    }
+
+    function loadZiweiHistory(itemId) {
+      var id = String(itemId || '');
+      if (!id) return;
+      var list = _zwLoadHistory();
+      var found = null;
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] && list[i].id === id) { found = list[i]; break; }
+      }
+      if (!found) {
+        ziweiStatus.value = { type: 'error', text: '历史命例不存在或已被删除。' };
+        return;
+      }
+      ziweiProfileName.value = String(found.profileName || '');
+      ziweiCalendarType.value = found.calendarType === 'lunar' ? 'lunar' : 'solar';
+      ziweiSolarYear.value = String(found.solarYear || '1990');
+      ziweiSolarMonth.value = String(found.solarMonth || '01');
+      ziweiSolarDay.value = String(found.solarDay || '01');
+      ziweiLunarYear.value = String(found.lunarYear || '1990');
+      ziweiLunarMonth.value = String(found.lunarMonth || '1');
+      ziweiLunarDay.value = String(found.lunarDay || '1');
+      ziweiLunarLeap.value = !!found.lunarLeap;
+      ziweiBirthHour.value = String(found.birthHour || '12');
+      ziweiBirthMinute.value = String(found.birthMinute || '00');
+      ziweiGender.value = found.gender === 'female' ? 'female' : 'male';
+      generateZiweiChart({ saveHistory: false });
+      ziweiStatus.value = { type: 'success', text: '已载入历史命例并重新排盘。' };
+    }
+
+    function removeZiweiHistory(itemId) {
+      var id = String(itemId || '');
+      if (!id) return;
+      var list = _zwLoadHistory().filter(function(item) { return item && item.id !== id; });
+      ziweiHistory.value = list;
+      _zwSaveHistory(list);
+      ziweiStatus.value = { type: 'info', text: '历史命例已删除。' };
+    }
+
+    function clearZiweiHistory() {
+      ziweiHistory.value = [];
+      _zwSaveHistory([]);
+      ziweiStatus.value = { type: 'info', text: '历史命例已清空。' };
+    }
+
+    function formatZiweiHistoryTime(ts) {
+      var ms = Number(ts);
+      if (!Number.isFinite(ms) || ms <= 0) return '--';
+      var d = new Date(ms);
+      if (Number.isNaN(d.getTime())) return '--';
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      var hh = String(d.getHours()).padStart(2, '0');
+      var mm = String(d.getMinutes()).padStart(2, '0');
+      return y + '-' + m + '-' + day + ' ' + hh + ':' + mm;
+    }
+
+    function focusZiweiBranch(branch) {
+      var b = String(branch || '');
+      if (!b) return;
+      ziweiFocusBranch.value = b;
+    }
+
     function _zwBuildChartText(chart) {
       if (!chart) return '';
       var lines = [];
@@ -4065,7 +4300,9 @@ const app = createApp({
       return 'normal';
     }
 
-    function generateZiweiChart() {
+    function generateZiweiChart(options) {
+      var opt = options || {};
+      var saveHistory = opt.saveHistory !== false;
       if (!ziweiIntlSupported) {
         ziweiStatus.value = { type: 'error', text: '当前浏览器不支持农历转换（Intl Chinese Calendar），请升级浏览器后重试。' };
         return;
@@ -4293,6 +4530,11 @@ const app = createApp({
         var liuFirstAge = _zwParseAgeValue(liuNianFirstAgeMap[branch]);
         var xiaoSeries = _zwBuildAgeSeries(xiaoFirstAge, 120, 12);
         var liuSeries = _zwBuildAgeSeries(liuFirstAge, 120, 12);
+        var mainStarsText = main.length
+          ? main.map(function(s) { return s.name + (s.brightness ? ('(' + s.brightness + ')') : ''); }).join('、')
+          : '无';
+        var assistStarsText = assist.length ? assist.map(function(s) { return s.name; }).join('、') : '无';
+        var miscStarsText = misc.length ? misc.map(function(s) { return s.name; }).join('、') : '无';
         return {
           branch: branch,
           area: ZW_BOARD_AREA[branch] || '',
@@ -4308,6 +4550,9 @@ const app = createApp({
           changSheng: changShengMap[branch] || '',
           liuNianSeries: liuSeries,
           xiaoXianSeries: xiaoSeries,
+          mainStarsText: mainStarsText,
+          assistStarsText: assistStarsText,
+          miscStarsText: miscStarsText,
           liuNianSeriesText: liuSeries.length ? liuSeries.join(',') : '',
           xiaoXianSeriesText: xiaoSeries.length ? xiaoSeries.join(',') : ''
         };
@@ -4356,6 +4601,8 @@ const app = createApp({
       };
       chart.text = _zwBuildChartText(chart);
       ziweiChart.value = chart;
+      ziweiFocusBranch.value = mingBranch;
+      if (saveHistory) _zwPushHistory(chart);
       ziweiStatus.value = {
         type: 'success',
         text: shiftedByZiHour ? '排盘完成（23:00后子时已按次日换日）。' : '排盘完成。'
@@ -5664,9 +5911,11 @@ const app = createApp({
       ziweiLunarDayOptions, ziweiLunarMonthLabel,
       ziweiLeapMonthForYear, ziweiCanUseLeapMonth,
       ziweiBirthHour, ziweiBirthMinute, ziweiGender,
+      ziweiProfileName, ziweiProMode, ziweiFocusBranch, ziweiFocusCell,
       ziweiYearOptions, ziweiMonthOptions, ziweiHourOptions, ziweiMinuteOptions,
-      ziweiChart, ziweiStatus, ziweiExporting,
+      ziweiChart, ziweiAnalysis, ziweiHistory, ziweiHistoryCountText, ziweiStatus, ziweiExporting,
       generateZiweiChart, copyZiweiChartText, exportZiweiChartImage,
+      focusZiweiBranch, loadZiweiHistory, removeZiweiHistory, clearZiweiHistory, formatZiweiHistoryTime,
       // Shared
       statusText, fileInput, fileEncoding, ENCODING_OPTIONS, uploadFile, handleFileUpload,
       isWorkbenchPage, runWorkbenchAction, canRunPrimaryAction,
