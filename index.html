@@ -1190,22 +1190,19 @@ $$;</pre>
                     <label class="idtool-field">
                       <span>出生日期</span>
                       <div class="idtool-date-grid">
-                        <label class="idtool-date-item">
-                          <span>年</span>
+                        <label class="idtool-date-item" aria-label="出生年份">
                           <select v-model="idBirthYear">
-                            <option v-for="y in idBirthYearOptions" :key="'id-y-'+y" :value="String(y)">{{ y }}</option>
+                            <option v-for="y in idBirthYearOptions" :key="'id-y-'+y" :value="String(y)">{{ y }} 年</option>
                           </select>
                         </label>
-                        <label class="idtool-date-item">
-                          <span>月</span>
+                        <label class="idtool-date-item" aria-label="出生月份">
                           <select v-model="idBirthMonth">
-                            <option v-for="m in idBirthMonthOptions" :key="'id-m-'+m.value" :value="m.value">{{ m.label }}</option>
+                            <option v-for="m in idBirthMonthOptions" :key="'id-m-'+m.value" :value="m.value">{{ m.label }} 月</option>
                           </select>
                         </label>
-                        <label class="idtool-date-item">
-                          <span>日</span>
+                        <label class="idtool-date-item" aria-label="出生日期">
                           <select v-model="idBirthDay">
-                            <option v-for="d in idBirthDayOptions" :key="'id-d-'+d.value" :value="d.value">{{ d.label }}</option>
+                            <option v-for="d in idBirthDayOptions" :key="'id-d-'+d.value" :value="d.value">{{ d.label }} 日</option>
                           </select>
                         </label>
                       </div>

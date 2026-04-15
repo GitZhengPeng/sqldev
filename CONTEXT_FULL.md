@@ -180,3 +180,10 @@ Last updated: 2026-04-15
   - added in-memory conversion result cache (same input+direction+rules version returns instantly)
   - auth token retrieval now short-circuits when in-memory token is still valid (avoids redundant `getSession` on each convert)
   - logout flow made optimistic (UI clears immediately, remote signout finishes in background with timeout fallback).
+
+## 2026-04-15: Splash Font Stability + DOB Alignment
+- Reduced splash large-title refresh jitter:
+  - switched `.sp-hero-title` / `.sp-title` to stable local CJK/system font stack to avoid late webfont swap on refresh.
+- Refined ID tool birth-date layout alignment:
+  - replaced nested year/month/day sub-labels with clean single-line selectors (`年/月/日` in option text),
+  - updated date-grid CSS so the birth-date row aligns with neighboring fields.
