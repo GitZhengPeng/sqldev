@@ -112,13 +112,34 @@
     } catch (_err) {}
   }
 
+  function toErrorText(err) {
+    return String((err && err.message) ? err.message : (err || '')).trim();
+  }
+
+  function buildFriendlyErrorMessage(err) {
+    var msg = toErrorText(err).toLowerCase();
+    if (!msg) return '在线提交失败';
+    if (msg.indexOf('feedback_backend_not_configured') >= 0) return '反馈后端未配置';
+    if (msg.indexOf('storage_insert_failed') >= 0) return '反馈数据写入失败（请检查 feedback_entries 表）';
+    if (msg.indexOf('content_too_short') >= 0) return '建议内容过短';
+    if (msg.indexOf('rate_limited') >= 0) return '提交过于频繁，请稍后再试';
+    if (msg.indexOf('403') >= 0 || msg.indexOf('forbidden') >= 0) return '当前域名未被反馈接口允许（CORS）';
+    if (msg.indexOf('404') >= 0 || msg.indexOf('not found') >= 0) return '反馈接口未部署（feedback）';
+    if (msg.indexOf('failed to fetch') >= 0 || msg.indexOf('networkerror') >= 0 || msg.indexOf('fetch failed') >= 0) {
+      return '网络连接失败（可能是网络或代理问题）';
+    }
+    return '在线提交失败';
+  }
+
   async function postFeedback(payload) {
     var authApi = window.authApi;
+    var authInvokeError = '';
     if (authApi && typeof authApi.invokeFunction === 'function' && typeof authApi.getUserSync === 'function') {
       var user = authApi.getUserSync();
       if (user) {
         var authRes = await authApi.invokeFunction('feedback', payload);
         if (authRes && !authRes.error && authRes.data && authRes.data.ok) return { channel: 'auth-function' };
+        if (authRes && authRes.error) authInvokeError = toErrorText(authRes.error);
       }
     }
     var endpoint = getFeedbackEndpoint();
@@ -141,12 +162,17 @@
     if (!res.ok) {
       var bodyText = '';
       try { bodyText = await res.text(); } catch (_err2) {}
-      throw new Error(bodyText || ('HTTP_' + res.status));
+      var mergedError = (bodyText || ('HTTP_' + res.status));
+      if (authInvokeError) mergedError = mergedError + ' | authInvoke=' + authInvokeError;
+      throw new Error(mergedError);
     }
     var data = null;
     try { data = await res.json(); } catch (_err3) {}
     if (!data || data.ok !== true) {
-      throw new Error('ONLINE_SUBMIT_REJECTED');
+      var rejected = 'ONLINE_SUBMIT_REJECTED';
+      try { rejected = JSON.stringify(data); } catch (_err4) {}
+      if (authInvokeError) rejected = rejected + ' | authInvoke=' + authInvokeError;
+      throw new Error(rejected);
     }
     return { channel: 'direct-endpoint' };
   }
@@ -196,8 +222,10 @@
       showToast('反馈已提交');
       setTimeout(function () { closeModal(); }, 520);
     } catch (err) {
-      persistLocalFeedback(payload, err && err.message ? err.message : err);
-      setStatus('在线提交失败，已自动保存到本地草稿。请稍后重试。', true);
+      var reason = toErrorText(err);
+      persistLocalFeedback(payload, reason);
+      setStatus(buildFriendlyErrorMessage(err) + '；已自动保存到本地草稿。', true);
+      try { console.error('[feedback] submit failed:', reason); } catch (_err5) {}
       showToast('已保存到本地草稿');
     } finally {
       setBusy(false);

@@ -50,6 +50,7 @@ Last updated: 2026-04-15
   - CORS / localhost policy follows the same env controls used by `convert`
   - has per-user-or-anon + IP rate limiting in function runtime
   - if endpoint is unavailable, auto-saves draft to `localStorage` (`sqldev_feedback_queue`)
+  - client-side error diagnostics now surface likely cause (`not deployed` / `CORS` / `table write failed` / `network`) instead of only generic failure
 - New global API for internal integration:
   - `window.openFeedbackModal(source)`
 
