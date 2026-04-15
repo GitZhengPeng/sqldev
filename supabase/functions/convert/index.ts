@@ -1,6 +1,11 @@
 const PRIMARY_WEB_ORIGIN = 'https://gitzhengpeng.github.io'
-const ALLOWED_ORIGINS = new Set([PRIMARY_WEB_ORIGIN])
+const EXTRA_ALLOWED_ORIGINS = (Deno.env.get('CORS_ALLOWED_ORIGINS') || '')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean)
+const ALLOWED_ORIGINS = new Set([PRIMARY_WEB_ORIGIN, ...EXTRA_ALLOWED_ORIGINS])
 const LOCAL_ORIGIN_RE = /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i
+const ALLOW_LOCALHOST_ORIGIN = /^(1|true|yes)$/i.test((Deno.env.get('ALLOW_LOCALHOST_ORIGIN') || '').trim())
 const corsBaseHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
@@ -21,6 +26,12 @@ type RulesModuleShape = {
   _bodyRulesDefault?: Record<string, Array<Record<string, unknown>>>
 }
 
+type SessionValidationResult =
+  | { state: 'valid'; userId: string }
+  | { state: 'invalid' | 'error' }
+
+type RateBucket = { count: number; windowStart: number }
+
 let engineReady = false
 let convertDDLFn: ((input: string, from: string, to: string) => string) | null = null
 let convertFunctionFn: ((input: string, from: string, to: string) => string) | null = null
@@ -30,6 +41,16 @@ let ddlRulesDefaultSnapshot: Record<string, DdlRuleItem[]> | null = null
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
 const AUTH_USER_ENDPOINT = SUPABASE_URL ? `${SUPABASE_URL}/auth/v1/user` : ''
+const RATE_LIMIT_WINDOW_MS = parsePositiveInt(Deno.env.get('CONVERT_RATE_LIMIT_WINDOW_MS'), 60_000)
+const RATE_LIMIT_MAX_REQUESTS = parsePositiveInt(Deno.env.get('CONVERT_RATE_LIMIT_MAX_REQUESTS'), 20)
+const RATE_LIMIT_TRACK_MAX = parsePositiveInt(Deno.env.get('CONVERT_RATE_LIMIT_TRACK_MAX'), 2_000)
+const rateBuckets = new Map<string, RateBucket>()
+
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n <= 0) return fallback
+  return Math.floor(n)
+}
 
 function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value))
@@ -50,12 +71,53 @@ function defaultCorsHeaders() {
 function buildCorsHeaders(req: Request): Record<string, string> | null {
   const origin = (req.headers.get('origin') || '').trim()
   if (!origin) return defaultCorsHeaders()
-  if (!ALLOWED_ORIGINS.has(origin) && !LOCAL_ORIGIN_RE.test(origin)) return null
+  const localhostAllowed = ALLOW_LOCALHOST_ORIGIN && LOCAL_ORIGIN_RE.test(origin)
+  if (!ALLOWED_ORIGINS.has(origin) && !localhostAllowed) return null
   return {
     ...corsBaseHeaders,
     'Access-Control-Allow-Origin': origin,
     Vary: 'Origin'
   }
+}
+
+function getClientIp(req: Request): string {
+  const cf = (req.headers.get('cf-connecting-ip') || '').trim()
+  if (cf) return cf
+  const fwd = (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim() || ''
+  if (fwd) return fwd
+  const real = (req.headers.get('x-real-ip') || '').trim()
+  if (real) return real
+  return 'unknown'
+}
+
+function pruneRateBuckets(now: number) {
+  if (rateBuckets.size <= RATE_LIMIT_TRACK_MAX) return
+  for (const [key, bucket] of rateBuckets) {
+    if (now - bucket.windowStart >= RATE_LIMIT_WINDOW_MS) rateBuckets.delete(key)
+    if (rateBuckets.size <= RATE_LIMIT_TRACK_MAX) return
+  }
+  let toDrop = rateBuckets.size - RATE_LIMIT_TRACK_MAX
+  if (toDrop <= 0) return
+  for (const key of rateBuckets.keys()) {
+    rateBuckets.delete(key)
+    toDrop -= 1
+    if (toDrop <= 0) return
+  }
+}
+
+function consumeRateLimit(key: string, now = Date.now()): { ok: true; remaining: number } | { ok: false; retryAfter: number } {
+  let bucket = rateBuckets.get(key)
+  if (!bucket || now - bucket.windowStart >= RATE_LIMIT_WINDOW_MS) {
+    bucket = { count: 0, windowStart: now }
+    rateBuckets.set(key, bucket)
+  }
+  if (bucket.count >= RATE_LIMIT_MAX_REQUESTS) {
+    const retryAfter = Math.max(1, Math.ceil((RATE_LIMIT_WINDOW_MS - (now - bucket.windowStart)) / 1000))
+    return { ok: false, retryAfter }
+  }
+  bucket.count += 1
+  pruneRateBuckets(now)
+  return { ok: true, remaining: Math.max(0, RATE_LIMIT_MAX_REQUESTS - bucket.count) }
 }
 
 function replaceRecord<T>(target: Record<string, T>, source: Record<string, T>) {
@@ -228,8 +290,8 @@ function bearerToken(req: Request): string {
   return match ? match[1].trim() : ''
 }
 
-async function validateUserSession(token: string): Promise<'valid' | 'invalid' | 'error'> {
-  if (!AUTH_USER_ENDPOINT || !SUPABASE_ANON_KEY) return 'error'
+async function validateUserSession(token: string): Promise<SessionValidationResult> {
+  if (!AUTH_USER_ENDPOINT || !SUPABASE_ANON_KEY) return { state: 'error' }
   try {
     const res = await fetch(AUTH_USER_ENDPOINT, {
       method: 'GET',
@@ -238,11 +300,16 @@ async function validateUserSession(token: string): Promise<'valid' | 'invalid' |
         apikey: SUPABASE_ANON_KEY
       }
     })
-    if (res.ok) return 'valid'
-    if (res.status === 401 || res.status === 403) return 'invalid'
-    return 'error'
+    if (res.ok) {
+      const payload = await res.json().catch(() => null)
+      const userId = typeof payload?.id === 'string' ? payload.id : ''
+      if (!userId) return { state: 'error' }
+      return { state: 'valid', userId }
+    }
+    if (res.status === 401 || res.status === 403) return { state: 'invalid' }
+    return { state: 'error' }
   } catch {
-    return 'error'
+    return { state: 'error' }
   }
 }
 
@@ -264,8 +331,16 @@ Deno.serve(async (req) => {
     const token = bearerToken(req)
     if (!token) return json({ error: 'Missing Authorization bearer token' }, 401, corsHeaders)
     const sessionState = await validateUserSession(token)
-    if (sessionState === 'invalid') return json({ error: 'Unauthorized' }, 401, corsHeaders)
-    if (sessionState === 'error') return json({ error: 'Auth service unavailable' }, 503, corsHeaders)
+    if (sessionState.state === 'invalid') return json({ error: 'Unauthorized' }, 401, corsHeaders)
+    if (sessionState.state === 'error') return json({ error: 'Auth service unavailable' }, 503, corsHeaders)
+    const clientIp = getClientIp(req)
+    const limit = consumeRateLimit(`${sessionState.userId}:${clientIp}`)
+    if (!limit.ok) {
+      return json({ error: 'Rate limit exceeded. Please retry later.' }, 429, {
+        ...corsHeaders,
+        'Retry-After': String(limit.retryAfter)
+      })
+    }
 
     const body = await req.json().catch(() => null)
     const kind = String(body?.kind || '')
