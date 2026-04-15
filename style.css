@@ -2974,28 +2974,23 @@ body:not(.splash-active) #app{
 /* ===== Feedback Widget ===== */
 .feedback-fab{
   position:fixed;
-  right:0;
-  top:50%;
-  bottom:auto;
+  right:18px;
+  bottom:84px;
   z-index:140;
   display:inline-flex;
   align-items:center;
-  gap:10px;
-  height:46px;
-  min-width:48px;
-  padding:0 14px 0 13px;
-  border-radius:14px 0 0 14px;
-  border:1px solid rgba(99,135,241,.28);
-  border-right:none;
-  background:linear-gradient(135deg,rgba(18,27,50,.96),rgba(11,17,33,.96));
-  color:#dbe8ff;
-  box-shadow:0 14px 30px rgba(2,6,23,.42),inset 0 1px 0 rgba(255,255,255,.12);
+  gap:8px;
+  height:40px;
+  padding:0 14px;
+  border-radius:999px;
+  border:1px solid rgba(99,135,241,.24);
+  background:rgba(13,20,38,.92);
+  color:#e2ebff;
+  box-shadow:0 12px 28px rgba(2,6,23,.35),inset 0 1px 0 rgba(255,255,255,.08);
   font:600 12px var(--font-body);
   cursor:pointer;
-  overflow:hidden;
   white-space:nowrap;
-  transform:translateY(-50%);
-  transition:background .24s,border-color .24s,color .24s,transform .24s,box-shadow .24s,padding .24s;
+  transition:background .2s,border-color .2s,color .2s,transform .2s,box-shadow .2s;
 }
 /* Keep feedback entry clearly visible on splash and workbench */
 body.splash-active .feedback-fab,
@@ -3004,56 +2999,26 @@ body:not(.splash-active) .feedback-fab{
   opacity:1;
   pointer-events:auto;
 }
-body.splash-active .feedback-fab{
-  right:0;
-  top:50%;
-}
-.feedback-fab::after{
-  content:"";
-  position:absolute;
-  right:10px;
-  top:50%;
-  width:5px;
-  height:5px;
-  border-radius:50%;
-  background:rgba(94,234,212,.88);
-  box-shadow:0 0 0 0 rgba(94,234,212,.6);
-  transform:translateY(-50%);
-  animation:feedbackPulse 2.4s ease-out infinite;
-}
+.feedback-fab::after{display:none}
 .feedback-fab svg{
-  width:17px;
-  height:17px;
+  width:16px;
+  height:16px;
   flex:0 0 auto;
 }
 .feedback-fab span{
-  max-width:0;
-  opacity:0;
-  transform:translateX(4px);
-  transition:max-width .24s ease,opacity .18s ease,transform .24s ease;
+  opacity:.98;
+  transform:none;
 }
 .feedback-fab:hover{
-  transform:translate(-4px,-50%);
-  padding-right:22px;
-  border-color:rgba(125,163,255,.52);
-  background:linear-gradient(135deg,rgba(79,125,249,.28),rgba(103,77,235,.26));
+  transform:translateY(-2px);
+  border-color:rgba(125,163,255,.46);
+  background:rgba(28,40,72,.95);
   color:#f8fbff;
-  box-shadow:0 18px 36px rgba(37,99,235,.28),inset 0 1px 0 rgba(255,255,255,.14);
-}
-.feedback-fab:hover span{
-  max-width:66px;
-  opacity:1;
-  transform:translateX(0);
+  box-shadow:0 16px 30px rgba(2,6,23,.42),inset 0 1px 0 rgba(255,255,255,.1);
 }
 body.feedback-open .feedback-fab{
-  transform:translate(-4px,-50%);
   border-color:rgba(125,163,255,.5);
-  background:linear-gradient(135deg,rgba(79,125,249,.3),rgba(103,77,235,.28));
-}
-body.feedback-open .feedback-fab span{
-  max-width:66px;
-  opacity:1;
-  transform:translateX(0);
+  background:rgba(31,45,81,.98);
 }
 body.feedback-open{overflow:hidden}
 .feedback-modal-mask{
@@ -3195,7 +3160,7 @@ body.feedback-open{overflow:hidden}
 .feedback-toast{
   position:fixed;
   right:18px;
-  bottom:24px;
+  bottom:132px;
   top:auto;
   z-index:10050;
   padding:9px 14px;
@@ -3214,18 +3179,15 @@ body.feedback-open{overflow:hidden}
   transform:translateY(0);
 }
 [data-theme="light"] .feedback-fab{
-  border-color:#c8dbff;
-  background:linear-gradient(135deg,#ffffff,#f5f9ff);
-  color:#1f3b8e;
-  box-shadow:0 12px 28px rgba(15,23,42,.12),inset 0 1px 0 rgba(255,255,255,.9);
+  border-color:#dbe5f5;
+  background:#ffffff;
+  color:#1e3a8a;
+  box-shadow:0 10px 24px rgba(15,23,42,.12);
 }
 [data-theme="light"] .feedback-fab:hover{
-  border-color:#60a5fa;
-  background:linear-gradient(135deg,rgba(37,99,235,.14),rgba(124,58,237,.12));
+  border-color:#93c5fd;
+  background:#eff6ff;
   color:#1d4ed8;
-}
-[data-theme="light"] .feedback-fab::after{
-  background:#14b8a6;
 }
 [data-theme="light"] .feedback-modal-mask{
   background:rgba(148,163,184,.32);
@@ -3274,38 +3236,25 @@ body.feedback-open{overflow:hidden}
   color:#1e3a8a;
   box-shadow:0 12px 24px rgba(15,23,42,.15);
 }
-@keyframes feedbackPulse{
-  0%{box-shadow:0 0 0 0 rgba(94,234,212,.5)}
-  70%{box-shadow:0 0 0 7px rgba(94,234,212,0)}
-  100%{box-shadow:0 0 0 0 rgba(94,234,212,0)}
-}
 @media (max-width: 768px){
   .feedback-fab{
     right:12px;
     top:auto;
-    bottom:58px;
-    height:40px;
+    bottom:56px;
+    height:38px;
     padding:0 12px;
-    border-right:1px solid rgba(99,135,241,.24);
     border-radius:999px;
-    transform:none;
-    min-width:40px;
-  }
-  .feedback-fab::after{
-    right:7px;
-    width:4px;
-    height:4px;
+    min-width:38px;
   }
   .feedback-fab span{display:none !important}
-  .feedback-fab svg{width:17px;height:17px}
+  .feedback-fab svg{width:16px;height:16px}
   .feedback-fab:hover{
     transform:translateY(-1px);
-    padding-right:12px;
   }
   .feedback-toast{
     right:12px;
     top:auto;
-    bottom:104px;
+    bottom:100px;
   }
   .feedback-modal-mask{
     padding:12px;
