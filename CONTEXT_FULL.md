@@ -243,3 +243,27 @@ Last updated: 2026-04-15
   - dark/light theme variants + responsive adaptation
 - Updated test-tools submenu expand capacity:
   - `.nav-submenu.open` max-height adjusted for two submenu items.
+
+## 2026-04-15: ZiWei Chart Upgrade (Benchmark against Wenmo-style chart)
+- Compared current ZiWei output against user-provided reference screenshot (`文墨天机基础版`) and identified main gaps:
+  - palace-level info density too low (missing inline `流年/小限` sequences and `十二长生` feel)
+  - center panel missing compact `四化总览`
+  - missing bottom strip timeline for `大限/流年`
+  - directional board hints missing
+- Implemented enhancement pass in `app.js` + `index.html` + `style.css`:
+  - Added palace metadata:
+    - `流年序列` / `小限序列` per palace (`+12` progression display)
+    - `十二长生` label per palace (based on element-cycle mapping)
+  - Added center compact summary:
+    - `输入历法` + `大限方向`
+    - `四化总览` chip group (`禄/权/科/忌`)
+  - Added bottom timeline bars:
+    - row 1: `大限` 10段总览（range + 宫位）
+    - row 2: `流年` 10年总览（year + 干支 + age）
+  - Added board orientation labels:
+    - `正南方 / 正西方 / 正北方 / 正东方`
+  - Increased visual information hierarchy in palace cells:
+    - age-sequence header lines
+    - stronger main/assist/misc color separation
+    - palace footer shows `长生 + 大限 + 地支`
+- Kept all logic frontend-only and compatible with existing image export / text-copy flow.

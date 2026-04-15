@@ -2814,6 +2814,14 @@ const app = createApp({
       '七杀': { '寅': '平', '卯': '陷', '辰': '旺', '巳': '庙', '午': '旺', '未': '平', '申': '庙', '酉': '旺', '戌': '平', '亥': '陷', '子': '平', '丑': '旺' },
       '破军': { '寅': '陷', '卯': '平', '辰': '旺', '巳': '庙', '午': '旺', '未': '平', '申': '庙', '酉': '旺', '戌': '平', '亥': '陷', '子': '平', '丑': '旺' }
     };
+    const ZW_CHANGSHENG_NAMES = ['长生', '沐浴', '冠带', '临官', '帝旺', '衰', '病', '死', '墓', '绝', '胎', '养'];
+    const ZW_CHANGSHENG_START_BY_ELEMENT = {
+      '水': '申',
+      '木': '亥',
+      '金': '巳',
+      '土': '申',
+      '火': '寅'
+    };
     const ZW_TIANFU_MIRROR = {
       '寅': '寅', '卯': '丑', '辰': '子', '巳': '亥', '午': '戌', '未': '酉',
       '申': '申', '酉': '未', '戌': '午', '亥': '巳', '子': '辰', '丑': '卯'
@@ -3921,6 +3929,81 @@ const app = createApp({
       return out;
     }
 
+    function _zwParseAgeValue(value) {
+      var text = String(value || '');
+      var m = text.match(/\d+/);
+      return m ? Number(m[0]) : NaN;
+    }
+
+    function _zwBuildAgeSeries(firstAge, maxAge, step) {
+      var first = Number(firstAge);
+      var max = Number(maxAge);
+      var jump = Number(step || 12);
+      if (!Number.isInteger(first) || first < 1) return [];
+      if (!Number.isInteger(max) || max < first) max = first;
+      if (!Number.isInteger(jump) || jump < 1) jump = 12;
+      var out = [];
+      for (var age = first; age <= max; age += jump) out.push(age);
+      return out;
+    }
+
+    function _zwBuildLiuNianFirstAgeMap(yearBranch, direction) {
+      var out = {};
+      var dir = direction >= 0 ? 1 : -1;
+      for (var i = 0; i < 12; i++) {
+        var branch = _zwOffset(yearBranch, dir * i);
+        out[branch] = i + 1;
+      }
+      return out;
+    }
+
+    function _zwBuildChangShengMap(element) {
+      var startBranch = ZW_CHANGSHENG_START_BY_ELEMENT[element] || '申';
+      var out = {};
+      for (var i = 0; i < ZW_CHANGSHENG_NAMES.length; i++) {
+        var branch = _zwOffset(startBranch, i);
+        out[branch] = ZW_CHANGSHENG_NAMES[i];
+      }
+      return out;
+    }
+
+    function _zwBuildDaXianTimeline(mingBranch, startAge, direction, palaceNameByBranch, count) {
+      var total = Number(count || 10);
+      if (!Number.isInteger(total) || total < 1) total = 10;
+      var dir = direction >= 0 ? 1 : -1;
+      var out = [];
+      for (var i = 0; i < total; i++) {
+        var branch = _zwOffset(mingBranch, dir * i);
+        var from = Number(startAge) + (i * 10);
+        out.push({
+          branch: branch,
+          palaceName: (palaceNameByBranch && palaceNameByBranch[branch]) || '',
+          range: String(from) + '-' + String(from + 9)
+        });
+      }
+      return out;
+    }
+
+    function _zwBuildLiuNianTimeline(birthSolarYear, startAge, count) {
+      var baseYear = Number(birthSolarYear);
+      var age0 = Number(startAge);
+      var total = Number(count || 10);
+      if (!Number.isInteger(baseYear)) baseYear = new Date().getFullYear();
+      if (!Number.isInteger(age0) || age0 < 1) age0 = 1;
+      if (!Number.isInteger(total) || total < 1) total = 10;
+      var out = [];
+      for (var i = 0; i < total; i++) {
+        var age = age0 + i;
+        var year = baseYear + age - 1;
+        out.push({
+          year: year,
+          age: age,
+          ganzhi: _zwGetYearGanZhi(year)
+        });
+      }
+      return out;
+    }
+
     function _zwBuildChartText(chart) {
       if (!chart) return '';
       var lines = [];
@@ -3930,8 +4013,12 @@ const app = createApp({
       lines.push('农历：' + chart.center.lunarText);
       lines.push('生年干支：' + chart.center.yearGanZhi);
       lines.push('五行局：' + chart.center.bureauLabel);
+      lines.push('大限方向：' + chart.center.daXianDirectionLabel);
       lines.push('命宫/身宫：' + chart.center.mingBranch + ' / ' + chart.center.shenBranch + '（身宫落' + chart.center.shenPalaceName + '）');
       lines.push('命主/身主：' + chart.center.mingZhu + ' / ' + chart.center.shenZhu);
+      if (chart.center.huaSummary && chart.center.huaSummary.length) {
+        lines.push('本命四化：' + chart.center.huaSummary.map(function(item) { return item.label; }).join('  '));
+      }
       lines.push('');
       chart.boardCells.forEach(function(cell) {
         var title = '[' + cell.branch + '宫] ' + (cell.palaceName || '—') + ' / ' + (cell.stemBranch || '');
@@ -3955,7 +4042,18 @@ const app = createApp({
         lines.push('  主星：' + (mains.length ? mains.join('、') : '无'));
         lines.push('  辅星：' + (assists.length ? assists.join('、') : '无'));
         lines.push('  杂曜：' + (misc.length ? misc.join('、') : '无'));
-        lines.push('  大限：' + (cell.daXian || '--') + '  小限：' + (cell.xiaoXian || '--'));
+        lines.push('  大限：' + (cell.daXian || '--') + '  小限：' + (cell.xiaoXian || '--') + '  十二长生：' + (cell.changSheng || '--'));
+        lines.push('  流年序列：' + (cell.liuNianSeriesText || '--'));
+        lines.push('  小限序列：' + (cell.xiaoXianSeriesText || '--'));
+      });
+      lines.push('');
+      lines.push('【大限总览】');
+      (chart.daXianTimeline || []).forEach(function(item) {
+        lines.push('  ' + item.range + '  ' + (item.branch || '') + (item.palaceName ? (' ' + item.palaceName) : ''));
+      });
+      lines.push('【流年总览】');
+      (chart.liuNianTimeline || []).forEach(function(item) {
+        lines.push('  ' + item.year + '年 ' + item.ganzhi + ' ' + item.age + '岁');
       });
       return lines.join('\n');
     }
@@ -4159,6 +4257,19 @@ const app = createApp({
       var daXianDirection = (isYangYear && isMale) || (!isYangYear && !isMale) ? 1 : -1;
       var daXianMap = _zwBuildDaXianMap(mingBranch, bureauNum, daXianDirection);
       var xiaoXianMap = _zwBuildXiaoXianMap(yearBranch, isMale ? 'male' : 'female');
+      var liuNianFirstAgeMap = _zwBuildLiuNianFirstAgeMap(yearBranch, 1);
+      var changShengMap = _zwBuildChangShengMap(bureauInfo.element);
+      var daXianTimeline = _zwBuildDaXianTimeline(mingBranch, bureauNum, daXianDirection, palaceNameByBranch, 10);
+      var liuNianTimeline = _zwBuildLiuNianTimeline(effectiveSolar.year, bureauNum, 10);
+      var huaSummary = [];
+      if (huaRule) {
+        huaSummary = [
+          { tag: '禄', star: huaRule.lu, label: '禄:' + huaRule.lu },
+          { tag: '权', star: huaRule.quan, label: '权:' + huaRule.quan },
+          { tag: '科', star: huaRule.ke, label: '科:' + huaRule.ke },
+          { tag: '忌', star: huaRule.ji, label: '忌:' + huaRule.ji }
+        ];
+      }
 
       var boardCells = ZW_BOARD_ORDER.map(function(branch) {
         var pack = palaceStars[branch] || { main: [], assist: [], misc: [], huaByStar: {} };
@@ -4178,6 +4289,10 @@ const app = createApp({
         var misc = pack.misc.map(function(star) {
           return { name: star, huaTags: pack.huaByStar[star] || [] };
         });
+        var xiaoFirstAge = _zwParseAgeValue(xiaoXianMap[branch]);
+        var liuFirstAge = _zwParseAgeValue(liuNianFirstAgeMap[branch]);
+        var xiaoSeries = _zwBuildAgeSeries(xiaoFirstAge, 120, 12);
+        var liuSeries = _zwBuildAgeSeries(liuFirstAge, 120, 12);
         return {
           branch: branch,
           area: ZW_BOARD_AREA[branch] || '',
@@ -4189,7 +4304,12 @@ const app = createApp({
           assistStars: assist,
           miscStars: misc,
           daXian: daXianMap[branch] || '--',
-          xiaoXian: xiaoXianMap[branch] || '--'
+          xiaoXian: xiaoXianMap[branch] || '--',
+          changSheng: changShengMap[branch] || '',
+          liuNianSeries: liuSeries,
+          xiaoXianSeries: xiaoSeries,
+          liuNianSeriesText: liuSeries.length ? liuSeries.join(',') : '',
+          xiaoXianSeriesText: xiaoSeries.length ? xiaoSeries.join(',') : ''
         };
       });
 
@@ -4210,6 +4330,7 @@ const app = createApp({
         genderLabel: isMale ? '男' : '女',
         solarText: solarText,
         lunarText: lunarText,
+        calendarInputType: ziweiCalendarType.value === 'lunar' ? '农历' : '公历',
         yearGanZhi: yearGanZhi,
         mingZhu: ZW_MINGZHU_BY_BRANCH[mingBranch] || '',
         shenZhu: ZW_SHENZHU_BY_YEAR_BRANCH[yearBranch] || '',
@@ -4221,13 +4342,17 @@ const app = createApp({
         tianfuBranch: tianfuBranch,
         monthLabel: lunarMonthLabel + '月',
         shichenLabel: _zwGetShiChenLabel(hour),
+        daXianDirectionLabel: daXianDirection > 0 ? '顺行' : '逆行',
+        huaSummary: huaSummary,
         shiftedByZiHour: shiftedByZiHour
       };
 
       var chart = {
         generatedAt: Date.now(),
         boardCells: boardCells,
-        center: center
+        center: center,
+        daXianTimeline: daXianTimeline,
+        liuNianTimeline: liuNianTimeline
       };
       chart.text = _zwBuildChartText(chart);
       ziweiChart.value = chart;

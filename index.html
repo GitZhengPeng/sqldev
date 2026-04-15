@@ -1425,8 +1425,14 @@ $$;</pre>
             <p>选择出生信息后点击“排盘”，将生成完整紫微斗数方盘（含主星、辅星、杂曜、四化、大限与小限）。</p>
           </article>
 
-          <article class="ziwei-chart-wrap" v-if="ziweiChart">
-            <div class="ziwei-board" id="ziwei-board-export">
+          <article class="ziwei-chart-wrap" v-if="ziweiChart" id="ziwei-board-export">
+            <div class="ziwei-board-shell">
+              <div class="ziwei-board-compass ziwei-board-compass-top">正南方</div>
+              <div class="ziwei-board-compass ziwei-board-compass-right">正西方</div>
+              <div class="ziwei-board-compass ziwei-board-compass-bottom">正北方</div>
+              <div class="ziwei-board-compass ziwei-board-compass-left">正东方</div>
+
+              <div class="ziwei-board">
               <section
                 v-for="cell in ziweiChart.boardCells"
                 :key="'zw-cell-'+cell.branch"
@@ -1437,6 +1443,11 @@ $$;</pre>
                   <span class="ziwei-palace-name">{{ cell.palaceName || '—' }}</span>
                   <span class="ziwei-palace-gz">{{ cell.stemBranch }}</span>
                 </header>
+
+                <div class="ziwei-age-series">
+                  <span class="ziwei-age-line">流年: {{ cell.liuNianSeriesText || '--' }}</span>
+                  <span class="ziwei-age-line">小限: {{ cell.xiaoXianSeriesText || '--' }}</span>
+                </div>
 
                 <div class="ziwei-star-row main">
                   <span class="ziwei-star main" v-for="star in cell.mainStars" :key="'zw-main-'+cell.branch+'-'+star.name">
@@ -1461,23 +1472,47 @@ $$;</pre>
                 </div>
 
                 <footer class="ziwei-palace-foot">
-                  <span>大限 {{ cell.daXian }}</span>
-                  <span>小限 {{ cell.xiaoXian }}</span>
+                  <span>{{ cell.changSheng || '--' }}</span>
+                  <span>{{ cell.daXian }}</span>
+                  <span>{{ cell.branch }}</span>
                 </footer>
               </section>
 
               <section class="ziwei-center">
                 <h4>命盘信息</h4>
                 <p><strong>性别：</strong>{{ ziweiChart.center.genderLabel }}</p>
+                <p><strong>输入历法：</strong>{{ ziweiChart.center.calendarInputType }}</p>
                 <p><strong>公历：</strong>{{ ziweiChart.center.solarText }}</p>
                 <p><strong>农历：</strong>{{ ziweiChart.center.lunarText }}</p>
                 <p><strong>生年干支：</strong>{{ ziweiChart.center.yearGanZhi }}</p>
                 <p><strong>五行局：</strong>{{ ziweiChart.center.bureauLabel }}</p>
+                <p><strong>大限方向：</strong>{{ ziweiChart.center.daXianDirectionLabel }}</p>
                 <p><strong>命主 / 身主：</strong>{{ ziweiChart.center.mingZhu }} / {{ ziweiChart.center.shenZhu }}</p>
                 <p><strong>命宫 / 身宫：</strong>{{ ziweiChart.center.mingBranch }} / {{ ziweiChart.center.shenBranch }}</p>
                 <p><strong>身宫所落：</strong>{{ ziweiChart.center.shenPalaceName }}</p>
+                <div class="ziwei-center-hua" v-if="ziweiChart.center.huaSummary && ziweiChart.center.huaSummary.length">
+                  <span class="ziwei-hua-tag ziwei-hua-summary" v-for="item in ziweiChart.center.huaSummary" :key="'zw-center-hua-'+item.tag" :data-hua="item.tag">{{ item.label }}</span>
+                </div>
                 <p class="ziwei-center-note" v-if="ziweiChart.center.shiftedByZiHour">已按子时（23:00后）换日规则排盘</p>
               </section>
+              </div>
+            </div>
+
+            <div class="ziwei-timeline">
+              <div class="ziwei-timeline-row">
+                <div class="ziwei-timeline-label">大限</div>
+                <div class="ziwei-timeline-cell" v-for="item in ziweiChart.daXianTimeline" :key="'zw-dx-'+item.range">
+                  <strong>{{ item.range }}</strong>
+                  <span>{{ item.branch }} {{ item.palaceName }}</span>
+                </div>
+              </div>
+              <div class="ziwei-timeline-row">
+                <div class="ziwei-timeline-label">流年</div>
+                <div class="ziwei-timeline-cell" v-for="item in ziweiChart.liuNianTimeline" :key="'zw-ln-'+item.year+'-'+item.age">
+                  <strong>{{ item.year }}年</strong>
+                  <span>{{ item.ganzhi }} {{ item.age }}岁</span>
+                </div>
+              </div>
             </div>
           </article>
         </section>

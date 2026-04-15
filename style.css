@@ -3822,6 +3822,38 @@ body.feedback-open{overflow:hidden}
   box-shadow:0 20px 36px rgba(0,0,0,.3);
   padding:12px;
 }
+.ziwei-board-shell{
+  position:relative;
+  padding:18px 18px;
+}
+.ziwei-board-compass{
+  position:absolute;
+  color:#8e9cb4;
+  font:600 12px "Noto Serif SC","Source Han Serif SC",serif;
+  letter-spacing:.2px;
+  user-select:none;
+  pointer-events:none;
+}
+.ziwei-board-compass-top{
+  top:0;
+  left:50%;
+  transform:translateX(-50%);
+}
+.ziwei-board-compass-right{
+  right:0;
+  top:50%;
+  transform:translateY(-50%) rotate(90deg);
+}
+.ziwei-board-compass-bottom{
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+}
+.ziwei-board-compass-left{
+  left:0;
+  top:50%;
+  transform:translateY(-50%) rotate(-90deg);
+}
 .ziwei-board{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
@@ -3847,7 +3879,7 @@ body.feedback-open{overflow:hidden}
 .ziwei-center{grid-area:zw-center}
 
 .ziwei-palace{
-  min-height:144px;
+  min-height:168px;
   border:1px solid rgba(212,168,69,.36);
   border-radius:10px;
   background:linear-gradient(160deg,rgba(24,24,45,.92),rgba(14,14,30,.92));
@@ -3877,14 +3909,30 @@ body.feedback-open{overflow:hidden}
   color:#c9b17b;
   font:600 11px "JetBrains Mono", monospace;
 }
+.ziwei-age-series{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  margin-top:1px;
+}
+.ziwei-age-line{
+  color:#8ea2c8;
+  font:500 10px "JetBrains Mono", monospace;
+  line-height:1.3;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 .ziwei-star-row{
   display:flex;
   flex-wrap:wrap;
   gap:4px 5px;
 }
 .ziwei-star-row.main{
-  min-height:22px;
+  min-height:24px;
 }
+.ziwei-star-row.assist .ziwei-star{color:#5fd8ff}
+.ziwei-star-row.misc .ziwei-star{color:#94a3b8}
 .ziwei-star{
   display:inline-flex;
   align-items:center;
@@ -3958,8 +4006,17 @@ body.feedback-open{overflow:hidden}
   justify-content:space-between;
   align-items:center;
   gap:6px;
-  color:#93a4be;
+  color:#aab6ca;
   font:600 10px "JetBrains Mono", monospace;
+  border-top:1px dashed rgba(148,163,184,.28);
+  padding-top:3px;
+}
+.ziwei-palace-foot span:nth-child(1){
+  color:#7dd3fc;
+}
+.ziwei-palace-foot span:nth-child(3){
+  color:#f0d89e;
+  font-weight:700;
 }
 .ziwei-center{
   border:1px solid rgba(212,168,69,.4);
@@ -3984,9 +4041,65 @@ body.feedback-open{overflow:hidden}
 .ziwei-center p strong{
   color:#c9b17b;
 }
+.ziwei-center-hua{
+  margin-top:4px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.ziwei-hua-summary{
+  height:20px;
+  min-width:48px;
+  padding:0 8px;
+  border-radius:999px;
+  font-size:11px;
+}
 .ziwei-center-note{
   margin-top:4px !important;
   color:#fda4af !important;
+}
+.ziwei-timeline{
+  margin-top:10px;
+  border:1px solid rgba(212,168,69,.26);
+  border-radius:10px;
+  overflow:hidden;
+}
+.ziwei-timeline-row{
+  display:grid;
+  grid-template-columns:64px repeat(10,minmax(86px,1fr));
+  border-top:1px solid rgba(212,168,69,.22);
+}
+.ziwei-timeline-row:first-child{
+  border-top:none;
+}
+.ziwei-timeline-label{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#f0d89e;
+  font:700 14px "Noto Serif SC","Source Han Serif SC",serif;
+  background:rgba(212,168,69,.12);
+  border-right:1px solid rgba(212,168,69,.22);
+}
+.ziwei-timeline-cell{
+  min-height:48px;
+  border-right:1px solid rgba(212,168,69,.2);
+  padding:5px 6px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:1px;
+}
+.ziwei-timeline-cell:last-child{
+  border-right:none;
+}
+.ziwei-timeline-cell strong{
+  color:#e2e8f0;
+  font:600 11px "JetBrains Mono", monospace;
+}
+.ziwei-timeline-cell span{
+  color:#9eb0cf;
+  font:500 10px var(--font-body);
 }
 
 @media (max-width: 1180px){
@@ -4004,12 +4117,22 @@ body.feedback-open{overflow:hidden}
       "zw-yin zw-chou"
       "zw-zi zw-hai";
   }
-  .ziwei-palace{min-height:132px}
+  .ziwei-palace{min-height:144px}
+  .ziwei-timeline{
+    overflow:auto;
+  }
+  .ziwei-timeline-row{
+    min-width:1040px;
+  }
 }
 @media (max-width: 640px){
   .ziwei-page{padding:12px}
   .ziwei-form-grid{grid-template-columns:1fr}
-  .ziwei-palace{min-height:124px}
+  .ziwei-palace{min-height:132px}
+  .ziwei-board-shell{padding:4px}
+  .ziwei-board-compass{
+    display:none;
+  }
 }
 
 [data-theme="light"] .ziwei-input-card{
@@ -4039,15 +4162,26 @@ body.feedback-open{overflow:hidden}
   background:#fffdfa;
   box-shadow:0 14px 28px rgba(15,23,42,.08);
 }
+[data-theme="light"] .ziwei-board-compass{
+  color:#94a3b8;
+}
 [data-theme="light"] .ziwei-palace{
   border-color:#efd6a2;
   background:linear-gradient(160deg,#fffdfa,#fff5e6);
 }
 [data-theme="light"] .ziwei-palace-name{color:#8a2d24}
 [data-theme="light"] .ziwei-palace-gz{color:#7c6340}
+[data-theme="light"] .ziwei-age-line{color:#64748b}
 [data-theme="light"] .ziwei-star{color:#334155}
 [data-theme="light"] .ziwei-star.main strong{color:#b42318}
-[data-theme="light"] .ziwei-palace-foot{color:#64748b}
+[data-theme="light"] .ziwei-star-row.assist .ziwei-star{color:#0369a1}
+[data-theme="light"] .ziwei-star-row.misc .ziwei-star{color:#64748b}
+[data-theme="light"] .ziwei-palace-foot{
+  color:#64748b;
+  border-top-color:#e2e8f0;
+}
+[data-theme="light"] .ziwei-palace-foot span:nth-child(1){color:#0284c7}
+[data-theme="light"] .ziwei-palace-foot span:nth-child(3){color:#9a3412}
 [data-theme="light"] .ziwei-center{
   border-color:#efd6a2;
   background:linear-gradient(160deg,#fffaf2,#fff5e6);
@@ -4056,6 +4190,26 @@ body.feedback-open{overflow:hidden}
 [data-theme="light"] .ziwei-center p{color:#334155}
 [data-theme="light"] .ziwei-center p strong{color:#7c6340}
 [data-theme="light"] .ziwei-center-note{color:#be123c !important}
+[data-theme="light"] .ziwei-timeline{
+  border-color:#efd6a2;
+}
+[data-theme="light"] .ziwei-timeline-row{
+  border-top-color:#f1e3c6;
+}
+[data-theme="light"] .ziwei-timeline-label{
+  color:#8a2d24;
+  background:#fff2d7;
+  border-right-color:#f1e3c6;
+}
+[data-theme="light"] .ziwei-timeline-cell{
+  border-right-color:#f1e3c6;
+}
+[data-theme="light"] .ziwei-timeline-cell strong{
+  color:#0f172a;
+}
+[data-theme="light"] .ziwei-timeline-cell span{
+  color:#64748b;
+}
 
 /* ===== Bug Fix: Hide native browser password reveal button (double eye icon) ===== */
 input::-ms-reveal,
