@@ -10,6 +10,7 @@ Last updated: 2026-04-15
 - Default behavior: execute directly, do not ask for confirmation on routine implementation details.
 - Git workflow rule: **always commit locally first, then push to remote**.
 - When design and interaction choices are obvious from prior direction, continue without extra questioning.
+- Context update cadence: save context to `CONTEXT_FULL.md` once per day at **17:00** (instead of updating on every change).
 
 ## Product/UI Direction (Locked)
 - Home page and Workbench are two separate interfaces.
