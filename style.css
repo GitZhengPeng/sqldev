@@ -1827,6 +1827,9 @@ body{
 html.startup-workbench #splash-poster{
   display:none !important;
 }
+html.startup-workbench #app{
+  transition:none !important;
+}
 html.startup-workbench body.splash-active{
   overflow:auto;
 }

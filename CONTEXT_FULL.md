@@ -28,6 +28,8 @@ Last updated: 2026-04-15
 - Startup should fast-path app bootstrap when restoring workbench.
 - Bootstrap now uses dependency-aware parallel loading (instead of full serial chain).
 - Splash startup delays heavy app warmup to reduce first-screen contention.
+- Theme is now resolved in earliest startup script to avoid dark/light flash on refresh.
+- Chinese font (`Noto Sans SC`) moved to primary font link to avoid async font swap jitter.
 
 ## Auth And Convert Architecture (Current Stable Path)
 - Current production-stable strategy:
