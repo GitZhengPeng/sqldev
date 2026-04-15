@@ -153,3 +153,11 @@ Last updated: 2026-04-15
   - gender parity enforced on the 17th digit (male odd / female even)
   - keeps checksum calculation unchanged (GB 11643-1999).
 - Tightened CSP `connect-src` by removing now-unused region data CDN domains.
+
+## 2026-04-15: Unified Scrollbar Theme
+- Unified site-wide scrollbars to match workbench editor style.
+- Added scrollbar design tokens in `style.css`:
+  - `--scrollbar-size`, `--scrollbar-radius`
+  - `--scrollbar-track`, `--scrollbar-thumb`, `--scrollbar-thumb-hover`, `--scrollbar-thumb-border`
+- Applied consistent scrollbar styling globally (`*`) and aligned `textarea` + `CodeMirror` + panel-specific scroll areas to the same token set.
+- Removed hidden scrollbar rule on `.main-content` so scrollbars follow the unified visual style.
