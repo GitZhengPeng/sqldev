@@ -577,11 +577,6 @@
       return { error: null };
     }
     var res = { error: null };
-    try {
-      res = await sb.auth.signOut();
-    } catch (err) {
-      res = { error: err };
-    }
     user = null;
     accessToken = '';
     if (authView === 'reset') exitResetPasswordMode('');
@@ -589,6 +584,15 @@
     closeAuthModal();
     updatePosterCta();
     emit();
+    try {
+      var signOutPromise = sb.auth.signOut();
+      var timeoutPromise = new Promise(function(resolve) {
+        setTimeout(function() { resolve({ error: null, timeout: true }); }, 1500);
+      });
+      res = await Promise.race([signOutPromise, timeoutPromise]);
+    } catch (err) {
+      res = { error: err };
+    }
     return res;
   }
 
@@ -602,6 +606,9 @@
 
   async function ensureAccessToken(forceRefresh) {
     if (!sb || !sb.auth) return accessToken || '';
+    if (!forceRefresh && accessToken && !isJwtExpired(accessToken)) {
+      return accessToken;
+    }
     var needsRefresh = forceRefresh || !accessToken || isJwtExpired(accessToken);
     if (needsRefresh && typeof sb.auth.refreshSession === 'function') {
       try {
@@ -888,7 +895,7 @@
     if (logoutBtn) {
       e.preventDefault();
       e.stopPropagation();
-      if (user) await signOut();
+      if (user) signOut();
       returnToSplashHome();
     }
   });

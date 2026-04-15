@@ -1189,7 +1189,26 @@ $$;</pre>
                     </label>
                     <label class="idtool-field">
                       <span>出生日期</span>
-                      <input type="date" v-model="idBirthDate" :min="idBirthMin" :max="idBirthMax"/>
+                      <div class="idtool-date-grid">
+                        <label class="idtool-date-item">
+                          <span>年</span>
+                          <select v-model="idBirthYear">
+                            <option v-for="y in idBirthYearOptions" :key="'id-y-'+y" :value="String(y)">{{ y }}</option>
+                          </select>
+                        </label>
+                        <label class="idtool-date-item">
+                          <span>月</span>
+                          <select v-model="idBirthMonth">
+                            <option v-for="m in idBirthMonthOptions" :key="'id-m-'+m.value" :value="m.value">{{ m.label }}</option>
+                          </select>
+                        </label>
+                        <label class="idtool-date-item">
+                          <span>日</span>
+                          <select v-model="idBirthDay">
+                            <option v-for="d in idBirthDayOptions" :key="'id-d-'+d.value" :value="d.value">{{ d.label }}</option>
+                          </select>
+                        </label>
+                      </div>
                     </label>
                   </div>
                   <div class="idtool-inline">
@@ -1229,6 +1248,12 @@ $$;</pre>
                 <div class="idtool-section">
                   <h4 class="idtool-section-title">生成统一社会信用代码</h4>
                   <div class="idtool-form-grid">
+                    <label class="idtool-field full">
+                      <span>证件体系</span>
+                      <select v-model="usccCodeMode">
+                        <option v-for="mode in usccModeOptions" :key="'uscc-mode-'+mode.value" :value="mode.value">{{ mode.label }}</option>
+                      </select>
+                    </label>
                     <label class="idtool-field">
                       <span>登记管理部门</span>
                       <select v-model="usccDeptCode">
@@ -1264,8 +1289,13 @@ $$;</pre>
                     <button class="idtool-btn primary" type="button" @click="generateUsccCode">生成</button>
                   </div>
                   <div class="idtool-output">
-                    <input type="text" :value="usccGeneratedCode" readonly placeholder="生成结果将显示在这里"/>
+                    <input type="text" :value="usccGeneratedCode" readonly :placeholder="usccOutputPlaceholder"/>
                     <button class="idtool-btn ghost" type="button" @click="copyGeneratedUsccCode">复制</button>
+                  </div>
+                  <div class="idtool-legacy-block" v-if="usccLegacyGenerated">
+                    <p><strong>工商注册号：</strong>{{ usccLegacyGenerated.businessRegNo }}</p>
+                    <p><strong>组织机构代码：</strong>{{ usccLegacyGenerated.orgCode }}</p>
+                    <p><strong>税务登记号：</strong>{{ usccLegacyGenerated.taxNo }}</p>
                   </div>
                   <p class="idtool-result" :class="usccGenerateResult.type" v-if="usccGenerateResult.text">{{ usccGenerateResult.text }}</p>
                 </div>
@@ -1275,8 +1305,8 @@ $$;</pre>
                 <div class="idtool-section">
                   <h4 class="idtool-section-title">校验统一社会信用代码</h4>
                   <label class="idtool-field full">
-                    <span>输入统一社会信用代码</span>
-                    <input type="text" v-model="usccVerifyInput" maxlength="18" placeholder="例如：91310106MA1FY4BN0X"/>
+                    <span>输入代码（支持统一社会信用代码 / 旧版三证）</span>
+                    <input type="text" v-model="usccVerifyInput" maxlength="120" :placeholder="usccVerifyPlaceholder"/>
                   </label>
                   <div class="idtool-actions">
                     <button class="idtool-btn primary" type="button" @click="validateUsccCode">校验</button>

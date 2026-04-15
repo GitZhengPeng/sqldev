@@ -161,3 +161,22 @@ Last updated: 2026-04-15
   - `--scrollbar-track`, `--scrollbar-thumb`, `--scrollbar-thumb-hover`, `--scrollbar-thumb-border`
 - Applied consistent scrollbar styling globally (`*`) and aligned `textarea` + `CodeMirror` + panel-specific scroll areas to the same token set.
 - Removed hidden scrollbar rule on `.main-content` so scrollbars follow the unified visual style.
+
+## 2026-04-15: ID Tool UX + Performance + Feedback Visibility
+- ID card birth date input was redesigned from native `type="date"` to custom year/month/day selectors:
+  - avoids browser-native calendar popup inconsistency and improves visual consistency.
+- Improved light-theme readability for ID tool result messages:
+  - success/error/info text and backgrounds now use higher-contrast light palette.
+- Auth modal password eye icon duplication fixed:
+  - explicitly hides browser-native password reveal controls (`::-ms-reveal` / `::-ms-clear`) and keeps only custom toggle.
+- Feedback floating button visibility fixed on splash:
+  - raised `.feedback-fab` z-index above splash poster layer so homepage can always see/click it.
+- USCC tool extended to support both:
+  - unified 18-digit social credit code
+  - legacy three-certificate mode (工商注册号 / 组织机构代码 / 税务登记号)
+  - validation now recognizes unified code, org code, and legacy 15-digit code formats.
+- Conversion speed optimizations:
+  - added frontend rules payload cache (rebuild only when rules revision changes)
+  - added in-memory conversion result cache (same input+direction+rules version returns instantly)
+  - auth token retrieval now short-circuits when in-memory token is still valid (avoids redundant `getSession` on each convert)
+  - logout flow made optimistic (UI clears immediately, remote signout finishes in background with timeout fallback).

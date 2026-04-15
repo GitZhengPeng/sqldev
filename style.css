@@ -438,6 +438,8 @@ body.auth-dragging{user-select:none}
 .auth-input-password{padding-right:40px}
 .auth-input::placeholder{color:#64748b}
 .auth-input:focus{outline:none;border-color:#60a5fa;box-shadow:0 0 0 3px rgba(37,99,235,.24)}
+.auth-input[type="password"]::-ms-reveal,
+.auth-input[type="password"]::-ms-clear{display:none}
 .auth-password-toggle{position:absolute;top:50%;right:10px;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:22px;height:22px;border:none;background:none;color:#94a3b8;cursor:pointer;padding:0}
 .auth-password-toggle:hover{color:#e2e8f0}
 .auth-password-toggle:focus-visible{outline:2px solid #60a5fa;outline-offset:2px;border-radius:6px}
@@ -3007,7 +3009,7 @@ body:not(.splash-active) #app{
   position:fixed;
   left:0;
   top:50%;
-  z-index:30;
+  z-index:130;
   display:flex;
   align-items:center;
   gap:6px;
@@ -3482,6 +3484,21 @@ body.feedback-open{overflow:hidden}
   flex-direction:column;
   gap:6px;
 }
+.idtool-date-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.idtool-date-item{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.idtool-date-item span{
+  color:#9db1d4;
+  font-size:11px;
+  font-weight:600;
+}
 .idtool-field.full{grid-column:1 / -1}
 .idtool-field span{
   color:#9db1d4;
@@ -3490,6 +3507,7 @@ body.feedback-open{overflow:hidden}
 }
 .idtool-field input,
 .idtool-field select,
+.idtool-date-item select,
 .idtool-output input{
   width:100%;
   border:1px solid rgba(99,135,241,.18);
@@ -3503,6 +3521,7 @@ body.feedback-open{overflow:hidden}
 }
 .idtool-field input:focus,
 .idtool-field select:focus,
+.idtool-date-item select:focus,
 .idtool-output input:focus{
   border-color:rgba(99,135,241,.45);
   box-shadow:0 0 0 3px rgba(79,125,249,.14);
@@ -3550,6 +3569,18 @@ body.feedback-open{overflow:hidden}
   grid-template-columns:minmax(0,1fr) auto;
   gap:8px;
 }
+.idtool-legacy-block{
+  border:1px dashed rgba(99,135,241,.3);
+  border-radius:10px;
+  background:rgba(8,13,24,.45);
+  padding:8px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  font-size:12px;
+  color:#d7e5ff;
+}
+.idtool-legacy-block p{margin:0;line-height:1.45}
 .idtool-result{
   border-radius:8px;
   padding:8px 10px;
@@ -3575,6 +3606,7 @@ body.feedback-open{overflow:hidden}
 @media (max-width: 980px){
   .idtool-grid{grid-template-columns:1fr}
   .idtool-form-grid{grid-template-columns:1fr}
+  .idtool-date-grid{grid-template-columns:1fr}
 }
 @media (max-width: 640px){
   .idtool-page{padding:12px}
@@ -3621,6 +3653,7 @@ body.feedback-open{overflow:hidden}
 [data-theme="light"] .idtool-inline-label{color:#475569}
 [data-theme="light"] .idtool-field input,
 [data-theme="light"] .idtool-field select,
+[data-theme="light"] .idtool-date-item select,
 [data-theme="light"] .idtool-output input{
   border-color:#dbe6f5;
   background:#fff;
@@ -3628,11 +3661,18 @@ body.feedback-open{overflow:hidden}
 }
 [data-theme="light"] .idtool-field input:focus,
 [data-theme="light"] .idtool-field select:focus,
+[data-theme="light"] .idtool-date-item select:focus,
 [data-theme="light"] .idtool-output input:focus{
   border-color:#93c5fd;
   box-shadow:0 0 0 3px rgba(37,99,235,.12);
 }
 [data-theme="light"] .idtool-radio{color:#1e293b}
+[data-theme="light"] .idtool-date-item span{color:#475569}
+[data-theme="light"] .idtool-legacy-block{
+  border-color:#cfe0f7;
+  background:#f8fbff;
+  color:#0f172a;
+}
 [data-theme="light"] .idtool-btn.ghost{
   border-color:#dbe6f5;
   background:#f8fafc;
@@ -3643,6 +3683,21 @@ body.feedback-open{overflow:hidden}
   background:#eff6ff;
   color:#1d4ed8;
 }
+[data-theme="light"] .idtool-result.success{
+  color:#166534;
+  background:#dcfce7;
+  border-color:#86efac;
+}
+[data-theme="light"] .idtool-result.error{
+  color:#991b1b;
+  background:#fef2f2;
+  border-color:#fecaca;
+}
+[data-theme="light"] .idtool-result.info{
+  color:#1e40af;
+  background:#eff6ff;
+  border-color:#bfdbfe;
+}
 
 /* ===== Bug Fix: Hide native browser password reveal button (double eye icon) ===== */
 input::-ms-reveal,
@@ -3651,65 +3706,6 @@ input::-ms-clear{
 }
 input[type="password"]::-webkit-credentials-auto-fill-button{
   display:none !important;
-}
-
-/* ===== Bug Fix: Date input styling for dark mode ===== */
-.idtool-field input[type="date"]{
-  -webkit-appearance:none;
-  appearance:none;
-  position:relative;
-  cursor:pointer;
-}
-.idtool-field input[type="date"]::-webkit-calendar-picker-indicator{
-  cursor:pointer;
-  border-radius:4px;
-  padding:2px;
-  opacity:0.7;
-  filter:invert(1);
-  transition:opacity .14s ease;
-}
-.idtool-field input[type="date"]::-webkit-calendar-picker-indicator:hover{
-  opacity:1;
-}
-.idtool-field input[type="date"]::-webkit-datetime-edit{
-  color:#edf3ff;
-  font:500 12px var(--font-body);
-}
-.idtool-field input[type="date"]::-webkit-datetime-edit-fields-wrapper{
-  padding:0;
-}
-.idtool-field input[type="date"]::-webkit-datetime-edit-month-field,
-.idtool-field input[type="date"]::-webkit-datetime-edit-day-field,
-.idtool-field input[type="date"]::-webkit-datetime-edit-year-field{
-  color:#edf3ff;
-}
-.idtool-field input[type="date"]::-webkit-datetime-edit-month-field:focus,
-.idtool-field input[type="date"]::-webkit-datetime-edit-day-field:focus,
-.idtool-field input[type="date"]::-webkit-datetime-edit-year-field:focus{
-  background:rgba(79,125,249,.25);
-  border-radius:2px;
-  color:#fff;
-}
-[data-theme="light"] .idtool-field input[type="date"]::-webkit-calendar-picker-indicator{
-  filter:none;
-  opacity:0.6;
-}
-[data-theme="light"] .idtool-field input[type="date"]::-webkit-calendar-picker-indicator:hover{
-  opacity:1;
-}
-[data-theme="light"] .idtool-field input[type="date"]::-webkit-datetime-edit{
-  color:#0f172a;
-}
-[data-theme="light"] .idtool-field input[type="date"]::-webkit-datetime-edit-month-field,
-[data-theme="light"] .idtool-field input[type="date"]::-webkit-datetime-edit-day-field,
-[data-theme="light"] .idtool-field input[type="date"]::-webkit-datetime-edit-year-field{
-  color:#0f172a;
-}
-[data-theme="light"] .idtool-field input[type="date"]::-webkit-datetime-edit-month-field:focus,
-[data-theme="light"] .idtool-field input[type="date"]::-webkit-datetime-edit-day-field:focus,
-[data-theme="light"] .idtool-field input[type="date"]::-webkit-datetime-edit-year-field:focus{
-  background:rgba(37,99,235,.12);
-  color:#1d4ed8;
 }
 
 /* ===== Bug Fix: Hide nav-caret when sidebar is collapsed (not hovered) ===== */

@@ -2677,6 +2677,9 @@ const app = createApp({
     const idCityCode = ref('');
     const idCountyCode = ref('');
     const idBirthDate = ref('');
+    const idBirthYear = ref('1990');
+    const idBirthMonth = ref('01');
+    const idBirthDay = ref('01');
     const idGender = ref('male');
     const idGeneratedNumber = ref('');
     const idGenerateResult = ref({ type: 'info', text: '' });
@@ -2686,9 +2689,12 @@ const app = createApp({
     const usccProvinceCode = ref('');
     const usccCityCode = ref('');
     const usccCountyCode = ref('');
+    const usccCodeMode = ref('uscc18');
     const usccDeptCode = ref('9');
     const usccOrgTypeCode = ref('1');
     const usccGeneratedCode = ref('');
+    const usccLegacyGenerated = ref(null);
+    const usccCopyPayload = ref('');
     const usccGenerateResult = ref({ type: 'info', text: '' });
     const usccVerifyInput = ref('');
     const usccVerifyResult = ref({ type: 'info', text: '' });
@@ -2710,6 +2716,10 @@ const app = createApp({
       { value: 'N', label: '其他登记部门N' },
       { value: 'Y', label: '其他登记部门Y' }
     ];
+    const usccModeOptions = [
+      { value: 'uscc18', label: '统一社会信用代码（18位）' },
+      { value: 'legacy3', label: '旧版三证（工商/组织机构/税务）' }
+    ];
     const usccOrgTypeOptions = [
       { value: '1', label: '企业' },
       { value: '2', label: '个体工商户' },
@@ -2722,6 +2732,8 @@ const app = createApp({
     const USCC_CHARSET = '0123456789ABCDEFGHJKLMNPQRTUWXY';
     const USCC_WEIGHTS = [1, 3, 9, 27, 19, 26, 16, 17, 20, 29, 25, 13, 8, 24, 10, 30, 28];
     const USCC_DEPT_ALLOWED = new Set(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'N', 'Y']);
+    const ORG_CODE_CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const ORG_CODE_WEIGHTS = [3, 7, 9, 10, 5, 8, 4, 2];
     const usccCharIndexMap = {};
     for (var usccIdx = 0; usccIdx < USCC_CHARSET.length; usccIdx++) {
       usccCharIndexMap[USCC_CHARSET[usccIdx]] = usccIdx;
@@ -2738,6 +2750,41 @@ const app = createApp({
     });
     const usccCountyOptions = computed(function() {
       return countiesByCity.value[usccCityCode.value] || [];
+    });
+    const idBirthYearOptions = computed(function() {
+      var currentYear = Number(idBirthMax.value.slice(0, 4)) || new Date().getFullYear();
+      var list = [];
+      for (var y = currentYear; y >= 1900; y--) list.push(y);
+      return list;
+    });
+    const idBirthMonthOptions = computed(function() {
+      var list = [];
+      for (var m = 1; m <= 12; m++) {
+        list.push({ value: String(m).padStart(2, '0'), label: String(m).padStart(2, '0') });
+      }
+      return list;
+    });
+    const idBirthDayOptions = computed(function() {
+      var year = Number(idBirthYear.value || '1990');
+      var month = Number(idBirthMonth.value || '1');
+      if (!Number.isInteger(year) || year < 1900) year = 1990;
+      if (!Number.isInteger(month) || month < 1 || month > 12) month = 1;
+      var monthDays = [31, (_isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      var maxDay = monthDays[month - 1];
+      var list = [];
+      for (var d = 1; d <= maxDay; d++) {
+        var txt = String(d).padStart(2, '0');
+        list.push({ value: txt, label: txt });
+      }
+      return list;
+    });
+    const usccOutputPlaceholder = computed(function() {
+      return usccCodeMode.value === 'legacy3' ? '主输出显示旧版工商注册号' : '生成结果将显示在这里';
+    });
+    const usccVerifyPlaceholder = computed(function() {
+      return usccCodeMode.value === 'legacy3'
+        ? '例如：110105123456789 或 A1B2C3D4-5'
+        : '例如：91310106MA1FY4BN0X';
     });
 
     function _sortRegionByCode(list) {
@@ -2815,6 +2862,56 @@ const app = createApp({
       };
     }
 
+    var _idBirthSyncing = false;
+    function _syncIdBirthDateFromParts() {
+      if (_idBirthSyncing) return;
+      _idBirthSyncing = true;
+      try {
+        var year = Number(idBirthYear.value || '1990');
+        var month = Number(idBirthMonth.value || '1');
+        var day = Number(idBirthDay.value || '1');
+        if (!Number.isInteger(year) || year < 1900) year = 1990;
+        if (!Number.isInteger(month) || month < 1 || month > 12) month = 1;
+        var monthDays = [31, (_isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        var maxDay = monthDays[month - 1];
+        if (!Number.isInteger(day) || day < 1) day = 1;
+        if (day > maxDay) day = maxDay;
+        var nextDay = String(day).padStart(2, '0');
+        if (idBirthDay.value !== nextDay) idBirthDay.value = nextDay;
+        var next = String(year).padStart(4, '0') + '-' + String(month).padStart(2, '0') + '-' + nextDay;
+        if (idBirthDate.value !== next) idBirthDate.value = next;
+      } finally {
+        _idBirthSyncing = false;
+      }
+    }
+    function _syncIdBirthPartsFromDate() {
+      if (_idBirthSyncing) return;
+      _idBirthSyncing = true;
+      try {
+        var dateText = String(idBirthDate.value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) dateText = '1990-01-01';
+        var parts = dateText.split('-');
+        var year = Number(parts[0]);
+        var month = Number(parts[1]);
+        var day = Number(parts[2]);
+        if (!Number.isInteger(year) || year < 1900) year = 1990;
+        var maxYear = Number(idBirthMax.value.slice(0, 4)) || new Date().getFullYear();
+        if (year > maxYear) year = maxYear;
+        if (!Number.isInteger(month) || month < 1 || month > 12) month = 1;
+        var monthDays = [31, (_isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        var maxDay = monthDays[month - 1];
+        if (!Number.isInteger(day) || day < 1) day = 1;
+        if (day > maxDay) day = maxDay;
+        idBirthYear.value = String(year);
+        idBirthMonth.value = String(month).padStart(2, '0');
+        idBirthDay.value = String(day).padStart(2, '0');
+        var normalized = String(year).padStart(4, '0') + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        if (idBirthDate.value !== normalized) idBirthDate.value = normalized;
+      } finally {
+        _idBirthSyncing = false;
+      }
+    }
+
     function _initIdToolDefaults() {
       if (!provinces.value.length) return;
       if (!idProvinceCode.value) idProvinceCode.value = provinces.value[0].code;
@@ -2822,6 +2919,7 @@ const app = createApp({
       _ensureAddressSelection(idProvinceCode, idCityCode, idCountyCode);
       _ensureAddressSelection(usccProvinceCode, usccCityCode, usccCountyCode);
       if (!idBirthDate.value) idBirthDate.value = '1990-01-01';
+      _syncIdBirthPartsFromDate();
     }
 
     async function ensureRegionDataLoaded(forceReload) {
@@ -2870,6 +2968,19 @@ const app = createApp({
     });
     watch(usccCityCode, function() {
       _ensureAddressSelection(usccProvinceCode, usccCityCode, usccCountyCode);
+    });
+    watch(idBirthDate, function() {
+      _syncIdBirthPartsFromDate();
+    });
+    watch([idBirthYear, idBirthMonth, idBirthDay], function() {
+      _syncIdBirthDateFromParts();
+    });
+    watch(usccCodeMode, function() {
+      usccGeneratedCode.value = '';
+      usccCopyPayload.value = '';
+      usccLegacyGenerated.value = null;
+      usccGenerateResult.value = { type: 'info', text: '' };
+      usccVerifyResult.value = { type: 'info', text: '' };
     });
 
     function _pickBestRegionCode(provinceCode, cityCode, countyCode) {
@@ -3025,6 +3136,94 @@ const app = createApp({
       return out;
     }
 
+    function _randomOrgCodeBody(len) {
+      var out = '';
+      for (var i = 0; i < len; i++) {
+        out += ORG_CODE_CHARSET[_randomInt(0, ORG_CODE_CHARSET.length - 1)];
+      }
+      return out;
+    }
+
+    function _calcOrgCodeCheckChar(base8) {
+      if (!/^[0-9A-Z]{8}$/.test(base8)) return '';
+      var sum = 0;
+      for (var i = 0; i < 8; i++) {
+        var idx = ORG_CODE_CHARSET.indexOf(base8[i]);
+        if (idx < 0) return '';
+        sum += idx * ORG_CODE_WEIGHTS[i];
+      }
+      var c9 = 11 - (sum % 11);
+      if (c9 === 10) return 'X';
+      if (c9 === 11) return '0';
+      if (c9 === 12) return '0';
+      return String(c9);
+    }
+
+    function _generateLegacyThreeCert(regionCode) {
+      var businessRegNo = String(regionCode) + String(_randomInt(0, 999999999)).padStart(9, '0');
+      var orgBody = _randomOrgCodeBody(8);
+      var orgCheck = _calcOrgCodeCheckChar(orgBody);
+      if (!orgCheck) return null;
+      var orgCode = orgBody + '-' + orgCheck;
+      var taxNo = String(regionCode) + orgBody + orgCheck;
+      return {
+        businessRegNo: businessRegNo,
+        orgCode: orgCode,
+        taxNo: taxNo
+      };
+    }
+
+    function _validateUscc18(raw) {
+      if (!/^[0-9A-HJ-NPQRTUWXY]{18}$/.test(raw)) {
+        return { ok: false, msg: '格式错误：应为18位，仅允许数字及大写字母（不含 I/O/S/V/Z）' };
+      }
+      if (!USCC_DEPT_ALLOWED.has(raw[0])) {
+        return { ok: false, msg: '登记管理部门代码不合法：' + raw[0] };
+      }
+      if (!USCC_CHARSET.includes(raw[1])) {
+        return { ok: false, msg: '机构类别代码不合法：' + raw[1] };
+      }
+      var regionCode = raw.slice(2, 8);
+      if (!regionCodeSet.value.has(regionCode)) {
+        return { ok: false, msg: '行政区划码不存在：' + regionCode };
+      }
+      var expected = _calcUsccCheckChar(raw.slice(0, 17));
+      if (!expected || expected !== raw[17]) {
+        return { ok: false, msg: '校验码错误：应为 ' + expected + '，实际为 ' + raw[17] };
+      }
+      return { ok: true, msg: '校验通过：统一社会信用代码合法' };
+    }
+
+    function _validateOrgCode(raw) {
+      var normalized = String(raw || '').toUpperCase().replace(/-/g, '');
+      if (!/^[0-9A-Z]{8}[0-9X]$/.test(normalized)) {
+        return { ok: false, msg: '组织机构代码格式错误：应为 8位主体码 + 校验位（支持中划线）' };
+      }
+      var expected = _calcOrgCodeCheckChar(normalized.slice(0, 8));
+      if (!expected || expected !== normalized[8]) {
+        return { ok: false, msg: '组织机构代码校验位错误：应为 ' + expected + '，实际为 ' + normalized[8] };
+      }
+      return { ok: true, msg: '校验通过：组织机构代码合法' };
+    }
+
+    function _validateLegacy15(raw) {
+      if (!/^\d{15}$/.test(raw)) {
+        return { ok: false, msg: '旧版15位号码格式错误：应为15位数字' };
+      }
+      var regionCode = raw.slice(0, 6);
+      if (!regionCodeSet.value.has(regionCode)) {
+        return { ok: false, msg: '行政区划码不存在：' + regionCode };
+      }
+      return { ok: true, msg: '校验通过：15位旧版号码格式合法' };
+    }
+
+    function _validateUsccOrLegacyToken(raw) {
+      if (/^[0-9A-HJ-NPQRTUWXY]{18}$/.test(raw)) return _validateUscc18(raw);
+      if (/^[0-9A-Z]{8}-?[0-9X]$/.test(raw)) return _validateOrgCode(raw);
+      if (/^\d{15}$/.test(raw)) return _validateLegacy15(raw);
+      return { ok: false, msg: '无法识别的编码格式：' + raw };
+    }
+
     function generateUsccCode() {
       if (!regionReady.value) {
         usccGenerateResult.value = { type: 'error', text: regionLoadError.value || '行政区划数据尚未就绪，请稍后再试' };
@@ -3043,6 +3242,21 @@ const app = createApp({
         usccGenerateResult.value = { type: 'error', text: '请选择有效的登记机关行政区划' };
         return;
       }
+      if (usccCodeMode.value === 'legacy3') {
+        var legacy = _generateLegacyThreeCert(regionCode);
+        if (!legacy) {
+          usccGenerateResult.value = { type: 'error', text: '旧版三证生成失败，请重试' };
+          return;
+        }
+        usccLegacyGenerated.value = legacy;
+        usccGeneratedCode.value = legacy.businessRegNo;
+        usccCopyPayload.value =
+          '工商注册号：' + legacy.businessRegNo + '\n' +
+          '组织机构代码：' + legacy.orgCode + '\n' +
+          '税务登记号：' + legacy.taxNo;
+        usccGenerateResult.value = { type: 'success', text: '已生成旧版三证号码（工商/组织机构/税务）' };
+        return;
+      }
       var body9 = _randomUsccBody(9);
       var base17 = String(usccDeptCode.value) + String(usccOrgTypeCode.value) + regionCode + body9;
       var check = _calcUsccCheckChar(base17);
@@ -3050,47 +3264,42 @@ const app = createApp({
         usccGenerateResult.value = { type: 'error', text: '生成失败，请重试' };
         return;
       }
+      usccLegacyGenerated.value = null;
       usccGeneratedCode.value = base17 + check;
+      usccCopyPayload.value = usccGeneratedCode.value;
       usccGenerateResult.value = { type: 'success', text: '已生成统一社会信用代码' };
     }
 
     function validateUsccCode() {
       var raw = String(usccVerifyInput.value || '').trim().toUpperCase();
       if (!raw) {
-        usccVerifyResult.value = { type: 'error', text: '请输入待校验的统一社会信用代码' };
+        usccVerifyResult.value = { type: 'error', text: '请输入待校验的代码' };
         return;
       }
-      if (!/^[0-9A-HJ-NPQRTUWXY]{18}$/.test(raw)) {
-        usccVerifyResult.value = { type: 'error', text: '格式错误：应为18位，仅允许数字及大写字母（不含 I/O/S/V/Z）' };
+      var tokenMatches = raw.match(/[0-9A-HJ-NPQRTUWXY]{18}|[0-9A-Z]{8}-?[0-9X]|\d{15}/g);
+      if (tokenMatches && tokenMatches.length > 1) {
+        var lines = [];
+        var allOk = true;
+        for (var i = 0; i < tokenMatches.length; i++) {
+          var token = tokenMatches[i];
+          var checkRes = _validateUsccOrLegacyToken(token);
+          lines.push((checkRes.ok ? '√ ' : '× ') + token + '：' + checkRes.msg.replace(/^校验通过：/, ''));
+          if (!checkRes.ok) allOk = false;
+        }
+        usccVerifyResult.value = { type: allOk ? 'success' : 'info', text: lines.join('；') };
         return;
       }
-      if (!USCC_DEPT_ALLOWED.has(raw[0])) {
-        usccVerifyResult.value = { type: 'error', text: '登记管理部门代码不合法：' + raw[0] };
-        return;
-      }
-      if (!USCC_CHARSET.includes(raw[1])) {
-        usccVerifyResult.value = { type: 'error', text: '机构类别代码不合法：' + raw[1] };
-        return;
-      }
-      var regionCode = raw.slice(2, 8);
-      if (!regionCodeSet.value.has(regionCode)) {
-        usccVerifyResult.value = { type: 'error', text: '行政区划码不存在：' + regionCode };
-        return;
-      }
-      var expected = _calcUsccCheckChar(raw.slice(0, 17));
-      if (!expected || expected !== raw[17]) {
-        usccVerifyResult.value = { type: 'error', text: '校验码错误：应为 ' + expected + '，实际为 ' + raw[17] };
-        return;
-      }
-      usccVerifyResult.value = { type: 'success', text: '校验通过：统一社会信用代码合法' };
+      var result = _validateUsccOrLegacyToken(raw);
+      usccVerifyResult.value = { type: result.ok ? 'success' : 'error', text: result.msg };
     }
 
     function copyGeneratedUsccCode() {
-      if (!usccGeneratedCode.value) {
-        usccGenerateResult.value = { type: 'info', text: '请先生成统一社会信用代码' };
+      var payload = String(usccCopyPayload.value || usccGeneratedCode.value || '').trim();
+      if (!payload) {
+        usccGenerateResult.value = { type: 'info', text: '请先生成代码' };
         return;
       }
-      clipboardWrite(usccGeneratedCode.value);
+      clipboardWrite(payload);
     }
 
     function pickDb(refName, val) {
@@ -3101,7 +3310,13 @@ const app = createApp({
 
     const statusText = ref('工作台已就绪');
     var _persistWarnShown = false;
+    var _frontendRulesRevision = 0;
+    var _frontendRulesCache = { revision: -1, payload: null };
+    var _convertResultCache = new Map();
+    var _CONVERT_RESULT_CACHE_MAX = 24;
     function _doPersist() {
+      _frontendRulesRevision += 1;
+      _convertResultCache.clear();
       if (!_persistRules()) {
         var msg = '⚠ 规则未能持久化（' + _persistError + '），当前修改仅在本次会话有效';
         if (statusText.value) statusText.value += '  ' + msg;
@@ -3722,7 +3937,20 @@ const app = createApp({
       return { level: 'success', summary: '未发现明显兼容问题' };
     }
 
+    function _fastHashText(text) {
+      var src = String(text || '');
+      var h = 2166136261;
+      for (var i = 0; i < src.length; i++) {
+        h ^= src.charCodeAt(i);
+        h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+      }
+      return (h >>> 0).toString(16);
+    }
+
     function _buildFrontendRulesPayload() {
+      if (_frontendRulesCache.payload && _frontendRulesCache.revision === _frontendRulesRevision) {
+        return _frontendRulesCache.payload;
+      }
       var ddlRules = null;
       var bodyRules = null;
       if (typeof _ddlRulesData === 'object' && _ddlRulesData) ddlRules = _ddlRulesData;
@@ -3751,6 +3979,7 @@ const app = createApp({
         hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
       }
       payload.version = 'frontend-' + (hash >>> 0).toString(16);
+      _frontendRulesCache = { revision: _frontendRulesRevision, payload: payload };
       return payload;
     }
 
@@ -3798,6 +4027,17 @@ const app = createApp({
         throw new Error('认证模块版本过低，不支持 invokeFunction');
       }
       var frontendRules = _buildFrontendRulesPayload();
+      var cacheKey = [
+        kind,
+        fromDb,
+        toDb,
+        (frontendRules && frontendRules.version) || 'no-rules',
+        String(input || '').length,
+        _fastHashText(input || '')
+      ].join('|');
+      if (_convertResultCache.has(cacheKey)) {
+        return _convertResultCache.get(cacheKey);
+      }
       var result;
       try {
         result = await window.authApi.invokeFunction('convert', {
@@ -3848,6 +4088,11 @@ const app = createApp({
       var json = result.data;
       if (!json || typeof json.output !== 'string') {
         throw new Error('后端返回格式异常');
+      }
+      _convertResultCache.set(cacheKey, json.output);
+      if (_convertResultCache.size > _CONVERT_RESULT_CACHE_MAX) {
+        var firstKey = _convertResultCache.keys().next().value;
+        if (firstKey) _convertResultCache.delete(firstKey);
       }
       return json.output;
     }
@@ -4216,12 +4461,15 @@ const app = createApp({
       regionLoading, regionReady, regionLoadError, reloadRegionData,
       provinces,
       idProvinceCode, idCityCode, idCountyCode, idCityOptions, idCountyOptions,
-      idBirthDate, idBirthMin, idBirthMax, idGender,
+      idBirthDate, idBirthMin, idBirthMax, idBirthYear, idBirthMonth, idBirthDay,
+      idBirthYearOptions, idBirthMonthOptions, idBirthDayOptions, idGender,
       idGeneratedNumber, idGenerateResult, idVerifyInput, idVerifyResult,
       generateIdNumber, validateIdNumber, copyGeneratedIdNumber,
       usccProvinceCode, usccCityCode, usccCountyCode, usccCityOptions, usccCountyOptions,
+      usccCodeMode, usccModeOptions,
       usccDeptCode, usccOrgTypeCode, usccDeptOptions, usccOrgTypeOptions,
-      usccGeneratedCode, usccGenerateResult, usccVerifyInput, usccVerifyResult,
+      usccGeneratedCode, usccLegacyGenerated, usccOutputPlaceholder, usccVerifyPlaceholder,
+      usccGenerateResult, usccVerifyInput, usccVerifyResult,
       generateUsccCode, validateUsccCode, copyGeneratedUsccCode,
       // Shared
       statusText, fileInput, fileEncoding, ENCODING_OPTIONS, uploadFile, handleFileUpload,
