@@ -105,3 +105,34 @@ Last updated: 2026-04-15
 - For Supabase function runtime env vars, use `supabase secrets set ... --project-ref <ref>`.
 - Keep `service_role` out of frontend at all times.
 - Keep RLS enabled for any future business tables.
+
+## New Feature: Test Tools (ID/USCC)
+- Added a new collapsible sidebar group: `测试小工具`
+  - child menu: `证件号码生成工具`
+  - clicking child switches `activePage` to `idTool`
+- Added new workbench page `idTool` with tab switch:
+  - `身份证号码生成 / 校验`
+  - `统一社会信用代码生成 / 校验`
+- Frontend-only algorithms implemented in `app.js`:
+  - ID card generation + validation (GB 11643-1999, weighted mod-11 checksum)
+  - USCC generation + validation (GB 32100-2015 charset/weights/check digit)
+  - copy generated results to clipboard
+- Added administrative-region loader reuse for tool page:
+  - province/city/county联动 and region-code existence checks
+  - load error retry action in UI
+- Updated keyboard primary-action guard:
+  - `Ctrl/Cmd + Enter` now only triggers conversion on `ddl/func/proc` pages
+- Updated CSP `connect-src` in `index.html` to allow external region data mirrors:
+  - `cdn.jsdelivr.net`
+  - `fastly.jsdelivr.net`
+  - `raw.githubusercontent.com`
+
+## UI Tuning: Feedback Button (Ora100 style)
+- Reworked left-side feedback entry to match ora100 homepage style:
+  - fixed left-center vertical rail
+  - rounded-right edge with `border-left: none`
+  - low-opacity default, full-opacity on hover/open
+  - subtle horizontal expand on hover
+  - icon rotated 90° + label vertical layout
+  - desktop shows label, mobile keeps icon-only compact mode
+- Updated both dark/light theme shadows and hover color to consistent Oracle red accent.

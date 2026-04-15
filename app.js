@@ -2549,8 +2549,20 @@ const app = createApp({
       localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value ? '1' : '0');
     }
     const NAV_PAGES = ['ddl', 'func', 'proc'];
+    const testToolsExpanded = ref(false);
+    const idToolTab = ref('idcard');
+    function toggleTestToolsMenu() {
+      testToolsExpanded.value = !testToolsExpanded.value;
+      if (!testToolsExpanded.value && activePage.value === 'idTool') {
+        setPage('ddl');
+      }
+    }
     function setPage(page) {
       activePage.value = page;
+      if (page === 'idTool') {
+        testToolsExpanded.value = true;
+        ensureRegionDataLoaded();
+      }
       if (window.innerWidth <= 1024) sidebarOpen.value = false;
     }
     /* navKeydown removed: sidebar is now role="navigation" with aria-current, not tablist */
@@ -2649,6 +2661,504 @@ const app = createApp({
     const procTargetDb = ref('postgresql');
     const procInput = ref('');
     const procOutput = ref('');
+
+    // Test tools state
+    const REGION_DATA_SOURCE_GROUPS = [
+      {
+        province: 'https://fastly.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/province.json',
+        city: 'https://fastly.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/city.json',
+        area: 'https://fastly.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/area.json'
+      },
+      {
+        province: 'https://cdn.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/province.json',
+        city: 'https://cdn.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/city.json',
+        area: 'https://cdn.jsdelivr.net/gh/uiwjs/province-city-china@gh-pages/area.json'
+      },
+      {
+        province: 'https://raw.githubusercontent.com/uiwjs/province-city-china/gh-pages/province.json',
+        city: 'https://raw.githubusercontent.com/uiwjs/province-city-china/gh-pages/city.json',
+        area: 'https://raw.githubusercontent.com/uiwjs/province-city-china/gh-pages/area.json'
+      }
+    ];
+    const regionLoading = ref(false);
+    const regionReady = ref(false);
+    const regionLoadError = ref('');
+    const provinces = ref([]);
+    const citiesByProvince = ref({});
+    const countiesByCity = ref({});
+    const regionCodeSet = ref(new Set());
+    const provinceCodeSet = ref(new Set());
+
+    const idProvinceCode = ref('');
+    const idCityCode = ref('');
+    const idCountyCode = ref('');
+    const idBirthDate = ref('');
+    const idGender = ref('male');
+    const idGeneratedNumber = ref('');
+    const idGenerateResult = ref({ type: 'info', text: '' });
+    const idVerifyInput = ref('');
+    const idVerifyResult = ref({ type: 'info', text: '' });
+
+    const usccProvinceCode = ref('');
+    const usccCityCode = ref('');
+    const usccCountyCode = ref('');
+    const usccDeptCode = ref('9');
+    const usccOrgTypeCode = ref('1');
+    const usccGeneratedCode = ref('');
+    const usccGenerateResult = ref({ type: 'info', text: '' });
+    const usccVerifyInput = ref('');
+    const usccVerifyResult = ref({ type: 'info', text: '' });
+
+    const idBirthMin = '1900-01-01';
+    const idBirthMax = computed(() => {
+      var now = new Date();
+      var y = now.getFullYear();
+      var m = String(now.getMonth() + 1).padStart(2, '0');
+      var d = String(now.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + d;
+    });
+
+    const usccDeptOptions = [
+      { value: '9', label: '市场监管' },
+      { value: '1', label: '机构编制' },
+      { value: '5', label: '民政' },
+      { value: 'A', label: '其他登记部门A' },
+      { value: 'N', label: '其他登记部门N' },
+      { value: 'Y', label: '其他登记部门Y' }
+    ];
+    const usccOrgTypeOptions = [
+      { value: '1', label: '企业' },
+      { value: '2', label: '个体工商户' },
+      { value: '3', label: '农民专业合作社' },
+      { value: '9', label: '其他组织' }
+    ];
+
+    const ID_CHECK_WEIGHTS = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+    const ID_CHECK_MAP = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+    const USCC_CHARSET = '0123456789ABCDEFGHJKLMNPQRTUWXY';
+    const USCC_WEIGHTS = [1, 3, 9, 27, 19, 26, 16, 17, 20, 29, 25, 13, 8, 24, 10, 30, 28];
+    const USCC_DEPT_ALLOWED = new Set(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'N', 'Y']);
+    const usccCharIndexMap = {};
+    for (var usccIdx = 0; usccIdx < USCC_CHARSET.length; usccIdx++) {
+      usccCharIndexMap[USCC_CHARSET[usccIdx]] = usccIdx;
+    }
+
+    const idCityOptions = computed(function() {
+      return citiesByProvince.value[idProvinceCode.value] || [];
+    });
+    const idCountyOptions = computed(function() {
+      return countiesByCity.value[idCityCode.value] || [];
+    });
+    const usccCityOptions = computed(function() {
+      return citiesByProvince.value[usccProvinceCode.value] || [];
+    });
+    const usccCountyOptions = computed(function() {
+      return countiesByCity.value[usccCityCode.value] || [];
+    });
+
+    function _sortRegionByCode(list) {
+      return (list || []).slice().sort(function(a, b) {
+        return String(a.code || '').localeCompare(String(b.code || ''));
+      });
+    }
+
+    function _normalizeRegionData(provinceRows, cityRows, areaRows) {
+      var pRows = Array.isArray(provinceRows) ? provinceRows : [];
+      var cRows = Array.isArray(cityRows) ? cityRows : [];
+      var aRows = Array.isArray(areaRows) ? areaRows : [];
+
+      var provs = [];
+      var provNameByCode = {};
+      var provSet = new Set();
+      var codeSet = new Set();
+      var cityMap = {};
+      var countyMap = {};
+
+      pRows.forEach(function(p) {
+        if (!p || !/^\d{6}$/.test(String(p.code || ''))) return;
+        var code = String(p.code);
+        var name = String(p.name || code);
+        provs.push({ code: code, name: name });
+        provNameByCode[code] = name;
+        provSet.add(code.slice(0, 2));
+        codeSet.add(code);
+        cityMap[code] = [];
+      });
+
+      cRows.forEach(function(c) {
+        if (!c || !/^\d{6}$/.test(String(c.code || ''))) return;
+        var code = String(c.code);
+        var provCode = code.slice(0, 2) + '0000';
+        if (!cityMap[provCode]) cityMap[provCode] = [];
+        cityMap[provCode].push({
+          code: code,
+          name: String(c.name || code),
+          provinceCode: provCode
+        });
+        codeSet.add(code);
+      });
+
+      aRows.forEach(function(a) {
+        if (!a || !/^\d{6}$/.test(String(a.code || ''))) return;
+        var code = String(a.code);
+        var cityCode = code.slice(0, 4) + '00';
+        if (!countyMap[cityCode]) countyMap[cityCode] = [];
+        countyMap[cityCode].push({
+          code: code,
+          name: String(a.name || code),
+          cityCode: cityCode
+        });
+        codeSet.add(code);
+      });
+
+      provs.forEach(function(p) {
+        var currentCities = cityMap[p.code] || [];
+        if (!currentCities.length) {
+          // 直辖市/特别行政区在 city.json 中可能没有独立层级，按区县反推一个“辖区”城市
+          var virtualCodes = {};
+          aRows.forEach(function(a) {
+            var aCode = String((a && a.code) || '');
+            if (!/^\d{6}$/.test(aCode) || aCode.slice(0, 2) !== p.code.slice(0, 2)) return;
+            var cityCode = aCode.slice(0, 4) + '00';
+            virtualCodes[cityCode] = true;
+          });
+          Object.keys(virtualCodes).sort().forEach(function(cityCode) {
+            currentCities.push({
+              code: cityCode,
+              name: (provNameByCode[p.code] || p.name) + '辖区',
+              provinceCode: p.code
+            });
+            codeSet.add(cityCode);
+          });
+          cityMap[p.code] = currentCities;
+        }
+        cityMap[p.code] = _sortRegionByCode(currentCities);
+      });
+
+      Object.keys(countyMap).forEach(function(cityCode) {
+        countyMap[cityCode] = _sortRegionByCode(countyMap[cityCode]);
+      });
+
+      return {
+        provinces: _sortRegionByCode(provs),
+        citiesByProvince: cityMap,
+        countiesByCity: countyMap,
+        regionCodeSet: codeSet,
+        provinceCodeSet: provSet
+      };
+    }
+
+    function _ensureAddressSelection(provinceRef, cityRef, countyRef) {
+      var cityList = citiesByProvince.value[provinceRef.value] || [];
+      if (!cityList.some(function(c) { return c.code === cityRef.value; })) {
+        cityRef.value = cityList.length ? cityList[0].code : '';
+      }
+      var countyList = countiesByCity.value[cityRef.value] || [];
+      if (!countyList.some(function(c) { return c.code === countyRef.value; })) {
+        countyRef.value = countyList.length ? countyList[0].code : '';
+      }
+    }
+
+    function _initIdToolDefaults() {
+      if (!provinces.value.length) return;
+      if (!idProvinceCode.value) idProvinceCode.value = provinces.value[0].code;
+      if (!usccProvinceCode.value) usccProvinceCode.value = provinces.value[0].code;
+      _ensureAddressSelection(idProvinceCode, idCityCode, idCountyCode);
+      _ensureAddressSelection(usccProvinceCode, usccCityCode, usccCountyCode);
+      if (!idBirthDate.value) idBirthDate.value = '1990-01-01';
+    }
+
+    async function _fetchJsonWithTimeout(url, timeoutMs) {
+      var controller = new AbortController();
+      var timeout = setTimeout(function() { controller.abort(); }, timeoutMs || 12000);
+      try {
+        var res = await fetch(url, {
+          method: 'GET',
+          signal: controller.signal,
+          cache: 'force-cache',
+          credentials: 'omit'
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' @ ' + url);
+        var data = await res.json();
+        if (!Array.isArray(data)) throw new Error('JSON 结构异常 @ ' + url);
+        return data;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    async function ensureRegionDataLoaded(forceReload) {
+      if (regionLoading.value) return;
+      if (regionReady.value && !forceReload) return;
+      regionLoading.value = true;
+      regionLoadError.value = '';
+      var lastErr = '';
+      try {
+        for (var i = 0; i < REGION_DATA_SOURCE_GROUPS.length; i++) {
+          var source = REGION_DATA_SOURCE_GROUPS[i];
+          try {
+            var rows = await Promise.all([
+              _fetchJsonWithTimeout(source.province, 12000),
+              _fetchJsonWithTimeout(source.city, 12000),
+              _fetchJsonWithTimeout(source.area, 12000)
+            ]);
+            var normalized = _normalizeRegionData(rows[0], rows[1], rows[2]);
+            provinces.value = normalized.provinces;
+            citiesByProvince.value = normalized.citiesByProvince;
+            countiesByCity.value = normalized.countiesByCity;
+            regionCodeSet.value = normalized.regionCodeSet;
+            provinceCodeSet.value = normalized.provinceCodeSet;
+            regionReady.value = true;
+            _initIdToolDefaults();
+            return;
+          } catch (err) {
+            lastErr = String((err && err.message) || err || '未知错误');
+          }
+        }
+        throw new Error(lastErr || '行政区划数据源不可用');
+      } catch (err) {
+        regionReady.value = false;
+        regionLoadError.value = '行政区划数据加载失败，请检查网络后重试：' + String((err && err.message) || err || '');
+      } finally {
+        regionLoading.value = false;
+      }
+    }
+
+    function reloadRegionData() {
+      regionReady.value = false;
+      ensureRegionDataLoaded(true);
+    }
+
+    watch(idProvinceCode, function() {
+      _ensureAddressSelection(idProvinceCode, idCityCode, idCountyCode);
+    });
+    watch(idCityCode, function() {
+      _ensureAddressSelection(idProvinceCode, idCityCode, idCountyCode);
+    });
+    watch(usccProvinceCode, function() {
+      _ensureAddressSelection(usccProvinceCode, usccCityCode, usccCountyCode);
+    });
+    watch(usccCityCode, function() {
+      _ensureAddressSelection(usccProvinceCode, usccCityCode, usccCountyCode);
+    });
+
+    function _pickBestRegionCode(provinceCode, cityCode, countyCode) {
+      var county = String(countyCode || '');
+      var city = String(cityCode || '');
+      var province = String(provinceCode || '');
+      if (/^\d{6}$/.test(county) && regionCodeSet.value.has(county)) return county;
+      if (/^\d{6}$/.test(city) && regionCodeSet.value.has(city)) return city;
+      if (/^\d{6}$/.test(province) && regionCodeSet.value.has(province)) return province;
+      return '';
+    }
+
+    function _isLeapYear(year) {
+      return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+    }
+
+    function _isValidDateParts(year, month, day) {
+      if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return false;
+      if (month < 1 || month > 12 || day < 1) return false;
+      var monthDays = [31, (_isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      return day <= monthDays[month - 1];
+    }
+
+    function _parseYmdFromIsoDate(value) {
+      var dateText = String(value || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) return '';
+      var parts = dateText.split('-');
+      var y = Number(parts[0]);
+      var m = Number(parts[1]);
+      var d = Number(parts[2]);
+      if (!_isValidDateParts(y, m, d)) return '';
+      return parts.join('');
+    }
+
+    function _validateBirthYmd8(ymd8) {
+      if (!/^\d{8}$/.test(ymd8)) return false;
+      var y = Number(ymd8.slice(0, 4));
+      var m = Number(ymd8.slice(4, 6));
+      var d = Number(ymd8.slice(6, 8));
+      if (!_isValidDateParts(y, m, d)) return false;
+      var today = Number(idBirthMax.value.replace(/-/g, ''));
+      var currentYear = new Date().getFullYear();
+      if (y < 1900 || y > currentYear) return false;
+      if (Number(ymd8) > today) return false;
+      return true;
+    }
+
+    function _calcIdCheckDigit(id17) {
+      if (!/^\d{17}$/.test(id17)) return '';
+      var sum = 0;
+      for (var i = 0; i < 17; i++) {
+        sum += Number(id17[i]) * ID_CHECK_WEIGHTS[i];
+      }
+      return ID_CHECK_MAP[sum % 11];
+    }
+
+    function _randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function _randomSeqByGender(gender) {
+      var n = _randomInt(1, 999);
+      if (gender === 'female' && n % 2 !== 0) n = n === 999 ? 998 : n + 1;
+      if (gender !== 'female' && n % 2 === 0) n = n === 999 ? 997 : n + 1;
+      return String(n).padStart(3, '0');
+    }
+
+    function generateIdNumber() {
+      if (!regionReady.value) {
+        idGenerateResult.value = { type: 'error', text: regionLoadError.value || '行政区划数据尚未就绪，请稍后再试' };
+        return;
+      }
+      var regionCode = _pickBestRegionCode(idProvinceCode.value, idCityCode.value, idCountyCode.value);
+      if (!regionCode) {
+        idGenerateResult.value = { type: 'error', text: '请选择有效的省市区' };
+        return;
+      }
+      var ymd = _parseYmdFromIsoDate(idBirthDate.value);
+      if (!ymd) {
+        idGenerateResult.value = { type: 'error', text: '请输入合法的出生日期' };
+        return;
+      }
+      if (!_validateBirthYmd8(ymd)) {
+        idGenerateResult.value = { type: 'error', text: '出生日期不在合理范围内' };
+        return;
+      }
+      var seq = _randomSeqByGender(idGender.value);
+      var id17 = regionCode + ymd + seq;
+      var check = _calcIdCheckDigit(id17);
+      if (!check) {
+        idGenerateResult.value = { type: 'error', text: '生成失败，请重试' };
+        return;
+      }
+      idGeneratedNumber.value = id17 + check;
+      idGenerateResult.value = { type: 'success', text: '已生成合法身份证号码' };
+    }
+
+    function validateIdNumber() {
+      var raw = String(idVerifyInput.value || '').trim().toUpperCase();
+      if (!raw) {
+        idVerifyResult.value = { type: 'error', text: '请输入待校验的身份证号码' };
+        return;
+      }
+      if (!/^\d{17}[\dX]$/.test(raw)) {
+        idVerifyResult.value = { type: 'error', text: '格式错误：应为18位（前17位数字，最后一位数字或X）' };
+        return;
+      }
+      if (!regionCodeSet.value.has(raw.slice(0, 6))) {
+        idVerifyResult.value = { type: 'error', text: '行政区划代码不存在：' + raw.slice(0, 6) };
+        return;
+      }
+      var birth = raw.slice(6, 14);
+      if (!_validateBirthYmd8(birth)) {
+        idVerifyResult.value = { type: 'error', text: '出生日期不合法：' + birth };
+        return;
+      }
+      var expected = _calcIdCheckDigit(raw.slice(0, 17));
+      if (!expected || expected !== raw[17]) {
+        idVerifyResult.value = { type: 'error', text: '校验码错误：应为 ' + expected + '，实际为 ' + raw[17] };
+        return;
+      }
+      idVerifyResult.value = { type: 'success', text: '校验通过：身份证号码合法' };
+    }
+
+    function copyGeneratedIdNumber() {
+      if (!idGeneratedNumber.value) {
+        idGenerateResult.value = { type: 'info', text: '请先生成身份证号码' };
+        return;
+      }
+      clipboardWrite(idGeneratedNumber.value);
+    }
+
+    function _calcUsccCheckChar(base17) {
+      if (!/^[0-9A-HJ-NPQRTUWXY]{17}$/.test(base17)) return '';
+      var sum = 0;
+      for (var i = 0; i < 17; i++) {
+        var v = usccCharIndexMap[base17[i]];
+        if (typeof v !== 'number') return '';
+        sum += v * USCC_WEIGHTS[i];
+      }
+      var checkIndex = (31 - (sum % 31)) % 31;
+      return USCC_CHARSET[checkIndex];
+    }
+
+    function _randomUsccBody(len) {
+      var out = '';
+      for (var i = 0; i < len; i++) {
+        out += USCC_CHARSET[_randomInt(0, USCC_CHARSET.length - 1)];
+      }
+      return out;
+    }
+
+    function generateUsccCode() {
+      if (!regionReady.value) {
+        usccGenerateResult.value = { type: 'error', text: regionLoadError.value || '行政区划数据尚未就绪，请稍后再试' };
+        return;
+      }
+      if (!USCC_DEPT_ALLOWED.has(usccDeptCode.value)) {
+        usccGenerateResult.value = { type: 'error', text: '登记管理部门代码无效' };
+        return;
+      }
+      if (!USCC_CHARSET.includes(usccOrgTypeCode.value)) {
+        usccGenerateResult.value = { type: 'error', text: '机构类别代码无效' };
+        return;
+      }
+      var regionCode = _pickBestRegionCode(usccProvinceCode.value, usccCityCode.value, usccCountyCode.value);
+      if (!regionCode) {
+        usccGenerateResult.value = { type: 'error', text: '请选择有效的登记机关行政区划' };
+        return;
+      }
+      var body9 = _randomUsccBody(9);
+      var base17 = String(usccDeptCode.value) + String(usccOrgTypeCode.value) + regionCode + body9;
+      var check = _calcUsccCheckChar(base17);
+      if (!check) {
+        usccGenerateResult.value = { type: 'error', text: '生成失败，请重试' };
+        return;
+      }
+      usccGeneratedCode.value = base17 + check;
+      usccGenerateResult.value = { type: 'success', text: '已生成统一社会信用代码' };
+    }
+
+    function validateUsccCode() {
+      var raw = String(usccVerifyInput.value || '').trim().toUpperCase();
+      if (!raw) {
+        usccVerifyResult.value = { type: 'error', text: '请输入待校验的统一社会信用代码' };
+        return;
+      }
+      if (!/^[0-9A-HJ-NPQRTUWXY]{18}$/.test(raw)) {
+        usccVerifyResult.value = { type: 'error', text: '格式错误：应为18位，仅允许数字及大写字母（不含 I/O/S/V/Z）' };
+        return;
+      }
+      if (!USCC_DEPT_ALLOWED.has(raw[0])) {
+        usccVerifyResult.value = { type: 'error', text: '登记管理部门代码不合法：' + raw[0] };
+        return;
+      }
+      if (!USCC_CHARSET.includes(raw[1])) {
+        usccVerifyResult.value = { type: 'error', text: '机构类别代码不合法：' + raw[1] };
+        return;
+      }
+      var regionCode = raw.slice(2, 8);
+      if (!regionCodeSet.value.has(regionCode)) {
+        usccVerifyResult.value = { type: 'error', text: '行政区划码不存在：' + regionCode };
+        return;
+      }
+      var expected = _calcUsccCheckChar(raw.slice(0, 17));
+      if (!expected || expected !== raw[17]) {
+        usccVerifyResult.value = { type: 'error', text: '校验码错误：应为 ' + expected + '，实际为 ' + raw[17] };
+        return;
+      }
+      usccVerifyResult.value = { type: 'success', text: '校验通过：统一社会信用代码合法' };
+    }
+
+    function copyGeneratedUsccCode() {
+      if (!usccGeneratedCode.value) {
+        usccGenerateResult.value = { type: 'info', text: '请先生成统一社会信用代码' };
+        return;
+      }
+      clipboardWrite(usccGeneratedCode.value);
+    }
 
     function pickDb(refName, val) {
       var refs = {sourceDb:sourceDb, targetDb:targetDb, funcSourceDb:funcSourceDb, funcTargetDb:funcTargetDb, procSourceDb:procSourceDb, procTargetDb:procTargetDb};
@@ -3111,6 +3621,7 @@ const app = createApp({
     const procSourceLabel = computed(() => DB_LABELS[procSourceDb.value] || procSourceDb.value);
     const procTargetLabel = computed(() => DB_LABELS[procTargetDb.value] || procTargetDb.value);
     const currentPageTitle = computed(() => {
+      if (activePage.value === 'idTool') return '测试小工具';
       if (activePage.value === 'func') return '函数翻译';
       if (activePage.value === 'proc') return '存储过程翻译';
       if (activePage.value === 'rules') return 'DDL 映射规则管理';
@@ -3118,6 +3629,7 @@ const app = createApp({
       return 'DDL 语句翻译';
     });
     const currentPageSubtitle = computed(() => {
+      if (activePage.value === 'idTool') return '身份证号码与统一社会信用代码生成 / 校验';
       if (activePage.value === 'func') return 'CREATE FUNCTION / CREATE OR REPLACE FUNCTION 兼容转换';
       if (activePage.value === 'proc') return 'CREATE PROCEDURE / CREATE OR REPLACE PROCEDURE 兼容转换';
       if (activePage.value === 'rules') return '维护前端与后端共享的 DDL 类型映射规则';
@@ -3161,6 +3673,7 @@ const app = createApp({
     const canRunPrimaryAction = computed(() => {
       if (activePage.value === 'func') return hasText(funcInput.value);
       if (activePage.value === 'proc') return hasText(procInput.value);
+      if (activePage.value !== 'ddl') return false;
       return hasText(inputDdl.value);
     });
     const inputLineCount = computed(() => inputDdl.value ? inputDdl.value.split('\n').length : 0);
@@ -3587,7 +4100,8 @@ const app = createApp({
     function runPrimaryAction() {
       if (activePage.value === 'func') return convertFunc();
       if (activePage.value === 'proc') return convertProc();
-      return convert();
+      if (activePage.value === 'ddl') return convert();
+      return;
     }
 
     function runWorkbenchAction(action) {
@@ -3717,6 +4231,7 @@ const app = createApp({
         }
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
           if (ruleModal.value.visible || alertModal.value.visible || confirmModal.value.visible) return;
+          if (activePage.value !== 'ddl' && activePage.value !== 'func' && activePage.value !== 'proc') return;
           e.preventDefault();
           if (activePage.value === 'func') convertFunc();
           else if (activePage.value === 'proc') convertProc();
@@ -3745,6 +4260,7 @@ const app = createApp({
 
     return {
       activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, handleSidebarHover, setPage,
+      testToolsExpanded, toggleTestToolsMenu, idToolTab,
       sidebarSettingsOpen, actionBarCollapsed,
       // DB Picker
       dbDropdown, dbAbbr, dbOptions, pickDb,
@@ -3763,6 +4279,17 @@ const app = createApp({
       procSourceDb, procTargetDb, procInput, procOutput,
       procSourceLabel, procTargetLabel, procInputLineCount, procOutputMeta, procInputEmpty, procOutputEmpty,
       swapProcDbs, loadProcSample, clearProc, convertProc, copyProcOutput, saveProcOutput,
+      // Test tools
+      regionLoading, regionReady, regionLoadError, reloadRegionData,
+      provinces,
+      idProvinceCode, idCityCode, idCountyCode, idCityOptions, idCountyOptions,
+      idBirthDate, idBirthMin, idBirthMax, idGender,
+      idGeneratedNumber, idGenerateResult, idVerifyInput, idVerifyResult,
+      generateIdNumber, validateIdNumber, copyGeneratedIdNumber,
+      usccProvinceCode, usccCityCode, usccCountyCode, usccCityOptions, usccCountyOptions,
+      usccDeptCode, usccOrgTypeCode, usccDeptOptions, usccOrgTypeOptions,
+      usccGeneratedCode, usccGenerateResult, usccVerifyInput, usccVerifyResult,
+      generateUsccCode, validateUsccCode, copyGeneratedUsccCode,
       // Shared
       statusText, fileInput, fileEncoding, ENCODING_OPTIONS, uploadFile, handleFileUpload,
       isWorkbenchPage, runWorkbenchAction, canRunPrimaryAction,
