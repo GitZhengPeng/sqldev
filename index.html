@@ -397,7 +397,7 @@
           <span class="nav-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="10" y="2" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="5.5" y="10" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 6v2h4.5M12.5 6v2h-4.5M8 8v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           <span class="nav-text">存储过程</span>
         </button>
-        <div class="nav-group" :class="{active: activePage==='idTool', expanded: testToolsExpanded}">
+        <div class="nav-group" :class="{active: activePage==='idTool' || activePage==='ziweiTool', expanded: testToolsExpanded}">
           <button class="nav-item nav-item-parent" type="button" :aria-expanded="String(testToolsExpanded)" @click.stop="toggleTestToolsMenu" title="测试工具">
             <span class="nav-icon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -416,6 +416,10 @@
             <button class="nav-sub-item" type="button" :aria-current="activePage==='idTool'?'page':null" :class="{active: activePage==='idTool'}" @click.stop="setPage('idTool')" title="证件号码生成">
               <span class="nav-sub-dot" aria-hidden="true"></span>
               <span class="nav-sub-text">证件号码生成</span>
+            </button>
+            <button class="nav-sub-item" type="button" :aria-current="activePage==='ziweiTool'?'page':null" :class="{active: activePage==='ziweiTool'}" @click.stop="setPage('ziweiTool')" title="紫微斗数命盘">
+              <span class="nav-sub-dot" aria-hidden="true"></span>
+              <span class="nav-sub-text">紫微斗数命盘</span>
             </button>
           </div>
         </div>
@@ -1315,6 +1319,167 @@ $$;</pre>
               </article>
             </section>
           </div>
+        </section>
+      </template>
+
+      <!-- ==================== ZI WEI DOU SHU PAGE ==================== -->
+      <template v-if="activePage==='ziweiTool'">
+        <section class="ziwei-page" id="panel-ziwei-tool" role="region" aria-label="紫微斗数命盘">
+          <article class="ziwei-input-card">
+            <div class="ziwei-input-head">
+              <h3 class="ziwei-input-title">紫微斗数命盘排盘</h3>
+              <p class="ziwei-input-desc">支持公历 / 农历输入，自动处理闰月与子时换日，生成标准方盘。</p>
+            </div>
+
+            <div class="ziwei-form-grid">
+              <label class="idtool-field full">
+                <span>历法输入</span>
+                <div class="ziwei-toggle">
+                  <button class="ziwei-toggle-btn" :class="{active: ziweiCalendarType==='solar'}" type="button" @click="ziweiCalendarType='solar'">公历输入</button>
+                  <button class="ziwei-toggle-btn" :class="{active: ziweiCalendarType==='lunar'}" type="button" @click="ziweiCalendarType='lunar'">农历输入</button>
+                </div>
+              </label>
+
+              <template v-if="ziweiCalendarType==='solar'">
+                <label class="idtool-field">
+                  <span>公历年份</span>
+                  <select v-model="ziweiSolarYear">
+                    <option v-for="y in ziweiYearOptions" :key="'zw-sy-'+y" :value="y">{{ y }} 年</option>
+                  </select>
+                </label>
+                <label class="idtool-field">
+                  <span>公历月份</span>
+                  <select v-model="ziweiSolarMonth">
+                    <option v-for="m in ziweiMonthOptions" :key="'zw-sm-'+m.value" :value="m.value">{{ m.label }} 月</option>
+                  </select>
+                </label>
+                <label class="idtool-field">
+                  <span>公历日期</span>
+                  <select v-model="ziweiSolarDay">
+                    <option v-for="d in ziweiSolarDayOptions" :key="'zw-sd-'+d.value" :value="d.value">{{ d.label }} 日</option>
+                  </select>
+                </label>
+              </template>
+
+              <template v-else>
+                <label class="idtool-field">
+                  <span>农历年份</span>
+                  <select v-model="ziweiLunarYear">
+                    <option v-for="y in ziweiYearOptions" :key="'zw-ly-'+y" :value="y">{{ y }} 年</option>
+                  </select>
+                </label>
+                <label class="idtool-field">
+                  <span>农历月份</span>
+                  <select v-model="ziweiLunarMonth">
+                    <option v-for="m in ziweiMonthOptions" :key="'zw-lm-'+m.value" :value="String(Number(m.value))">{{ Number(m.value) }} 月</option>
+                  </select>
+                </label>
+                <label class="idtool-field">
+                  <span>农历日期</span>
+                  <select v-model="ziweiLunarDay">
+                    <option v-for="d in ziweiLunarDayOptions" :key="'zw-ld-'+d.value" :value="d.value">{{ d.label }}</option>
+                  </select>
+                </label>
+                <label class="idtool-field full">
+                  <span>闰月</span>
+                  <div class="ziwei-leap-row">
+                    <label class="idtool-radio">
+                      <input type="checkbox" v-model="ziweiLunarLeap" :disabled="!ziweiCanUseLeapMonth"/>
+                      闰月（{{ ziweiCanUseLeapMonth ? ('本年闰' + ziweiLeapMonthForYear + '月，可启用') : '本月无闰月' }}）
+                    </label>
+                  </div>
+                </label>
+              </template>
+
+              <label class="idtool-field">
+                <span>出生小时（24h）</span>
+                <select v-model="ziweiBirthHour">
+                  <option v-for="h in ziweiHourOptions" :key="'zw-h-'+h.value" :value="h.value">{{ h.label }} 时</option>
+                </select>
+              </label>
+              <label class="idtool-field">
+                <span>出生分钟</span>
+                <select v-model="ziweiBirthMinute">
+                  <option v-for="m in ziweiMinuteOptions" :key="'zw-min-'+m.value" :value="m.value">{{ m.label }} 分</option>
+                </select>
+              </label>
+              <label class="idtool-field">
+                <span>性别</span>
+                <div class="idtool-inline">
+                  <label class="idtool-radio"><input type="radio" value="male" v-model="ziweiGender"/> 男</label>
+                  <label class="idtool-radio"><input type="radio" value="female" v-model="ziweiGender"/> 女</label>
+                </div>
+              </label>
+            </div>
+
+            <div class="ziwei-actions">
+              <button class="idtool-btn primary" type="button" @click="generateZiweiChart">排盘</button>
+              <button class="idtool-btn ghost" type="button" @click="copyZiweiChartText">复制命盘文本</button>
+              <button class="idtool-btn ghost" type="button" :disabled="ziweiExporting" @click="exportZiweiChartImage">{{ ziweiExporting ? '导出中...' : '导出命盘图片' }}</button>
+            </div>
+            <p class="idtool-result" :class="ziweiStatus.type" v-if="ziweiStatus.text">{{ ziweiStatus.text }}</p>
+          </article>
+
+          <article class="ziwei-empty" v-if="!ziweiChart">
+            <h4>等待排盘</h4>
+            <p>选择出生信息后点击“排盘”，将生成完整紫微斗数方盘（含主星、辅星、杂曜、四化、大限与小限）。</p>
+          </article>
+
+          <article class="ziwei-chart-wrap" v-if="ziweiChart">
+            <div class="ziwei-board" id="ziwei-board-export">
+              <section
+                v-for="cell in ziweiChart.boardCells"
+                :key="'zw-cell-'+cell.branch"
+                class="ziwei-palace"
+                :class="[cell.area, {ming: cell.isMing, shen: cell.isShen}]"
+              >
+                <header class="ziwei-palace-head">
+                  <span class="ziwei-palace-name">{{ cell.palaceName || '—' }}</span>
+                  <span class="ziwei-palace-gz">{{ cell.stemBranch }}</span>
+                </header>
+
+                <div class="ziwei-star-row main">
+                  <span class="ziwei-star main" v-for="star in cell.mainStars" :key="'zw-main-'+cell.branch+'-'+star.name">
+                    <strong>★{{ star.name }}</strong>
+                    <em class="ziwei-brightness" :class="star.brightnessClass" v-if="star.brightness">{{ star.brightness }}</em>
+                    <span class="ziwei-hua-tag" v-for="tag in star.huaTags" :key="'zw-hua-main-'+cell.branch+'-'+star.name+'-'+tag" :data-hua="tag">{{ tag }}</span>
+                  </span>
+                </div>
+
+                <div class="ziwei-star-row assist">
+                  <span class="ziwei-star" v-for="star in cell.assistStars" :key="'zw-assist-'+cell.branch+'-'+star.name">
+                    {{ star.name }}
+                    <span class="ziwei-hua-tag" v-for="tag in star.huaTags" :key="'zw-hua-assist-'+cell.branch+'-'+star.name+'-'+tag" :data-hua="tag">{{ tag }}</span>
+                  </span>
+                </div>
+
+                <div class="ziwei-star-row misc">
+                  <span class="ziwei-star" v-for="star in cell.miscStars" :key="'zw-misc-'+cell.branch+'-'+star.name">
+                    {{ star.name }}
+                    <span class="ziwei-hua-tag" v-for="tag in star.huaTags" :key="'zw-hua-misc-'+cell.branch+'-'+star.name+'-'+tag" :data-hua="tag">{{ tag }}</span>
+                  </span>
+                </div>
+
+                <footer class="ziwei-palace-foot">
+                  <span>大限 {{ cell.daXian }}</span>
+                  <span>小限 {{ cell.xiaoXian }}</span>
+                </footer>
+              </section>
+
+              <section class="ziwei-center">
+                <h4>命盘信息</h4>
+                <p><strong>性别：</strong>{{ ziweiChart.center.genderLabel }}</p>
+                <p><strong>公历：</strong>{{ ziweiChart.center.solarText }}</p>
+                <p><strong>农历：</strong>{{ ziweiChart.center.lunarText }}</p>
+                <p><strong>生年干支：</strong>{{ ziweiChart.center.yearGanZhi }}</p>
+                <p><strong>五行局：</strong>{{ ziweiChart.center.bureauLabel }}</p>
+                <p><strong>命主 / 身主：</strong>{{ ziweiChart.center.mingZhu }} / {{ ziweiChart.center.shenZhu }}</p>
+                <p><strong>命宫 / 身宫：</strong>{{ ziweiChart.center.mingBranch }} / {{ ziweiChart.center.shenBranch }}</p>
+                <p><strong>身宫所落：</strong>{{ ziweiChart.center.shenPalaceName }}</p>
+                <p class="ziwei-center-note" v-if="ziweiChart.center.shiftedByZiHour">已按子时（23:00后）换日规则排盘</p>
+              </section>
+            </div>
+          </article>
         </section>
       </template>
 

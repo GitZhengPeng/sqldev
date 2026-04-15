@@ -2549,17 +2549,20 @@ const app = createApp({
       localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value ? '1' : '0');
     }
     const NAV_PAGES = ['ddl', 'func', 'proc'];
+    const TEST_TOOL_PAGES = ['idTool', 'ziweiTool'];
     const testToolsExpanded = ref(false);
     function toggleTestToolsMenu() {
       testToolsExpanded.value = !testToolsExpanded.value;
-      if (!testToolsExpanded.value && activePage.value === 'idTool') {
+      if (!testToolsExpanded.value && TEST_TOOL_PAGES.indexOf(activePage.value) >= 0) {
         setPage('ddl');
       }
     }
     function setPage(page) {
       activePage.value = page;
-      if (page === 'idTool') {
+      if (TEST_TOOL_PAGES.indexOf(page) >= 0) {
         testToolsExpanded.value = true;
+      }
+      if (page === 'idTool') {
         ensureRegionDataLoaded();
       }
       if (window.innerWidth <= 1024) sidebarOpen.value = false;
@@ -2715,6 +2718,134 @@ const app = createApp({
     let usccCopyTimer = 0;
     let usccVerifyTimer = 0;
 
+    // Zi Wei Dou Shu state
+    const ZW_STEMS = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+    const ZW_BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+    const ZW_RING = ['寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑']; // clockwise
+    const ZW_PALACE_NAMES = ['命宫', '兄弟宫', '夫妻宫', '子女宫', '财帛宫', '疾厄宫', '迁移宫', '交友宫', '官禄宫', '田宅宫', '福德宫', '父母宫'];
+    const ZW_BOARD_ORDER = ['巳', '午', '未', '申', '辰', '酉', '卯', '戌', '寅', '丑', '子', '亥'];
+    const ZW_BOARD_AREA = {
+      '巳': 'zw-si', '午': 'zw-wu', '未': 'zw-wei', '申': 'zw-shen',
+      '辰': 'zw-chen', '酉': 'zw-you', '卯': 'zw-mao', '戌': 'zw-xu',
+      '寅': 'zw-yin', '丑': 'zw-chou', '子': 'zw-zi', '亥': 'zw-hai'
+    };
+    const ZW_SHICHEN_NAMES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+    const ZW_WUHU_START_STEM = { '甲': '丙', '己': '丙', '乙': '戊', '庚': '戊', '丙': '庚', '辛': '庚', '丁': '壬', '壬': '壬', '戊': '甲', '癸': '甲' };
+    const ZW_BUREAU_BY_ELEMENT = { '水': 2, '木': 3, '金': 4, '土': 5, '火': 6 };
+    const ZW_YEAR_STEM_YINYANG = { '甲': '阳', '乙': '阴', '丙': '阳', '丁': '阴', '戊': '阳', '己': '阴', '庚': '阳', '辛': '阴', '壬': '阳', '癸': '阴' };
+    const ZW_MAIN_STARS = ['紫微', '天机', '太阳', '武曲', '天同', '廉贞', '天府', '太阴', '贪狼', '巨门', '天相', '天梁', '七杀', '破军'];
+    const ZW_LUNAR_MONTH_LABEL = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+    const ZW_LUNAR_DAY_LABEL = ['', '初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
+      '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
+      '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
+    const ZW_TIME_SLOT = [
+      { label: '子时', start: '23:00', end: '00:59' }, { label: '丑时', start: '01:00', end: '02:59' },
+      { label: '寅时', start: '03:00', end: '04:59' }, { label: '卯时', start: '05:00', end: '06:59' },
+      { label: '辰时', start: '07:00', end: '08:59' }, { label: '巳时', start: '09:00', end: '10:59' },
+      { label: '午时', start: '11:00', end: '12:59' }, { label: '未时', start: '13:00', end: '14:59' },
+      { label: '申时', start: '15:00', end: '16:59' }, { label: '酉时', start: '17:00', end: '18:59' },
+      { label: '戌时', start: '19:00', end: '20:59' }, { label: '亥时', start: '21:00', end: '22:59' }
+    ];
+    const ZW_NAYIN_BY_JIAZI = {
+      '甲子': '海中金', '乙丑': '海中金', '丙寅': '炉中火', '丁卯': '炉中火', '戊辰': '大林木', '己巳': '大林木',
+      '庚午': '路旁土', '辛未': '路旁土', '壬申': '剑锋金', '癸酉': '剑锋金', '甲戌': '山头火', '乙亥': '山头火',
+      '丙子': '涧下水', '丁丑': '涧下水', '戊寅': '城头土', '己卯': '城头土', '庚辰': '白蜡金', '辛巳': '白蜡金',
+      '壬午': '杨柳木', '癸未': '杨柳木', '甲申': '泉中水', '乙酉': '泉中水', '丙戌': '屋上土', '丁亥': '屋上土',
+      '戊子': '霹雳火', '己丑': '霹雳火', '庚寅': '松柏木', '辛卯': '松柏木', '壬辰': '长流水', '癸巳': '长流水',
+      '甲午': '砂石金', '乙未': '砂石金', '丙申': '山下火', '丁酉': '山下火', '戊戌': '平地木', '己亥': '平地木',
+      '庚子': '壁上土', '辛丑': '壁上土', '壬寅': '金箔金', '癸卯': '金箔金', '甲辰': '覆灯火', '乙巳': '覆灯火',
+      '丙午': '天河水', '丁未': '天河水', '戊申': '大驿土', '己酉': '大驿土', '庚戌': '钗钏金', '辛亥': '钗钏金',
+      '壬子': '桑柘木', '癸丑': '桑柘木', '甲寅': '大溪水', '乙卯': '大溪水', '丙辰': '沙中土', '丁巳': '沙中土',
+      '戊午': '天上火', '己未': '天上火', '庚申': '石榴木', '辛酉': '石榴木', '壬戌': '大海水', '癸亥': '大海水'
+    };
+    const ZW_KUI_YUE_BY_STEM = {
+      '甲': { kui: '丑', yue: '未' }, '戊': { kui: '丑', yue: '未' }, '庚': { kui: '丑', yue: '未' },
+      '乙': { kui: '子', yue: '申' }, '己': { kui: '子', yue: '申' },
+      '丙': { kui: '亥', yue: '酉' }, '丁': { kui: '亥', yue: '酉' },
+      '壬': { kui: '卯', yue: '巳' }, '癸': { kui: '卯', yue: '巳' },
+      '辛': { kui: '午', yue: '寅' }
+    };
+    const ZW_LUCUN_YANG_TUO_BY_STEM = {
+      '甲': { lucun: '寅', yang: '卯', tuo: '丑' }, '乙': { lucun: '卯', yang: '辰', tuo: '寅' },
+      '丙': { lucun: '巳', yang: '午', tuo: '辰' }, '丁': { lucun: '午', yang: '未', tuo: '巳' },
+      '戊': { lucun: '巳', yang: '午', tuo: '辰' }, '己': { lucun: '午', yang: '未', tuo: '巳' },
+      '庚': { lucun: '申', yang: '酉', tuo: '未' }, '辛': { lucun: '酉', yang: '戌', tuo: '申' },
+      '壬': { lucun: '亥', yang: '子', tuo: '戌' }, '癸': { lucun: '子', yang: '丑', tuo: '亥' }
+    };
+    const ZW_FIRE_BELL_BY_YEAR_BRANCH = {
+      '寅': { fire: '丑', bell: '卯' }, '午': { fire: '丑', bell: '卯' }, '戌': { fire: '丑', bell: '卯' },
+      '申': { fire: '寅', bell: '戌' }, '子': { fire: '寅', bell: '戌' }, '辰': { fire: '寅', bell: '戌' },
+      '巳': { fire: '卯', bell: '戌' }, '酉': { fire: '卯', bell: '戌' }, '丑': { fire: '卯', bell: '戌' },
+      '亥': { fire: '酉', bell: '戌' }, '卯': { fire: '酉', bell: '戌' }, '未': { fire: '酉', bell: '戌' }
+    };
+    const ZW_HUA_BY_STEM = {
+      '甲': { lu: '廉贞', quan: '破军', ke: '武曲', ji: '太阳' },
+      '乙': { lu: '天机', quan: '天梁', ke: '紫微', ji: '太阴' },
+      '丙': { lu: '天同', quan: '天机', ke: '文昌', ji: '廉贞' },
+      '丁': { lu: '太阴', quan: '天同', ke: '天机', ji: '巨门' },
+      '戊': { lu: '贪狼', quan: '太阴', ke: '右弼', ji: '天机' },
+      '己': { lu: '武曲', quan: '贪狼', ke: '天梁', ji: '文曲' },
+      '庚': { lu: '太阳', quan: '武曲', ke: '太阴', ji: '天同' },
+      '辛': { lu: '巨门', quan: '太阳', ke: '文曲', ji: '文昌' },
+      '壬': { lu: '天梁', quan: '紫微', ke: '左辅', ji: '武曲' },
+      '癸': { lu: '破军', quan: '巨门', ke: '太阴', ji: '贪狼' }
+    };
+    const ZW_TIANMA_BY_YEAR_BRANCH = {
+      '寅': '申', '午': '申', '戌': '申',
+      '申': '寅', '子': '寅', '辰': '寅',
+      '巳': '亥', '酉': '亥', '丑': '亥',
+      '亥': '巳', '卯': '巳', '未': '巳'
+    };
+    const ZW_MINGZHU_BY_BRANCH = { '子': '贪狼', '丑': '巨门', '寅': '禄存', '卯': '文曲', '辰': '廉贞', '巳': '武曲', '午': '破军', '未': '武曲', '申': '廉贞', '酉': '文曲', '戌': '禄存', '亥': '巨门' };
+    const ZW_SHENZHU_BY_YEAR_BRANCH = { '子': '火星', '丑': '天相', '寅': '天梁', '卯': '天同', '辰': '文昌', '巳': '天机', '午': '火星', '未': '天相', '申': '天梁', '酉': '天同', '戌': '文昌', '亥': '天机' };
+    const ZW_BRIGHTNESS = {
+      '紫微': { '寅': '庙', '卯': '旺', '辰': '得', '巳': '旺', '午': '庙', '未': '旺', '申': '得', '酉': '平', '戌': '平', '亥': '平', '子': '旺', '丑': '庙' },
+      '天机': { '寅': '旺', '卯': '庙', '辰': '得', '巳': '平', '午': '陷', '未': '平', '申': '旺', '酉': '庙', '戌': '得', '亥': '平', '子': '陷', '丑': '平' },
+      '太阳': { '寅': '旺', '卯': '庙', '辰': '旺', '巳': '庙', '午': '庙', '未': '旺', '申': '平', '酉': '陷', '戌': '陷', '亥': '陷', '子': '平', '丑': '平' },
+      '武曲': { '寅': '平', '卯': '平', '辰': '庙', '巳': '旺', '午': '庙', '未': '旺', '申': '庙', '酉': '旺', '戌': '庙', '亥': '平', '子': '陷', '丑': '得' },
+      '天同': { '寅': '平', '卯': '旺', '辰': '庙', '巳': '旺', '午': '陷', '未': '平', '申': '平', '酉': '陷', '戌': '平', '亥': '庙', '子': '旺', '丑': '平' },
+      '廉贞': { '寅': '平', '卯': '利', '辰': '庙', '巳': '陷', '午': '旺', '未': '平', '申': '平', '酉': '利', '戌': '庙', '亥': '陷', '子': '平', '丑': '旺' },
+      '天府': { '寅': '庙', '卯': '旺', '辰': '庙', '巳': '旺', '午': '庙', '未': '旺', '申': '庙', '酉': '旺', '戌': '庙', '亥': '旺', '子': '庙', '丑': '旺' },
+      '太阴': { '寅': '平', '卯': '平', '辰': '平', '巳': '陷', '午': '陷', '未': '平', '申': '旺', '酉': '庙', '戌': '旺', '亥': '庙', '子': '庙', '丑': '旺' },
+      '贪狼': { '寅': '平', '卯': '旺', '辰': '庙', '巳': '旺', '午': '平', '未': '陷', '申': '平', '酉': '旺', '戌': '庙', '亥': '旺', '子': '平', '丑': '陷' },
+      '巨门': { '寅': '旺', '卯': '平', '辰': '庙', '巳': '陷', '午': '陷', '未': '平', '申': '旺', '酉': '平', '戌': '庙', '亥': '旺', '子': '平', '丑': '陷' },
+      '天相': { '寅': '旺', '卯': '平', '辰': '庙', '巳': '旺', '午': '庙', '未': '旺', '申': '庙', '酉': '旺', '戌': '庙', '亥': '平', '子': '陷', '丑': '平' },
+      '天梁': { '寅': '庙', '卯': '旺', '辰': '庙', '巳': '平', '午': '旺', '未': '庙', '申': '旺', '酉': '平', '戌': '陷', '亥': '平', '子': '旺', '丑': '庙' },
+      '七杀': { '寅': '平', '卯': '陷', '辰': '旺', '巳': '庙', '午': '旺', '未': '平', '申': '庙', '酉': '旺', '戌': '平', '亥': '陷', '子': '平', '丑': '旺' },
+      '破军': { '寅': '陷', '卯': '平', '辰': '旺', '巳': '庙', '午': '旺', '未': '平', '申': '庙', '酉': '旺', '戌': '平', '亥': '陷', '子': '平', '丑': '旺' }
+    };
+    const ZW_TIANFU_MIRROR = {
+      '寅': '寅', '卯': '丑', '辰': '子', '巳': '亥', '午': '戌', '未': '酉',
+      '申': '申', '酉': '未', '戌': '午', '亥': '巳', '子': '辰', '丑': '卯'
+    };
+    const ZW_SMALL_LIMIT_RULE_MALE = {
+      '子': { start: '辰', dir: 1 }, '辰': { start: '辰', dir: 1 }, '申': { start: '辰', dir: 1 },
+      '寅': { start: '辰', dir: 1 }, '午': { start: '辰', dir: 1 }, '戌': { start: '辰', dir: 1 },
+      '丑': { start: '未', dir: -1 }, '巳': { start: '未', dir: -1 }, '酉': { start: '未', dir: -1 },
+      '亥': { start: '戌', dir: 1 }, '卯': { start: '戌', dir: 1 }, '未': { start: '戌', dir: 1 }
+    };
+
+    const ziweiCalendarType = ref('solar');
+    const ziweiSolarYear = ref('1990');
+    const ziweiSolarMonth = ref('01');
+    const ziweiSolarDay = ref('01');
+    const ziweiLunarYear = ref('1990');
+    const ziweiLunarMonth = ref('1');
+    const ziweiLunarDay = ref('1');
+    const ziweiLunarLeap = ref(false);
+    const ziweiBirthHour = ref('12');
+    const ziweiBirthMinute = ref('00');
+    const ziweiGender = ref('male');
+    const ziweiChart = ref(null);
+    const ziweiStatus = ref({ type: 'info', text: '' });
+    const ziweiExporting = ref(false);
+    const ziweiIntlSupported = typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function';
+    const _zwLunarFmt = ziweiIntlSupported ? new Intl.DateTimeFormat('en-u-ca-chinese', { year: 'numeric', month: 'numeric', day: 'numeric' }) : null;
+    const _zwSolarToLunarCache = new Map();
+    const _zwLunarToSolarCache = new Map();
+    const _zwLeapMonthCache = new Map();
+    const _zwLunarMonthDaysCache = new Map();
+
     const idBirthMin = '1900-01-01';
     const idBirthMax = computed(() => {
       var now = new Date();
@@ -2801,6 +2932,85 @@ const app = createApp({
       return usccCodeMode.value === 'legacy3'
         ? '例如：110105123456789 或 A1B2C3D4-5'
         : '例如：91310106MA1FY4BN0X';
+    });
+    const ziweiYearOptions = computed(function() {
+      var years = [];
+      for (var y = 2100; y >= 1900; y--) years.push(String(y));
+      return years;
+    });
+    const ziweiMonthOptions = computed(function() {
+      var months = [];
+      for (var m = 1; m <= 12; m++) {
+        var mm = String(m).padStart(2, '0');
+        months.push({ value: mm, label: mm });
+      }
+      return months;
+    });
+    const ziweiHourOptions = computed(function() {
+      var hours = [];
+      for (var h = 0; h <= 23; h++) {
+        var hh = String(h).padStart(2, '0');
+        hours.push({ value: hh, label: hh });
+      }
+      return hours;
+    });
+    const ziweiMinuteOptions = computed(function() {
+      var minutes = [];
+      for (var m = 0; m <= 59; m++) {
+        var mm = String(m).padStart(2, '0');
+        minutes.push({ value: mm, label: mm });
+      }
+      return minutes;
+    });
+    const ziweiSolarDayOptions = computed(function() {
+      var year = Number(ziweiSolarYear.value || '1990');
+      var month = Number(ziweiSolarMonth.value || '1');
+      if (!Number.isInteger(year) || year < 1900) year = 1990;
+      if (year > 2100) year = 2100;
+      if (!Number.isInteger(month) || month < 1 || month > 12) month = 1;
+      var max = new Date(year, month, 0).getDate();
+      var list = [];
+      for (var d = 1; d <= max; d++) {
+        var dd = String(d).padStart(2, '0');
+        list.push({ value: dd, label: dd });
+      }
+      return list;
+    });
+    const ziweiLunarDayOptions = computed(function() {
+      var max = 30;
+      var year = Number(ziweiLunarYear.value || '1990');
+      var month = Number(ziweiLunarMonth.value || '1');
+      if (year >= 1900 && year <= 2100 && month >= 1 && month <= 12) {
+        max = _zwGetLunarMonthDays(year, month, !!ziweiLunarLeap.value);
+      }
+      if (!Number.isInteger(max) || max < 29 || max > 30) max = 30;
+      var list = [];
+      for (var d = 1; d <= max; d++) {
+        list.push({
+          value: String(d),
+          label: ZW_LUNAR_DAY_LABEL[d] || ('初' + d)
+        });
+      }
+      return list;
+    });
+    const ziweiLeapMonthForYear = computed(function() {
+      var year = Number(ziweiLunarYear.value || '0');
+      if (!Number.isInteger(year) || year < 1900 || year > 2100) return 0;
+      return _zwGetLeapMonth(year);
+    });
+    const ziweiCanUseLeapMonth = computed(function() {
+      var leap = ziweiLeapMonthForYear.value;
+      var month = Number(ziweiLunarMonth.value || '0');
+      return leap > 0 && leap === month;
+    });
+    const ziweiLunarMonthLabel = computed(function() {
+      var m = Number(ziweiLunarMonth.value || '1');
+      if (!Number.isInteger(m) || m < 1 || m > 12) m = 1;
+      var monthText = ZW_LUNAR_MONTH_LABEL[m - 1] || String(m);
+      return (ziweiLunarLeap.value ? '闰' : '') + monthText + '月';
+    });
+    const ziweiCalendarTypeLabel = computed(function() {
+      return ziweiCalendarType.value === 'lunar' ? '农历输入' : '公历输入';
     });
     const idCopyButtonLabel = computed(function() {
       return idCopyDone.value ? '\u5df2\u590d\u5236' : '\u590d\u5236';
@@ -3045,6 +3255,22 @@ const app = createApp({
       usccVerifyDone.value = false;
       usccLastVerifyInput.value = '';
       usccLastVerifySignature.value = '';
+    });
+    watch([ziweiSolarYear, ziweiSolarMonth], function() {
+      _zwNormalizeSolarDay();
+    });
+    watch(ziweiSolarDay, function() {
+      _zwNormalizeSolarDay();
+    });
+    watch([ziweiLunarYear, ziweiLunarMonth], function() {
+      _zwNormalizeLunarInput();
+    });
+    watch(ziweiLunarLeap, function(next) {
+      if (next && !ziweiCanUseLeapMonth.value) ziweiLunarLeap.value = false;
+      _zwNormalizeLunarInput();
+    });
+    watch(ziweiCalendarType, function() {
+      ziweiStatus.value = { type: 'info', text: '' };
     });
 
     function _pickBestRegionCode(provinceCode, cityCode, countyCode) {
@@ -3426,6 +3652,670 @@ const app = createApp({
         if (ok) _flashButtonState(usccCopyDone, 'usccCopy');
       });
       return;
+    }
+
+    function _zwNormalizeSolarDay() {
+      var year = Number(ziweiSolarYear.value || '1990');
+      var month = Number(ziweiSolarMonth.value || '1');
+      var day = Number(ziweiSolarDay.value || '1');
+      if (!Number.isInteger(year) || year < 1900) year = 1900;
+      if (year > 2100) year = 2100;
+      if (!Number.isInteger(month) || month < 1 || month > 12) month = 1;
+      var max = new Date(year, month, 0).getDate();
+      if (!Number.isInteger(day) || day < 1) day = 1;
+      if (day > max) day = max;
+      ziweiSolarYear.value = String(year);
+      ziweiSolarMonth.value = String(month).padStart(2, '0');
+      ziweiSolarDay.value = String(day).padStart(2, '0');
+    }
+
+    function _zwNormalizeLunarInput() {
+      var year = Number(ziweiLunarYear.value || '1990');
+      var month = Number(ziweiLunarMonth.value || '1');
+      var day = Number(ziweiLunarDay.value || '1');
+      if (!Number.isInteger(year) || year < 1900) year = 1900;
+      if (year > 2100) year = 2100;
+      if (!Number.isInteger(month) || month < 1 || month > 12) month = 1;
+      var leapMonth = _zwGetLeapMonth(year);
+      var canLeap = leapMonth > 0 && leapMonth === month;
+      if (ziweiLunarLeap.value && !canLeap) ziweiLunarLeap.value = false;
+      var maxDay = _zwGetLunarMonthDays(year, month, !!ziweiLunarLeap.value);
+      if (!Number.isInteger(maxDay) || maxDay < 29 || maxDay > 30) maxDay = 30;
+      if (!Number.isInteger(day) || day < 1) day = 1;
+      if (day > maxDay) day = maxDay;
+      ziweiLunarYear.value = String(year);
+      ziweiLunarMonth.value = String(month);
+      ziweiLunarDay.value = String(day);
+    }
+
+    function _zwRingIndex(branch) {
+      return ZW_RING.indexOf(branch);
+    }
+
+    function _zwOffset(branch, step) {
+      var idx = _zwRingIndex(branch);
+      if (idx < 0) return '';
+      var next = (idx + step) % 12;
+      if (next < 0) next += 12;
+      return ZW_RING[next];
+    }
+
+    function _zwGetShiChenIndex0(hour) {
+      var h = Number(hour);
+      if (!Number.isInteger(h) || h < 0 || h > 23) return -1;
+      if (h === 23 || h === 0) return 0;
+      return Math.floor((h + 1) / 2);
+    }
+
+    function _zwGetShiChenLabel(hour) {
+      var idx = _zwGetShiChenIndex0(hour);
+      if (idx < 0 || idx >= ZW_SHICHEN_NAMES.length) return '';
+      return ZW_SHICHEN_NAMES[idx] + '时';
+    }
+
+    function _zwParseLunarParts(dateObj) {
+      if (!_zwLunarFmt || !(dateObj instanceof Date)) return null;
+      if (Number.isNaN(dateObj.getTime())) return null;
+      var parts = _zwLunarFmt.formatToParts(dateObj);
+      var monthRaw = '';
+      var dayRaw = '';
+      var yearRaw = '';
+      parts.forEach(function(part) {
+        if (!part || typeof part.value !== 'string') return;
+        if (part.type === 'month') monthRaw = part.value;
+        if (part.type === 'day') dayRaw = part.value;
+        if (part.type === 'relatedYear' || part.type === 'year') yearRaw = part.value;
+      });
+      var monthNum = Number(String(monthRaw).replace(/[^0-9]/g, ''));
+      var dayNum = Number(String(dayRaw).replace(/[^0-9]/g, ''));
+      var yearNum = Number(String(yearRaw).replace(/[^0-9]/g, ''));
+      if (!Number.isInteger(monthNum) || monthNum < 1 || monthNum > 12) return null;
+      if (!Number.isInteger(dayNum) || dayNum < 1 || dayNum > 30) return null;
+      if (!Number.isInteger(yearNum) || yearNum < 1800 || yearNum > 2200) return null;
+      return {
+        lunarYear: yearNum,
+        lunarMonth: monthNum,
+        lunarDay: dayNum,
+        isLeapMonth: /bis/i.test(monthRaw)
+      };
+    }
+
+    function _zwSolarToLunar(year, month, day) {
+      var y = Number(year);
+      var m = Number(month);
+      var d = Number(day);
+      if (!_isValidDateParts(y, m, d)) return null;
+      var key = String(y) + '-' + String(m) + '-' + String(d);
+      if (_zwSolarToLunarCache.has(key)) return _zwSolarToLunarCache.get(key);
+      var dateObj = new Date(y, m - 1, d, 12, 0, 0, 0);
+      var lunar = _zwParseLunarParts(dateObj);
+      _zwSolarToLunarCache.set(key, lunar);
+      return lunar;
+    }
+
+    function _zwLunarToSolar(lunarYear, lunarMonth, lunarDay, isLeapMonth) {
+      var ly = Number(lunarYear);
+      var lm = Number(lunarMonth);
+      var ld = Number(lunarDay);
+      var leap = !!isLeapMonth;
+      if (!Number.isInteger(ly) || ly < 1900 || ly > 2100) return null;
+      if (!Number.isInteger(lm) || lm < 1 || lm > 12) return null;
+      if (!Number.isInteger(ld) || ld < 1 || ld > 30) return null;
+      var key = [ly, lm, ld, leap ? 1 : 0].join('-');
+      if (_zwLunarToSolarCache.has(key)) return _zwLunarToSolarCache.get(key);
+      var start = new Date(ly - 1, 10, 1, 12, 0, 0, 0);
+      var end = new Date(ly + 1, 2, 1, 12, 0, 0, 0);
+      var result = null;
+      for (var ts = start.getTime(); ts <= end.getTime(); ts += 86400000) {
+        var solarDate = new Date(ts);
+        var lunar = _zwParseLunarParts(solarDate);
+        if (!lunar) continue;
+        if (lunar.lunarYear !== ly) continue;
+        if (lunar.lunarMonth !== lm) continue;
+        if (lunar.lunarDay !== ld) continue;
+        if (lunar.isLeapMonth !== leap) continue;
+        result = {
+          year: solarDate.getFullYear(),
+          month: solarDate.getMonth() + 1,
+          day: solarDate.getDate()
+        };
+        break;
+      }
+      _zwLunarToSolarCache.set(key, result);
+      return result;
+    }
+
+    function _zwGetLeapMonth(lunarYear) {
+      var year = Number(lunarYear);
+      if (!Number.isInteger(year) || year < 1900 || year > 2100) return 0;
+      if (_zwLeapMonthCache.has(year)) return _zwLeapMonthCache.get(year);
+      var start = new Date(year - 1, 10, 1, 12, 0, 0, 0);
+      var end = new Date(year + 1, 2, 1, 12, 0, 0, 0);
+      var leapMonth = 0;
+      for (var ts = start.getTime(); ts <= end.getTime(); ts += 86400000) {
+        var lunar = _zwParseLunarParts(new Date(ts));
+        if (!lunar || lunar.lunarYear !== year || !lunar.isLeapMonth) continue;
+        leapMonth = lunar.lunarMonth;
+        break;
+      }
+      _zwLeapMonthCache.set(year, leapMonth);
+      return leapMonth;
+    }
+
+    function _zwGetLunarMonthDays(lunarYear, lunarMonth, isLeapMonth) {
+      var year = Number(lunarYear);
+      var month = Number(lunarMonth);
+      var leap = !!isLeapMonth;
+      if (!Number.isInteger(year) || year < 1900 || year > 2100) return 30;
+      if (!Number.isInteger(month) || month < 1 || month > 12) return 30;
+      var key = [year, month, leap ? 1 : 0].join('-');
+      if (_zwLunarMonthDaysCache.has(key)) return _zwLunarMonthDaysCache.get(key);
+      var start = new Date(year - 1, 10, 1, 12, 0, 0, 0);
+      var end = new Date(year + 1, 2, 1, 12, 0, 0, 0);
+      var maxDay = 0;
+      for (var ts = start.getTime(); ts <= end.getTime(); ts += 86400000) {
+        var lunar = _zwParseLunarParts(new Date(ts));
+        if (!lunar || lunar.lunarYear !== year) continue;
+        if (lunar.lunarMonth !== month || lunar.isLeapMonth !== leap) continue;
+        if (lunar.lunarDay > maxDay) maxDay = lunar.lunarDay;
+      }
+      if (maxDay !== 29 && maxDay !== 30) maxDay = 30;
+      _zwLunarMonthDaysCache.set(key, maxDay);
+      return maxDay;
+    }
+
+    function _zwSolarAddDays(solar, deltaDays) {
+      if (!solar) return null;
+      var d = new Date(Number(solar.year), Number(solar.month) - 1, Number(solar.day), 12, 0, 0, 0);
+      if (Number.isNaN(d.getTime())) return null;
+      d.setDate(d.getDate() + Number(deltaDays || 0));
+      return {
+        year: d.getFullYear(),
+        month: d.getMonth() + 1,
+        day: d.getDate()
+      };
+    }
+
+    function _zwGetYearGanZhi(lunarYear) {
+      var y = Number(lunarYear);
+      if (!Number.isInteger(y)) return '';
+      var stem = ZW_STEMS[(y - 4) % 10 >= 0 ? (y - 4) % 10 : ((y - 4) % 10) + 10];
+      var branch = ZW_BRANCHES[(y - 4) % 12 >= 0 ? (y - 4) % 12 : ((y - 4) % 12) + 12];
+      return String(stem || '') + String(branch || '');
+    }
+
+    function _zwResolveBureauByGanZhi(gz) {
+      var nayin = ZW_NAYIN_BY_JIAZI[gz] || '';
+      var element = '';
+      if (nayin.indexOf('水') >= 0) element = '水';
+      else if (nayin.indexOf('木') >= 0) element = '木';
+      else if (nayin.indexOf('金') >= 0) element = '金';
+      else if (nayin.indexOf('土') >= 0) element = '土';
+      else if (nayin.indexOf('火') >= 0) element = '火';
+      var bureau = ZW_BUREAU_BY_ELEMENT[element] || 5;
+      return { element: element || '土', bureau: bureau, nayin: nayin || '' };
+    }
+
+    function _zwLocateZiWeiPos(lunarDay, bureauNum) {
+      var day = Number(lunarDay);
+      var bureau = Number(bureauNum);
+      if (!Number.isInteger(day) || day < 1) day = 1;
+      if (day > 30) day = 30;
+      if (!Number.isInteger(bureau) || bureau < 2) bureau = 5;
+      var q = Math.floor(day / bureau);
+      var r = day % bureau;
+      var pos;
+      if (r === 0) {
+        pos = q;
+      } else {
+        pos = q + 1;
+        var needOdd = bureau - r;
+        while (needOdd > 0) {
+          pos += 1;
+          var normalized = ((pos - 1) % 12 + 12) % 12 + 1;
+          if (normalized % 2 === 1) needOdd -= 1;
+        }
+      }
+      return ((pos - 1) % 12 + 12) % 12 + 1;
+    }
+
+    function _zwInstallTwelvePalaces(mingBranch) {
+      var result = {};
+      for (var i = 0; i < ZW_PALACE_NAMES.length; i++) {
+        var branch = _zwOffset(mingBranch, -i);
+        if (branch) result[branch] = ZW_PALACE_NAMES[i];
+      }
+      return result;
+    }
+
+    function _zwBuildBranchStemMap(yearStem) {
+      var startStem = ZW_WUHU_START_STEM[yearStem] || '丙';
+      var startIdx = ZW_STEMS.indexOf(startStem);
+      if (startIdx < 0) startIdx = 2;
+      var map = {};
+      for (var i = 0; i < ZW_RING.length; i++) {
+        map[ZW_RING[i]] = ZW_STEMS[(startIdx + i) % 10];
+      }
+      return map;
+    }
+
+    function _zwBuildDaXianMap(mingBranch, startAge, direction) {
+      var out = {};
+      var dir = direction >= 0 ? 1 : -1;
+      for (var i = 0; i < 12; i++) {
+        var branch = _zwOffset(mingBranch, dir * i);
+        var from = startAge + (i * 10);
+        out[branch] = String(from) + '-' + String(from + 9);
+      }
+      return out;
+    }
+
+    function _zwBuildXiaoXianMap(yearBranch, gender) {
+      var rule = ZW_SMALL_LIMIT_RULE_MALE[yearBranch] || { start: '辰', dir: 1 };
+      var dir = (gender === 'female' ? -rule.dir : rule.dir);
+      var out = {};
+      for (var age = 1; age <= 12; age++) {
+        var branch = _zwOffset(rule.start, dir * (age - 1));
+        out[branch] = String(age) + '岁';
+      }
+      return out;
+    }
+
+    function _zwBuildChartText(chart) {
+      if (!chart) return '';
+      var lines = [];
+      lines.push('【紫微斗数命盘】');
+      lines.push('性别：' + chart.center.genderLabel);
+      lines.push('公历：' + chart.center.solarText);
+      lines.push('农历：' + chart.center.lunarText);
+      lines.push('生年干支：' + chart.center.yearGanZhi);
+      lines.push('五行局：' + chart.center.bureauLabel);
+      lines.push('命宫/身宫：' + chart.center.mingBranch + ' / ' + chart.center.shenBranch + '（身宫落' + chart.center.shenPalaceName + '）');
+      lines.push('命主/身主：' + chart.center.mingZhu + ' / ' + chart.center.shenZhu);
+      lines.push('');
+      chart.boardCells.forEach(function(cell) {
+        var title = '[' + cell.branch + '宫] ' + (cell.palaceName || '—') + ' / ' + (cell.stemBranch || '');
+        var mains = cell.mainStars.map(function(star) {
+          var s = star.name;
+          if (star.brightness) s += '(' + star.brightness + ')';
+          if (star.huaTags && star.huaTags.length) s += '[' + star.huaTags.join('/') + ']';
+          return s;
+        });
+        var assists = cell.assistStars.map(function(star) {
+          var s = star.name;
+          if (star.huaTags && star.huaTags.length) s += '[' + star.huaTags.join('/') + ']';
+          return s;
+        });
+        var misc = cell.miscStars.map(function(star) {
+          var s = star.name;
+          if (star.huaTags && star.huaTags.length) s += '[' + star.huaTags.join('/') + ']';
+          return s;
+        });
+        lines.push(title);
+        lines.push('  主星：' + (mains.length ? mains.join('、') : '无'));
+        lines.push('  辅星：' + (assists.length ? assists.join('、') : '无'));
+        lines.push('  杂曜：' + (misc.length ? misc.join('、') : '无'));
+        lines.push('  大限：' + (cell.daXian || '--') + '  小限：' + (cell.xiaoXian || '--'));
+      });
+      return lines.join('\n');
+    }
+
+    function _zwBrightnessClass(level) {
+      var text = String(level || '');
+      if (text === '庙' || text === '旺' || text === '得') return 'good';
+      if (text === '陷' || text === '不得') return 'bad';
+      return 'normal';
+    }
+
+    function generateZiweiChart() {
+      if (!ziweiIntlSupported) {
+        ziweiStatus.value = { type: 'error', text: '当前浏览器不支持农历转换（Intl Chinese Calendar），请升级浏览器后重试。' };
+        return;
+      }
+
+      _zwNormalizeSolarDay();
+      _zwNormalizeLunarInput();
+
+      var hour = Number(ziweiBirthHour.value || '0');
+      var minute = Number(ziweiBirthMinute.value || '0');
+      if (!Number.isInteger(hour) || hour < 0 || hour > 23 || !Number.isInteger(minute) || minute < 0 || minute > 59) {
+        ziweiStatus.value = { type: 'error', text: '出生时间格式无效，请重新选择时分。' };
+        return;
+      }
+
+      var baseSolar = null;
+      var baseLunar = null;
+      if (ziweiCalendarType.value === 'lunar') {
+        var ly = Number(ziweiLunarYear.value || '0');
+        var lm = Number(ziweiLunarMonth.value || '0');
+        var ld = Number(ziweiLunarDay.value || '0');
+        var leap = !!ziweiLunarLeap.value;
+        if (!Number.isInteger(ly) || ly < 1900 || ly > 2100 || !Number.isInteger(lm) || lm < 1 || lm > 12 || !Number.isInteger(ld) || ld < 1 || ld > 30) {
+          ziweiStatus.value = { type: 'error', text: '农历出生日期不合法，请检查年/月/日输入。' };
+          return;
+        }
+        if (leap && !ziweiCanUseLeapMonth.value) {
+          ziweiStatus.value = { type: 'error', text: '所选年份无该闰月，请取消闰月或修改月份。' };
+          return;
+        }
+        var solarFromLunar = _zwLunarToSolar(ly, lm, ld, leap);
+        if (!solarFromLunar) {
+          ziweiStatus.value = { type: 'error', text: '农历转公历失败，请检查日期（含闰月）是否存在。' };
+          return;
+        }
+        baseSolar = solarFromLunar;
+        baseLunar = { lunarYear: ly, lunarMonth: lm, lunarDay: ld, isLeapMonth: leap };
+      } else {
+        var sy = Number(ziweiSolarYear.value || '0');
+        var sm = Number(ziweiSolarMonth.value || '0');
+        var sd = Number(ziweiSolarDay.value || '0');
+        if (!_isValidDateParts(sy, sm, sd) || sy < 1900 || sy > 2100) {
+          ziweiStatus.value = { type: 'error', text: '公历出生日期不合法，请检查输入范围（1900-2100）。' };
+          return;
+        }
+        baseSolar = { year: sy, month: sm, day: sd };
+        baseLunar = _zwSolarToLunar(sy, sm, sd);
+        if (!baseLunar) {
+          ziweiStatus.value = { type: 'error', text: '公历转农历失败，请稍后重试。' };
+          return;
+        }
+      }
+
+      var effectiveSolar = baseSolar;
+      var effectiveLunar = baseLunar;
+      var shiftedByZiHour = false;
+      if (hour === 23) {
+        shiftedByZiHour = true;
+        effectiveSolar = _zwSolarAddDays(baseSolar, 1);
+        effectiveLunar = _zwSolarToLunar(effectiveSolar.year, effectiveSolar.month, effectiveSolar.day);
+        if (!effectiveLunar) {
+          ziweiStatus.value = { type: 'error', text: '子时换日处理失败，请重试。' };
+          return;
+        }
+      }
+
+      var shichenIndex0 = _zwGetShiChenIndex0(hour);
+      var shichenIndex1 = shichenIndex0 + 1;
+      if (shichenIndex0 < 0 || shichenIndex1 < 1 || shichenIndex1 > 12) {
+        ziweiStatus.value = { type: 'error', text: '出生时辰计算失败。' };
+        return;
+      }
+
+      var lunarMonth = Number(effectiveLunar.lunarMonth);
+      var lunarDay = Number(effectiveLunar.lunarDay);
+      var yearGanZhi = _zwGetYearGanZhi(effectiveLunar.lunarYear);
+      var yearStem = yearGanZhi.slice(0, 1);
+      var yearBranch = yearGanZhi.slice(1, 2);
+      if (!yearStem || !yearBranch) {
+        ziweiStatus.value = { type: 'error', text: '生年干支计算失败。' };
+        return;
+      }
+
+      var mingPos = ((lunarMonth + 1 - shichenIndex1) % 12 + 12) % 12;
+      if (mingPos === 0) mingPos = 12;
+      var shenPos = ((lunarMonth - 1 + shichenIndex1) % 12 + 12) % 12;
+      if (shenPos === 0) shenPos = 12;
+      var mingBranch = ZW_RING[mingPos - 1];
+      var shenBranch = ZW_RING[shenPos - 1];
+
+      var palaceNameByBranch = _zwInstallTwelvePalaces(mingBranch);
+      var branchStemMap = _zwBuildBranchStemMap(yearStem);
+      var mingGan = branchStemMap[mingBranch] || '甲';
+      var mingGanZhi = mingGan + mingBranch;
+      var bureauInfo = _zwResolveBureauByGanZhi(mingGanZhi);
+      var bureauNum = bureauInfo.bureau;
+      var bureauLabel = bureauInfo.element + String(bureauNum) + '局';
+      var ziweiPos = _zwLocateZiWeiPos(lunarDay, bureauNum);
+      var ziweiBranch = ZW_RING[ziweiPos - 1];
+      var tianfuBranch = ZW_TIANFU_MIRROR[ziweiBranch] || _zwOffset(ziweiBranch, 6);
+
+      var palaceStars = {};
+      ZW_RING.forEach(function(branch) {
+        palaceStars[branch] = { main: [], assist: [], misc: [], huaByStar: {} };
+      });
+      var starBranchMap = {};
+
+      function addStar(starName, branch, group) {
+        if (!starName || !branch || !palaceStars[branch]) return;
+        var bucket = palaceStars[branch][group];
+        if (!bucket || !Array.isArray(bucket)) return;
+        if (bucket.indexOf(starName) < 0) bucket.push(starName);
+        starBranchMap[starName] = branch;
+      }
+
+      // 紫微星系
+      addStar('紫微', ziweiBranch, 'main');
+      addStar('天机', _zwOffset(ziweiBranch, -1), 'main');
+      addStar('太阳', _zwOffset(ziweiBranch, -3), 'main');
+      addStar('武曲', _zwOffset(ziweiBranch, -4), 'main');
+      addStar('天同', _zwOffset(ziweiBranch, -5), 'main');
+      addStar('廉贞', _zwOffset(ziweiBranch, -8), 'main');
+
+      // 天府星系
+      addStar('天府', tianfuBranch, 'main');
+      addStar('太阴', _zwOffset(tianfuBranch, 1), 'main');
+      addStar('贪狼', _zwOffset(tianfuBranch, 2), 'main');
+      addStar('巨门', _zwOffset(tianfuBranch, 3), 'main');
+      addStar('天相', _zwOffset(tianfuBranch, 4), 'main');
+      addStar('天梁', _zwOffset(tianfuBranch, 5), 'main');
+      addStar('七杀', _zwOffset(tianfuBranch, 6), 'main');
+      addStar('破军', _zwOffset(tianfuBranch, 10), 'main');
+
+      // 辅曜
+      addStar('左辅', _zwOffset('辰', lunarMonth - 1), 'assist');
+      addStar('右弼', _zwOffset('戌', -(lunarMonth - 1)), 'assist');
+      addStar('文昌', _zwOffset('戌', -shichenIndex0), 'assist');
+      addStar('文曲', _zwOffset('辰', shichenIndex0), 'assist');
+
+      var kuiYue = ZW_KUI_YUE_BY_STEM[yearStem];
+      if (kuiYue) {
+        addStar('天魁', kuiYue.kui, 'assist');
+        addStar('天钺', kuiYue.yue, 'assist');
+      }
+      var lyt = ZW_LUCUN_YANG_TUO_BY_STEM[yearStem];
+      if (lyt) {
+        addStar('禄存', lyt.lucun, 'assist');
+        addStar('擎羊', lyt.yang, 'assist');
+        addStar('陀罗', lyt.tuo, 'assist');
+      }
+      var fireBell = ZW_FIRE_BELL_BY_YEAR_BRANCH[yearBranch];
+      if (fireBell) {
+        addStar('火星', _zwOffset(fireBell.fire, shichenIndex0), 'assist');
+        addStar('铃星', _zwOffset(fireBell.bell, shichenIndex0), 'assist');
+      }
+      addStar('地劫', _zwOffset('亥', shichenIndex0), 'assist');
+      addStar('天空', _zwOffset('亥', -shichenIndex0), 'assist');
+
+      // 杂曜
+      addStar('天马', ZW_TIANMA_BY_YEAR_BRANCH[yearBranch], 'misc');
+      var yearBranchIndex = ZW_BRANCHES.indexOf(yearBranch);
+      if (yearBranchIndex < 0) yearBranchIndex = 0;
+      var hongLuanBranch = _zwOffset('卯', -yearBranchIndex);
+      addStar('红鸾', hongLuanBranch, 'misc');
+      addStar('天喜', _zwOffset(hongLuanBranch, 6), 'misc');
+      addStar('天刑', _zwOffset('酉', lunarMonth - 1), 'misc');
+      addStar('天姚', _zwOffset('丑', lunarMonth - 1), 'misc');
+
+      // 四化
+      var huaRule = ZW_HUA_BY_STEM[yearStem] || null;
+      if (huaRule) {
+        var huaItems = [
+          { key: 'lu', tag: '禄' },
+          { key: 'quan', tag: '权' },
+          { key: 'ke', tag: '科' },
+          { key: 'ji', tag: '忌' }
+        ];
+        huaItems.forEach(function(item) {
+          var starName = huaRule[item.key];
+          var branch = starBranchMap[starName];
+          if (!branch || !palaceStars[branch]) return;
+          if (!palaceStars[branch].huaByStar[starName]) palaceStars[branch].huaByStar[starName] = [];
+          palaceStars[branch].huaByStar[starName].push(item.tag);
+        });
+      }
+
+      var isYangYear = ZW_YEAR_STEM_YINYANG[yearStem] === '阳';
+      var isMale = ziweiGender.value === 'male';
+      var daXianDirection = (isYangYear && isMale) || (!isYangYear && !isMale) ? 1 : -1;
+      var daXianMap = _zwBuildDaXianMap(mingBranch, bureauNum, daXianDirection);
+      var xiaoXianMap = _zwBuildXiaoXianMap(yearBranch, isMale ? 'male' : 'female');
+
+      var boardCells = ZW_BOARD_ORDER.map(function(branch) {
+        var pack = palaceStars[branch] || { main: [], assist: [], misc: [], huaByStar: {} };
+        var main = pack.main.map(function(star) {
+          var brightness = (ZW_BRIGHTNESS[star] && ZW_BRIGHTNESS[star][branch]) || '';
+          var huaTags = pack.huaByStar[star] || [];
+          return {
+            name: star,
+            brightness: brightness,
+            brightnessClass: _zwBrightnessClass(brightness),
+            huaTags: huaTags
+          };
+        });
+        var assist = pack.assist.map(function(star) {
+          return { name: star, huaTags: pack.huaByStar[star] || [] };
+        });
+        var misc = pack.misc.map(function(star) {
+          return { name: star, huaTags: pack.huaByStar[star] || [] };
+        });
+        return {
+          branch: branch,
+          area: ZW_BOARD_AREA[branch] || '',
+          palaceName: palaceNameByBranch[branch] || '',
+          stemBranch: (branchStemMap[branch] || '') + branch,
+          isMing: branch === mingBranch,
+          isShen: branch === shenBranch,
+          mainStars: main,
+          assistStars: assist,
+          miscStars: misc,
+          daXian: daXianMap[branch] || '--',
+          xiaoXian: xiaoXianMap[branch] || '--'
+        };
+      });
+
+      var solarText = [
+        String(effectiveSolar.year).padStart(4, '0'),
+        String(effectiveSolar.month).padStart(2, '0'),
+        String(effectiveSolar.day).padStart(2, '0')
+      ].join('-') + ' ' + String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+      var lunarMonthLabel = ZW_LUNAR_MONTH_LABEL[effectiveLunar.lunarMonth - 1] || String(effectiveLunar.lunarMonth);
+      var lunarDayLabel = ZW_LUNAR_DAY_LABEL[effectiveLunar.lunarDay] || String(effectiveLunar.lunarDay);
+      var lunarText = String(effectiveLunar.lunarYear) + '年' +
+        (effectiveLunar.isLeapMonth ? '闰' : '') +
+        lunarMonthLabel + '月' +
+        lunarDayLabel +
+        ' ' + _zwGetShiChenLabel(hour) +
+        ' (' + String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0') + ')';
+      var center = {
+        genderLabel: isMale ? '男' : '女',
+        solarText: solarText,
+        lunarText: lunarText,
+        yearGanZhi: yearGanZhi,
+        mingZhu: ZW_MINGZHU_BY_BRANCH[mingBranch] || '',
+        shenZhu: ZW_SHENZHU_BY_YEAR_BRANCH[yearBranch] || '',
+        bureauLabel: bureauLabel,
+        mingBranch: mingBranch,
+        shenBranch: shenBranch,
+        shenPalaceName: palaceNameByBranch[shenBranch] || '',
+        ziweiBranch: ziweiBranch,
+        tianfuBranch: tianfuBranch,
+        monthLabel: lunarMonthLabel + '月',
+        shichenLabel: _zwGetShiChenLabel(hour),
+        shiftedByZiHour: shiftedByZiHour
+      };
+
+      var chart = {
+        generatedAt: Date.now(),
+        boardCells: boardCells,
+        center: center
+      };
+      chart.text = _zwBuildChartText(chart);
+      ziweiChart.value = chart;
+      ziweiStatus.value = {
+        type: 'success',
+        text: shiftedByZiHour ? '排盘完成（23:00后子时已按次日换日）。' : '排盘完成。'
+      };
+    }
+
+    function copyZiweiChartText() {
+      if (!ziweiChart.value) {
+        ziweiStatus.value = { type: 'info', text: '请先完成排盘。' };
+        return;
+      }
+      var payload = String(ziweiChart.value.text || '').trim();
+      if (!payload) {
+        ziweiStatus.value = { type: 'error', text: '命盘文本为空，无法复制。' };
+        return;
+      }
+      clipboardWrite(payload).then(function(ok) {
+        ziweiStatus.value = ok
+          ? { type: 'success', text: '命盘文本已复制。' }
+          : { type: 'error', text: '复制失败，请手动复制。' };
+      });
+    }
+
+    var _zwHtml2CanvasLoader = null;
+    function _zwEnsureHtml2Canvas() {
+      if (typeof window === 'undefined') return Promise.reject(new Error('当前环境不支持导出'));
+      if (window.html2canvas) return Promise.resolve(window.html2canvas);
+      if (_zwHtml2CanvasLoader) return _zwHtml2CanvasLoader;
+      _zwHtml2CanvasLoader = new Promise(function(resolve, reject) {
+        var script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+        script.async = true;
+        script.onload = function() {
+          if (window.html2canvas) resolve(window.html2canvas);
+          else reject(new Error('html2canvas 加载失败'));
+        };
+        script.onerror = function() {
+          reject(new Error('html2canvas 脚本加载失败'));
+        };
+        document.head.appendChild(script);
+      }).catch(function(err) {
+        _zwHtml2CanvasLoader = null;
+        throw err;
+      });
+      return _zwHtml2CanvasLoader;
+    }
+
+    async function exportZiweiChartImage() {
+      if (!ziweiChart.value) {
+        ziweiStatus.value = { type: 'info', text: '请先完成排盘。' };
+        return;
+      }
+      var target = document.getElementById('ziwei-board-export');
+      if (!target) {
+        ziweiStatus.value = { type: 'error', text: '未找到命盘画布区域，无法导出。' };
+        return;
+      }
+      ziweiExporting.value = true;
+      try {
+        var html2canvas = await _zwEnsureHtml2Canvas();
+        var canvas = await html2canvas(target, {
+          backgroundColor: null,
+          scale: Math.min(window.devicePixelRatio || 1.5, 2),
+          useCORS: true,
+          logging: false
+        });
+        var link = document.createElement('a');
+        var stamp = new Date();
+        var file = 'ziwei-chart-' +
+          String(stamp.getFullYear()) +
+          String(stamp.getMonth() + 1).padStart(2, '0') +
+          String(stamp.getDate()).padStart(2, '0') +
+          '-' +
+          String(stamp.getHours()).padStart(2, '0') +
+          String(stamp.getMinutes()).padStart(2, '0') +
+          '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.download = file;
+        link.click();
+        ziweiStatus.value = { type: 'success', text: '命盘图片导出成功。' };
+      } catch (err) {
+        ziweiStatus.value = { type: 'error', text: '命盘图片导出失败：' + String((err && err.message) || err || '') };
+      } finally {
+        ziweiExporting.value = false;
+      }
     }
 
     function pickDb(refName, val) {
@@ -3896,6 +4786,7 @@ const app = createApp({
     const procTargetLabel = computed(() => DB_LABELS[procTargetDb.value] || procTargetDb.value);
     const currentPageTitle = computed(() => {
       if (activePage.value === 'idTool') return '测试工具';
+      if (activePage.value === 'ziweiTool') return '紫微斗数命盘';
       if (activePage.value === 'func') return '函数翻译';
       if (activePage.value === 'proc') return '存储过程翻译';
       if (activePage.value === 'rules') return 'DDL 映射规则管理';
@@ -3904,6 +4795,7 @@ const app = createApp({
     });
     const currentPageSubtitle = computed(() => {
       if (activePage.value === 'idTool') return '身份证号码与统一社会信用代码生成 / 校验';
+      if (activePage.value === 'ziweiTool') return '公历 / 农历输入，自动排出完整方盘命盘';
       if (activePage.value === 'func') return 'CREATE FUNCTION / CREATE OR REPLACE FUNCTION 兼容转换';
       if (activePage.value === 'proc') return 'CREATE PROCEDURE / CREATE OR REPLACE PROCEDURE 兼容转换';
       if (activePage.value === 'rules') return '维护前端与后端共享的 DDL 类型映射规则';
@@ -3913,6 +4805,7 @@ const app = createApp({
     const currentEngineLabel = computed(() => {
       if (activePage.value === 'func') return 'Function Parser v2.0';
       if (activePage.value === 'proc') return 'Procedure Parser v2.0';
+      if (activePage.value === 'ziweiTool') return 'ZiWei Chart Engine v1.0';
       return 'DDL Parser v2.0';
     });
     const currentRuleCount = computed(() => {
@@ -4640,6 +5533,15 @@ const app = createApp({
       usccGeneratedCode, usccLegacyGenerated, usccOutputPlaceholder, usccVerifyPlaceholder,
       usccGenerateResult, usccVerifyInput, usccVerifyResult,
       usccCopyButtonLabel, usccVerifyButtonLabel, generateUsccCode, validateUsccCode, copyGeneratedUsccCode,
+      ziweiCalendarType, ziweiCalendarTypeLabel,
+      ziweiSolarYear, ziweiSolarMonth, ziweiSolarDay, ziweiSolarDayOptions,
+      ziweiLunarYear, ziweiLunarMonth, ziweiLunarDay, ziweiLunarLeap,
+      ziweiLunarDayOptions, ziweiLunarMonthLabel,
+      ziweiLeapMonthForYear, ziweiCanUseLeapMonth,
+      ziweiBirthHour, ziweiBirthMinute, ziweiGender,
+      ziweiYearOptions, ziweiMonthOptions, ziweiHourOptions, ziweiMinuteOptions,
+      ziweiChart, ziweiStatus, ziweiExporting,
+      generateZiweiChart, copyZiweiChartText, exportZiweiChartImage,
       // Shared
       statusText, fileInput, fileEncoding, ENCODING_OPTIONS, uploadFile, handleFileUpload,
       isWorkbenchPage, runWorkbenchAction, canRunPrimaryAction,

@@ -212,3 +212,34 @@ Last updated: 2026-04-15
 - Added workbench header entry to return to splash homepage:
   - new `返回首页` button in header right action area.
   - wired to `goSplashHome()` in `app.js`, which delegates to `window.splashApi.showHome()` and falls back safely if unavailable.
+
+## 2026-04-15: New Test Tool Page - 紫微斗数命盘
+- Added a new submenu under `测试工具`:
+  - existing: `证件号码生成`
+  - new: `紫微斗数命盘` (`activePage='ziweiTool'`)
+- Added a dedicated `ziweiTool` page in `index.html`:
+  - 公历/农历切换输入
+  - 农历闰月可用性判断与控制
+  - 出生时分（24h, minute precision）+ 性别
+  - action buttons: `排盘` / `复制命盘文本` / `导出命盘图片`
+- Implemented frontend-only Zi Wei chart engine in `app.js`:
+  - Gregorian↔Lunar conversion (1900-2100) via `Intl Chinese Calendar` + cache + leap-month handling
+  - 子时(23:00)换日处理
+  - 命宫/身宫计算
+  - 十二宫安宫（命宫起逆时针）
+  - 宫干起法（五虎遁）+ 命宫干支取局（纳音→五行局）
+  - 紫微星定位（按日数/局数算法）
+  - 紫微系 + 天府系主星布置
+  - 辅曜/杂曜：左辅右弼、文昌文曲、魁钺、禄存羊陀、火铃、天空地劫、天马、红鸾天喜、天刑天姚
+  - 四化标注（禄/权/科/忌）
+  - 主星庙旺利平陷标记
+  - 大限（顺逆 + 十年区间）与小限（按年支/性别方向）
+  - 命盘文本汇总构建与复制
+  - 命盘图片导出（动态加载 `html2canvas`）
+- Added Zi Wei board UI + theme styles in `style.css`:
+  - 4×4 方盘 grid (`grid-template-areas`) with center info block
+  - 命宫/身宫视觉高亮
+  - 主星/辅星/杂曜/四化标签颜色区分
+  - dark/light theme variants + responsive adaptation
+- Updated test-tools submenu expand capacity:
+  - `.nav-submenu.open` max-height adjusted for two submenu items.
