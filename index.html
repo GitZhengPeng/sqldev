@@ -1598,11 +1598,49 @@ $$;</pre>
                   <h4>摘要解盘</h4>
                   <span>{{ ziweiAnalysis.length }} 条</span>
                 </header>
-                <div class="ziwei-pro-body">
-                  <article class="ziwei-analysis-item" v-for="item in ziweiAnalysis" :key="'zw-analysis-'+item.key">
-                    <h5>{{ item.title }}</h5>
-                    <p>{{ item.text }}</p>
+                <div class="ziwei-pro-body ziwei-analysis-body" v-if="ziweiAnalysis.length">
+                  <div class="ziwei-analysis-list" role="tablist" aria-label="摘要条目">
+                    <button
+                      class="ziwei-analysis-item"
+                      :class="{active: ziweiActiveAnalysis && ziweiActiveAnalysis.key===item.key}"
+                      type="button"
+                      v-for="item in ziweiAnalysis"
+                      :key="'zw-analysis-'+item.key"
+                      @click="toggleZiweiAnalysis(item.key)"
+                    >
+                      <span class="ziwei-analysis-item-title">{{ item.title }}</span>
+                      <span class="ziwei-analysis-item-text">{{ item.text }}</span>
+                      <span class="ziwei-analysis-item-level">{{ item.level || '点击查看详情' }}</span>
+                    </button>
+                  </div>
+                  <article class="ziwei-analysis-detail" v-if="ziweiActiveAnalysis">
+                    <h5>{{ ziweiActiveAnalysis.title }}</h5>
+                    <p class="ziwei-analysis-detail-summary">{{ ziweiActiveAnalysis.text }}</p>
+                    <div class="ziwei-analysis-metrics" v-if="ziweiActiveAnalysis.metrics && ziweiActiveAnalysis.metrics.length">
+                      <span class="ziwei-analysis-metric" v-for="metric in ziweiActiveAnalysis.metrics" :key="'zw-analysis-m-'+ziweiActiveAnalysis.key+'-'+metric.label">
+                        <strong>{{ metric.label }}</strong>
+                        <em>{{ metric.value }}</em>
+                      </span>
+                    </div>
+                    <div class="ziwei-analysis-detail-block" v-if="ziweiActiveAnalysis.evidence && ziweiActiveAnalysis.evidence.length">
+                      <h6>依据</h6>
+                      <p v-for="(line, idx) in ziweiActiveAnalysis.evidence" :key="'zw-analysis-e-'+ziweiActiveAnalysis.key+'-'+idx">{{ line }}</p>
+                    </div>
+                    <div class="ziwei-analysis-detail-block" v-if="ziweiActiveAnalysis.explain && ziweiActiveAnalysis.explain.length">
+                      <h6>专业解读</h6>
+                      <p v-for="(line, idx) in ziweiActiveAnalysis.explain" :key="'zw-analysis-x-'+ziweiActiveAnalysis.key+'-'+idx">{{ line }}</p>
+                    </div>
+                    <div class="ziwei-analysis-detail-block" v-if="ziweiActiveAnalysis.suggestions && ziweiActiveAnalysis.suggestions.length">
+                      <h6>行动建议</h6>
+                      <p v-for="(line, idx) in ziweiActiveAnalysis.suggestions" :key="'zw-analysis-s-'+ziweiActiveAnalysis.key+'-'+idx">{{ line }}</p>
+                    </div>
+                    <div class="ziwei-analysis-detail-block" v-if="ziweiActiveAnalysis.risks && ziweiActiveAnalysis.risks.length">
+                      <h6>风险提示</h6>
+                      <p v-for="(line, idx) in ziweiActiveAnalysis.risks" :key="'zw-analysis-r-'+ziweiActiveAnalysis.key+'-'+idx">{{ line }}</p>
+                    </div>
                   </article>
+                </div>
+                <div class="ziwei-pro-body" v-else>
                   <p v-if="!ziweiAnalysis.length">暂无分析内容，请先排盘。</p>
                 </div>
               </section>
