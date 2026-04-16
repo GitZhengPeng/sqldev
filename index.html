@@ -1338,31 +1338,52 @@ $$;</pre>
             </div>
 
             <div class="ziwei-form-grid">
-              <label class="idtool-field full">
+              <label class="idtool-field ziwei-profile-field" v-if="false">
                 <span>命例名称（可选）</span>
                 <input
+                  class="ziwei-profile-input"
                   type="text"
                   v-model="ziweiProfileName"
                   maxlength="64"
-                  list="ziwei-history-name-list"
                   placeholder="例如：张三-1993-08-21 上午"
-                  @change="applyZiweiHistoryFromInput"
                 />
-                <datalist id="ziwei-history-name-list" v-if="ziweiHistoryNameOptions.length">
-                  <option
-                    v-for="item in ziweiHistoryNameOptions"
-                    :key="'zw-history-opt-'+item.id"
-                    :value="item.value"
-                  >{{ item.meta }}</option>
-                </datalist>
                 <small class="ziwei-mode-hint" v-if="ziweiHistoryNameOptions.length">点击输入框可下拉选择历史命例，不选择时会保留手输名称。</small>
               </label>
-              <label class="idtool-field full">
+              <label class="idtool-field full" v-if="false">
                 <span>历法输入</span>
                 <div class="ziwei-toggle">
                   <button class="ziwei-toggle-btn" :class="{active: ziweiCalendarType==='solar'}" type="button" @click="ziweiCalendarType='solar'">公历输入</button>
                   <button class="ziwei-toggle-btn" :class="{active: ziweiCalendarType==='lunar'}" type="button" @click="ziweiCalendarType='lunar'">农历输入</button>
                 </div>
+              </label>
+              <label class="idtool-field ziwei-profile-field">
+                <span>命例名称（可选）</span>
+                <input
+                  class="ziwei-profile-input"
+                  type="text"
+                  v-model="ziweiProfileName"
+                  maxlength="64"
+                  placeholder="例如：张三 1993-08-21 上午"
+                />
+                <small class="ziwei-mode-hint">可手工输入命例名称；不加载历史命例时，手输内容会保留。</small>
+              </label>
+              <label class="idtool-field ziwei-history-field" v-if="ziweiHistoryNameOptions.length">
+                <span>快速加载历史命例</span>
+                <select v-model="ziweiHistoryPickedId" @change="applyZiweiHistoryFromSelect">
+                  <option value="">选择历史命例...</option>
+                  <option
+                    v-for="item in ziweiHistoryNameOptions"
+                    :key="'zw-history-select-'+item.id"
+                    :value="item.id"
+                  >{{ item.label }}（{{ item.meta.replace('保存时间：','') }}）</option>
+                </select>
+              </label>
+              <label class="idtool-field">
+                <span>历法输入</span>
+                <select class="ziwei-calendar-select" v-model="ziweiCalendarType">
+                  <option value="solar">公历输入</option>
+                  <option value="lunar">农历输入</option>
+                </select>
               </label>
               <label class="idtool-field full">
                 <span>展示模式</span>

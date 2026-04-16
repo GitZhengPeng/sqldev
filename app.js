@@ -2878,6 +2878,7 @@ const app = createApp({
     const ziweiAnalysis = ref([]);
     const ziweiAnalysisActiveKey = ref('');
     const ziweiHistory = ref([]);
+    const ziweiHistoryPickedId = ref('');
     const ziweiStatus = ref({ type: 'info', text: '' });
     const ziweiAiLoading = ref(false);
     const ziweiAiDone = ref(false);
@@ -5021,6 +5022,13 @@ const app = createApp({
       });
     }
 
+    function applyZiweiHistoryFromSelect() {
+      var id = String(ziweiHistoryPickedId.value || '').trim();
+      if (!id) return;
+      loadZiweiHistory(id, { fromInputPicker: true });
+      ziweiHistoryPickedId.value = '';
+    }
+
     function loadZiweiHistory(itemId, options) {
       var opt = options || {};
       var id = String(itemId || '');
@@ -7086,7 +7094,7 @@ const app = createApp({
       ziweiTimezoneOffset, ziweiTimezoneOptions, ziweiLongitude,
       ziweiXiaoXianRule, ziweiXiaoXianRuleOptions,
       ziweiLiuNianRule, ziweiLiuNianRuleOptions,
-      ziweiProfileName, ziweiProMode, ziweiSchool, ziweiSchoolLabel, ziweiFocusBranch, ziweiFocusCell,
+      ziweiProfileName, ziweiHistoryPickedId, ziweiProMode, ziweiSchool, ziweiSchoolLabel, ziweiFocusBranch, ziweiFocusCell,
       ziweiSifangBranches, ziweiSifangCells,
       ziweiYearOptions, ziweiMonthOptions, ziweiHourOptions, ziweiMinuteOptions,
       ziweiChart, ziweiAnalysis, ziweiHistory, ziweiHistoryCountText, ziweiHistoryNameOptions, ziweiFocusTracks, ziweiFocusTrackCount, ziweiStatus,
@@ -7094,7 +7102,7 @@ const app = createApp({
       ziweiExporting, ziweiGenerating, ziweiAiLoading, ziweiAiDone, ziweiAiError, ziweiAiResult, ziweiAiUpdatedAtText,
       ziweiGenerateButtonLabel, ziweiCopyButtonLabel, ziweiExportButtonLabel, ziweiAiButtonLabel,
       generateZiweiChart, copyZiweiChartText, exportZiweiChartImage, requestZiweiAiAnalysis,
-      focusZiweiBranch, toggleZiweiAnalysis, applyZiweiHistoryFromInput, loadZiweiHistory, removeZiweiHistory, clearZiweiHistory, formatZiweiHistoryTime,
+      focusZiweiBranch, toggleZiweiAnalysis, applyZiweiHistoryFromInput, applyZiweiHistoryFromSelect, loadZiweiHistory, removeZiweiHistory, clearZiweiHistory, formatZiweiHistoryTime,
       // Shared
       statusText, fileInput, fileEncoding, ENCODING_OPTIONS, uploadFile, handleFileUpload,
       isWorkbenchPage, runWorkbenchAction, canRunPrimaryAction,
