@@ -1329,6 +1329,12 @@ $$;</pre>
             <div class="ziwei-input-head">
               <h3 class="ziwei-input-title">紫微斗数命盘排盘</h3>
               <p class="ziwei-input-desc">支持公历 / 农历输入，自动处理闰月与子时换日，生成标准方盘。</p>
+              <div class="ziwei-flow" aria-label="排盘步骤">
+                <span class="ziwei-flow-step"><em>1</em><b>填写出生信息</b></span>
+                <span class="ziwei-flow-step"><em>2</em><b>点击排盘</b></span>
+                <span class="ziwei-flow-step"><em>3</em><b>先看白话摘要</b></span>
+                <span class="ziwei-flow-step"><em>4</em><b>再看专业细解</b></span>
+              </div>
             </div>
 
             <div class="ziwei-form-grid">
@@ -1454,46 +1460,61 @@ $$;</pre>
                   <label class="idtool-radio"><input type="radio" value="female" v-model="ziweiGender"/> 女</label>
                 </div>
               </label>
-              <label class="idtool-field">
-                <span>校时模式</span>
-                <select v-model="ziweiClockMode">
-                  <option v-for="item in ziweiClockModeOptions" :key="'zw-clock-'+item.value" :value="item.value">{{ item.label }}</option>
-                </select>
+              <label class="idtool-field full ziwei-advanced-entry">
+                <span>高级参数（校时 / 起法）</span>
+                <button
+                  class="ziwei-advanced-toggle"
+                  type="button"
+                  :aria-expanded="String(ziweiAdvancedOpen)"
+                  @click="ziweiAdvancedOpen=!ziweiAdvancedOpen"
+                >
+                  <strong>{{ ziweiAdvancedOpen ? '收起高级设置' : '展开高级设置' }}</strong>
+                  <em>{{ ziweiAdvancedSummary }}</em>
+                </button>
               </label>
-              <label class="idtool-field">
-                <span>时区</span>
-                <select v-model="ziweiTimezoneOffset" :disabled="ziweiClockMode!=='trueSolar'">
-                  <option v-for="item in ziweiTimezoneOptions" :key="'zw-tz-'+item.value" :value="item.value">{{ item.label }}</option>
-                </select>
-              </label>
-              <label class="idtool-field">
-                <span>出生地经度</span>
-                <input
-                  type="number"
-                  step="0.001"
-                  min="-180"
-                  max="180"
-                  v-model="ziweiLongitude"
-                  :disabled="ziweiClockMode!=='trueSolar'"
-                  placeholder="例如 121.473"
-                />
-              </label>
-              <label class="idtool-field">
-                <span>小限起法</span>
-                <select v-model="ziweiXiaoXianRule">
-                  <option v-for="item in ziweiXiaoXianRuleOptions" :key="'zw-xs-'+item.value" :value="item.value">{{ item.label }}</option>
-                </select>
-              </label>
-              <label class="idtool-field">
-                <span>流年起法</span>
-                <select v-model="ziweiLiuNianRule">
-                  <option v-for="item in ziweiLiuNianRuleOptions" :key="'zw-lnrule-'+item.value" :value="item.value">{{ item.label }}</option>
-                </select>
-              </label>
-              <label class="idtool-field full">
-                <span>校时说明</span>
-                <small class="ziwei-mode-hint">{{ ziweiClockHint }}</small>
-              </label>
+
+              <template v-if="ziweiAdvancedOpen">
+                <label class="idtool-field">
+                  <span>校时模式</span>
+                  <select v-model="ziweiClockMode">
+                    <option v-for="item in ziweiClockModeOptions" :key="'zw-clock-'+item.value" :value="item.value">{{ item.label }}</option>
+                  </select>
+                </label>
+                <label class="idtool-field">
+                  <span>时区</span>
+                  <select v-model="ziweiTimezoneOffset" :disabled="ziweiClockMode!=='trueSolar'">
+                    <option v-for="item in ziweiTimezoneOptions" :key="'zw-tz-'+item.value" :value="item.value">{{ item.label }}</option>
+                  </select>
+                </label>
+                <label class="idtool-field">
+                  <span>出生地经度</span>
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="-180"
+                    max="180"
+                    v-model="ziweiLongitude"
+                    :disabled="ziweiClockMode!=='trueSolar'"
+                    placeholder="例如 121.473"
+                  />
+                </label>
+                <label class="idtool-field">
+                  <span>小限起法</span>
+                  <select v-model="ziweiXiaoXianRule">
+                    <option v-for="item in ziweiXiaoXianRuleOptions" :key="'zw-xs-'+item.value" :value="item.value">{{ item.label }}</option>
+                  </select>
+                </label>
+                <label class="idtool-field">
+                  <span>流年起法</span>
+                  <select v-model="ziweiLiuNianRule">
+                    <option v-for="item in ziweiLiuNianRuleOptions" :key="'zw-lnrule-'+item.value" :value="item.value">{{ item.label }}</option>
+                  </select>
+                </label>
+                <label class="idtool-field full">
+                  <span>校时说明</span>
+                  <small class="ziwei-mode-hint">{{ ziweiClockHint }}</small>
+                </label>
+              </template>
             </div>
 
             <div class="ziwei-actions">

@@ -400,3 +400,22 @@ Last updated: 2026-04-15
     - longitude component
     - equation-of-time component
   - status success message now reports total corrected minutes with decimal precision.
+
+## 2026-04-16: ZiWei UI V3 (First Visual Pass)
+- Added a dedicated V3 spec document:
+  - `ZIWEI_UI_V3.md`
+  - includes color semantics, hierarchy, interaction, responsive rules, and acceptance criteria.
+- ZiWei input panel upgraded with explicit user flow chips:
+  - `填写出生信息 -> 点击排盘 -> 先看白话摘要 -> 再看专业细解`.
+- Introduced advanced settings collapse for expert options:
+  - `高级参数（校时 / 起法）` now default-collapsed
+  - shows compact summary line for current advanced config
+  - auto-expands when selecting true-solar mode.
+- Visual hierarchy tuning:
+  - strengthened chart as primary visual focus
+  - adjusted chart split ratio to favor image board panel
+  - refined panel shadows/borders to reduce side-panel competition.
+- Added new styling blocks in `style.css`:
+  - `.ziwei-flow*`
+  - `.ziwei-advanced-toggle*`
+  - light-theme variants for both.

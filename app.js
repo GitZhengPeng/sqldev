@@ -2864,6 +2864,7 @@ const app = createApp({
     const ziweiBirthHour = ref('12');
     const ziweiBirthMinute = ref('00');
     const ziweiGender = ref('male');
+    const ziweiAdvancedOpen = ref(false);
     const ziweiClockMode = ref('standard');
     const ziweiTimezoneOffset = ref('8');
     const ziweiLongitude = ref('120.000');
@@ -3086,6 +3087,13 @@ const app = createApp({
       var tz = Number(ziweiTimezoneOffset.value || '8');
       if (!Number.isFinite(tz)) tz = 8;
       return '真太阳时校正：总修正 = 经度修正 + 时差方程(EoT)。当前时区 UTC' + (tz >= 0 ? '+' : '') + String(tz) + '。';
+    });
+    const ziweiAdvancedSummary = computed(function() {
+      return [
+        ziweiClockModeLabel.value,
+        _zwXiaoXianRuleToLabel(ziweiXiaoXianRule.value),
+        _zwLiuNianRuleToLabel(ziweiLiuNianRule.value)
+      ].join(' / ');
     });
     const ziweiSifangBranches = computed(function() {
       var branch = String(ziweiFocusBranch.value || '');
@@ -3441,6 +3449,9 @@ const app = createApp({
     });
     watch(ziweiCalendarType, function() {
       ziweiStatus.value = { type: 'info', text: '' };
+    });
+    watch(ziweiClockMode, function(next) {
+      if (next === 'trueSolar') ziweiAdvancedOpen.value = true;
     });
     watch([
       ziweiSolarYear, ziweiSolarMonth, ziweiSolarDay,
@@ -6861,6 +6872,7 @@ const app = createApp({
       ziweiLunarDayOptions, ziweiLunarMonthLabel,
       ziweiLeapMonthForYear, ziweiCanUseLeapMonth,
       ziweiBirthHour, ziweiBirthMinute, ziweiGender,
+      ziweiAdvancedOpen, ziweiAdvancedSummary,
       ziweiClockMode, ziweiClockModeLabel, ziweiClockModeOptions, ziweiClockHint,
       ziweiTimezoneOffset, ziweiTimezoneOptions, ziweiLongitude,
       ziweiXiaoXianRule, ziweiXiaoXianRuleOptions,
