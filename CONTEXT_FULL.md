@@ -290,3 +290,28 @@ Last updated: 2026-04-15
   - pro panels grid under timeline
   - dedicated history card style
   - light/dark theme adaptation for all newly-added pro components.
+
+## 2026-04-16: ZiWei Phase-2 (三方四正 + 飞化追踪 + 流派切换)
+- Added multi-school switch for ZiWei:
+  - `传统四化` / `飞星四化` (`ziweiSchool`).
+  - switching school triggers silent re-chart (no duplicate history).
+- Implemented 三方四正 linkage:
+  - computed branch set for focused palace (`本宫 + 对宫 + 三方`).
+  - linked palaces are highlighted; focused palace remains strongest highlight.
+  - pro detail panel shows 三方四正 chips.
+- Implemented 飞化落宫追踪:
+  - new track builder for both schools:
+    - traditional: 生年四化 track
+    - flying: 宫干飞化 tracks across 12 palaces
+  - each track includes tag/star/source/target palace text.
+  - added pro “飞化落宫追踪” panel with scoped list (focus palace prioritized).
+  - palace cards now show `飞出/飞入` counters in flying mode.
+- Enhanced chart model:
+  - `chart.huaTracks`
+  - per-cell `outgoingHuaCount` / `incomingHuaCount`
+  - center now includes `schoolLabel`.
+- Export text content upgraded:
+  - includes flow school and 飞化追踪 lines in copied text output.
+- Added missing Vue exports for all new pro states:
+  - `ziweiSchool`, `ziweiSchoolLabel`, `ziweiSifangBranches`, `ziweiSifangCells`,
+  - `ziweiFocusTracks`, `ziweiFocusTrackCount`.

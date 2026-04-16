@@ -2790,6 +2790,12 @@ const app = createApp({
       '壬': { lu: '天梁', quan: '紫微', ke: '左辅', ji: '武曲' },
       '癸': { lu: '破军', quan: '巨门', ke: '太阴', ji: '贪狼' }
     };
+    const ZW_HUA_TAG_ITEMS = [
+      { key: 'lu', tag: '禄' },
+      { key: 'quan', tag: '权' },
+      { key: 'ke', tag: '科' },
+      { key: 'ji', tag: '忌' }
+    ];
     const ZW_TIANMA_BY_YEAR_BRANCH = {
       '寅': '申', '午': '申', '戌': '申',
       '申': '寅', '子': '寅', '辰': '寅',
@@ -2846,6 +2852,7 @@ const app = createApp({
     const ziweiGender = ref('male');
     const ziweiProfileName = ref('');
     const ziweiProMode = ref(true);
+    const ziweiSchool = ref('traditional');
     const ziweiFocusBranch = ref('');
     const ziweiChart = ref(null);
     const ziweiAnalysis = ref([]);
@@ -3026,6 +3033,24 @@ const app = createApp({
     const ziweiCalendarTypeLabel = computed(function() {
       return ziweiCalendarType.value === 'lunar' ? '农历输入' : '公历输入';
     });
+    const ziweiSchoolLabel = computed(function() {
+      return ziweiSchool.value === 'flying' ? '飞星四化' : '传统四化';
+    });
+    const ziweiSifangBranches = computed(function() {
+      var branch = String(ziweiFocusBranch.value || '');
+      if (!branch) return [];
+      var list = [
+        branch,
+        _zwOffset(branch, 4),
+        _zwOffset(branch, 8),
+        _zwOffset(branch, 6)
+      ];
+      var uniq = [];
+      list.forEach(function(it) {
+        if (it && uniq.indexOf(it) < 0) uniq.push(it);
+      });
+      return uniq;
+    });
     const ziweiFocusCell = computed(function() {
       if (!ziweiChart.value || !Array.isArray(ziweiChart.value.boardCells)) return null;
       var branch = String(ziweiFocusBranch.value || '');
@@ -3034,6 +3059,38 @@ const app = createApp({
         if (ziweiChart.value.boardCells[i].branch === branch) return ziweiChart.value.boardCells[i];
       }
       return null;
+    });
+    const ziweiSifangCells = computed(function() {
+      if (!ziweiChart.value || !Array.isArray(ziweiChart.value.boardCells)) return [];
+      var branches = ziweiSifangBranches.value;
+      var out = [];
+      branches.forEach(function(branch) {
+        for (var i = 0; i < ziweiChart.value.boardCells.length; i++) {
+          var cell = ziweiChart.value.boardCells[i];
+          if (cell && cell.branch === branch) {
+            out.push(cell);
+            break;
+          }
+        }
+      });
+      return out;
+    });
+    const ziweiFocusTracks = computed(function() {
+      var chart = ziweiChart.value;
+      if (!chart || !Array.isArray(chart.huaTracks)) return [];
+      var tracks = chart.huaTracks.slice();
+      var focus = String(ziweiFocusBranch.value || '');
+      if (ziweiSchool.value === 'flying' && focus) {
+        var scoped = tracks.filter(function(track) {
+          return track && (track.sourceBranch === focus || track.targetBranch === focus);
+        });
+        if (scoped.length) return scoped;
+      }
+      return tracks.slice(0, ziweiSchool.value === 'flying' ? 24 : 12);
+    });
+    const ziweiFocusTrackCount = computed(function() {
+      var list = ziweiFocusTracks.value;
+      return Array.isArray(list) ? (String(list.length) + ' 条') : '0 条';
     });
     const ziweiHistoryCountText = computed(function() {
       var count = Array.isArray(ziweiHistory.value) ? ziweiHistory.value.length : 0;
@@ -3298,6 +3355,11 @@ const app = createApp({
     });
     watch(ziweiCalendarType, function() {
       ziweiStatus.value = { type: 'info', text: '' };
+    });
+    watch(ziweiSchool, function() {
+      if (ziweiChart.value) {
+        generateZiweiChart({ saveHistory: false, silent: true });
+      }
     });
     watch(ziweiChart, function(next) {
       if (!next || !Array.isArray(next.boardCells)) {
@@ -4035,6 +4097,55 @@ const app = createApp({
       return out;
     }
 
+    function _zwBuildHuaTracks(school, yearStem, yearBranch, branchStemMap, starBranchMap, palaceNameByBranch) {
+      var tracks = [];
+      function appendTrack(item, sourceBranch, sourceStem, sourceLabel) {
+        if (!item) return;
+        var star = item.star;
+        var targetBranch = starBranchMap[star] || '';
+        var sourcePalace = sourceBranch ? (palaceNameByBranch[sourceBranch] || '') : '';
+        var targetPalace = targetBranch ? (palaceNameByBranch[targetBranch] || '') : '';
+        tracks.push({
+          tag: item.tag,
+          star: star,
+          sourceBranch: sourceBranch || '',
+          sourceStem: sourceStem || '',
+          sourceLabel: sourceLabel || '',
+          sourcePalaceName: sourcePalace,
+          targetBranch: targetBranch,
+          targetPalaceName: targetPalace,
+          sourceText: sourceBranch ? (sourceBranch + (sourcePalace ? (' ' + sourcePalace) : '')) : (sourceLabel || ''),
+          targetText: targetBranch ? (targetBranch + (targetPalace ? (' ' + targetPalace) : '')) : '未知宫位',
+          traceText: (sourceBranch ? sourceBranch : (sourceLabel || '生年')) + ' → ' + (targetBranch || '未知')
+        });
+      }
+
+      if (school === 'flying') {
+        ZW_RING.forEach(function(branch) {
+          var stem = (branchStemMap && branchStemMap[branch]) || '';
+          var rule = ZW_HUA_BY_STEM[stem];
+          if (!rule) return;
+          ZW_HUA_TAG_ITEMS.forEach(function(def) {
+            appendTrack({
+              tag: def.tag,
+              star: rule[def.key]
+            }, branch, stem, '宫干飞化');
+          });
+        });
+      } else {
+        var yearRule = ZW_HUA_BY_STEM[yearStem];
+        if (yearRule) {
+          ZW_HUA_TAG_ITEMS.forEach(function(def) {
+            appendTrack({
+              tag: def.tag,
+              star: yearRule[def.key]
+            }, yearBranch, yearStem, '生年四化');
+          });
+        }
+      }
+      return tracks;
+    }
+
     function _zwGetCellByPalaceName(chart, palaceName) {
       if (!chart || !Array.isArray(chart.boardCells)) return null;
       for (var i = 0; i < chart.boardCells.length; i++) {
@@ -4107,6 +4218,11 @@ const app = createApp({
         title: '节奏与健康',
         text: '疾厄宫主星' + _zwStarsBrief(jiebing, 3) + '。建议以“稳定作息 + 持续运动 + 定期体检”作为长期底盘，避免阶段性透支。'
       });
+      sections.push({
+        key: 'school',
+        title: '流派说明',
+        text: (chart.center.schoolLabel || '传统四化') + '模式已启用。若观察飞化影响，建议结合“飞化落宫追踪”面板与三方四正一起判断。'
+      });
       if (chart.center.huaSummary && chart.center.huaSummary.length) {
         sections.push({
           key: 'hua',
@@ -4163,6 +4279,7 @@ const app = createApp({
         birthHour: String(ziweiBirthHour.value || ''),
         birthMinute: String(ziweiBirthMinute.value || ''),
         gender: ziweiGender.value,
+        school: ziweiSchool.value === 'flying' ? 'flying' : 'traditional',
         summary: {
           yearGanZhi: chart.center.yearGanZhi || '',
           bureau: chart.center.bureauLabel || '',
@@ -4201,6 +4318,7 @@ const app = createApp({
       ziweiBirthHour.value = String(found.birthHour || '12');
       ziweiBirthMinute.value = String(found.birthMinute || '00');
       ziweiGender.value = found.gender === 'female' ? 'female' : 'male';
+      ziweiSchool.value = found.school === 'flying' ? 'flying' : 'traditional';
       generateZiweiChart({ saveHistory: false });
       ziweiStatus.value = { type: 'success', text: '已载入历史命例并重新排盘。' };
     }
@@ -4247,6 +4365,7 @@ const app = createApp({
       lines.push('公历：' + chart.center.solarText);
       lines.push('农历：' + chart.center.lunarText);
       lines.push('生年干支：' + chart.center.yearGanZhi);
+      lines.push('流派：' + chart.center.schoolLabel);
       lines.push('五行局：' + chart.center.bureauLabel);
       lines.push('大限方向：' + chart.center.daXianDirectionLabel);
       lines.push('命宫/身宫：' + chart.center.mingBranch + ' / ' + chart.center.shenBranch + '（身宫落' + chart.center.shenPalaceName + '）');
@@ -4280,6 +4399,9 @@ const app = createApp({
         lines.push('  大限：' + (cell.daXian || '--') + '  小限：' + (cell.xiaoXian || '--') + '  十二长生：' + (cell.changSheng || '--'));
         lines.push('  流年序列：' + (cell.liuNianSeriesText || '--'));
         lines.push('  小限序列：' + (cell.xiaoXianSeriesText || '--'));
+        if (typeof cell.outgoingHuaCount === 'number' && typeof cell.incomingHuaCount === 'number') {
+          lines.push('  飞化：飞出' + cell.outgoingHuaCount + ' / 飞入' + cell.incomingHuaCount);
+        }
       });
       lines.push('');
       lines.push('【大限总览】');
@@ -4290,6 +4412,12 @@ const app = createApp({
       (chart.liuNianTimeline || []).forEach(function(item) {
         lines.push('  ' + item.year + '年 ' + item.ganzhi + ' ' + item.age + '岁');
       });
+      if (chart.huaTracks && chart.huaTracks.length) {
+        lines.push('【飞化落宫追踪】');
+        chart.huaTracks.slice(0, 48).forEach(function(track) {
+          lines.push('  化' + track.tag + ' ' + track.star + '：' + track.sourceText + ' -> ' + track.targetText);
+        });
+      }
       return lines.join('\n');
     }
 
@@ -4303,6 +4431,7 @@ const app = createApp({
     function generateZiweiChart(options) {
       var opt = options || {};
       var saveHistory = opt.saveHistory !== false;
+      var silent = opt.silent === true;
       if (!ziweiIntlSupported) {
         ziweiStatus.value = { type: 'error', text: '当前浏览器不支持农历转换（Intl Chinese Calendar），请升级浏览器后重试。' };
         return;
@@ -4381,6 +4510,7 @@ const app = createApp({
       var yearGanZhi = _zwGetYearGanZhi(effectiveLunar.lunarYear);
       var yearStem = yearGanZhi.slice(0, 1);
       var yearBranch = yearGanZhi.slice(1, 2);
+      var currentSchool = ziweiSchool.value === 'flying' ? 'flying' : 'traditional';
       if (!yearStem || !yearBranch) {
         ziweiStatus.value = { type: 'error', text: '生年干支计算失败。' };
         return;
@@ -4474,13 +4604,7 @@ const app = createApp({
       // 四化
       var huaRule = ZW_HUA_BY_STEM[yearStem] || null;
       if (huaRule) {
-        var huaItems = [
-          { key: 'lu', tag: '禄' },
-          { key: 'quan', tag: '权' },
-          { key: 'ke', tag: '科' },
-          { key: 'ji', tag: '忌' }
-        ];
-        huaItems.forEach(function(item) {
+        ZW_HUA_TAG_ITEMS.forEach(function(item) {
           var starName = huaRule[item.key];
           var branch = starBranchMap[starName];
           if (!branch || !palaceStars[branch]) return;
@@ -4507,6 +4631,7 @@ const app = createApp({
           { tag: '忌', star: huaRule.ji, label: '忌:' + huaRule.ji }
         ];
       }
+      var huaTracks = _zwBuildHuaTracks(currentSchool, yearStem, yearBranch, branchStemMap, starBranchMap, palaceNameByBranch);
 
       var boardCells = ZW_BOARD_ORDER.map(function(branch) {
         var pack = palaceStars[branch] || { main: [], assist: [], misc: [], huaByStar: {} };
@@ -4530,6 +4655,8 @@ const app = createApp({
         var liuFirstAge = _zwParseAgeValue(liuNianFirstAgeMap[branch]);
         var xiaoSeries = _zwBuildAgeSeries(xiaoFirstAge, 120, 12);
         var liuSeries = _zwBuildAgeSeries(liuFirstAge, 120, 12);
+        var outgoingTracks = huaTracks.filter(function(track) { return track && track.sourceBranch === branch; });
+        var incomingTracks = huaTracks.filter(function(track) { return track && track.targetBranch === branch; });
         var mainStarsText = main.length
           ? main.map(function(s) { return s.name + (s.brightness ? ('(' + s.brightness + ')') : ''); }).join('、')
           : '无';
@@ -4554,7 +4681,9 @@ const app = createApp({
           assistStarsText: assistStarsText,
           miscStarsText: miscStarsText,
           liuNianSeriesText: liuSeries.length ? liuSeries.join(',') : '',
-          xiaoXianSeriesText: xiaoSeries.length ? xiaoSeries.join(',') : ''
+          xiaoXianSeriesText: xiaoSeries.length ? xiaoSeries.join(',') : '',
+          outgoingHuaCount: outgoingTracks.length,
+          incomingHuaCount: incomingTracks.length
         };
       });
 
@@ -4588,6 +4717,8 @@ const app = createApp({
         monthLabel: lunarMonthLabel + '月',
         shichenLabel: _zwGetShiChenLabel(hour),
         daXianDirectionLabel: daXianDirection > 0 ? '顺行' : '逆行',
+        school: currentSchool,
+        schoolLabel: currentSchool === 'flying' ? '飞星四化' : '传统四化',
         huaSummary: huaSummary,
         shiftedByZiHour: shiftedByZiHour
       };
@@ -4597,16 +4728,19 @@ const app = createApp({
         boardCells: boardCells,
         center: center,
         daXianTimeline: daXianTimeline,
-        liuNianTimeline: liuNianTimeline
+        liuNianTimeline: liuNianTimeline,
+        huaTracks: huaTracks
       };
       chart.text = _zwBuildChartText(chart);
       ziweiChart.value = chart;
       ziweiFocusBranch.value = mingBranch;
       if (saveHistory) _zwPushHistory(chart);
-      ziweiStatus.value = {
-        type: 'success',
-        text: shiftedByZiHour ? '排盘完成（23:00后子时已按次日换日）。' : '排盘完成。'
-      };
+      if (!silent) {
+        ziweiStatus.value = {
+          type: 'success',
+          text: shiftedByZiHour ? '排盘完成（23:00后子时已按次日换日）。' : '排盘完成。'
+        };
+      }
     }
 
     function copyZiweiChartText() {
@@ -5911,9 +6045,10 @@ const app = createApp({
       ziweiLunarDayOptions, ziweiLunarMonthLabel,
       ziweiLeapMonthForYear, ziweiCanUseLeapMonth,
       ziweiBirthHour, ziweiBirthMinute, ziweiGender,
-      ziweiProfileName, ziweiProMode, ziweiFocusBranch, ziweiFocusCell,
+      ziweiProfileName, ziweiProMode, ziweiSchool, ziweiSchoolLabel, ziweiFocusBranch, ziweiFocusCell,
+      ziweiSifangBranches, ziweiSifangCells,
       ziweiYearOptions, ziweiMonthOptions, ziweiHourOptions, ziweiMinuteOptions,
-      ziweiChart, ziweiAnalysis, ziweiHistory, ziweiHistoryCountText, ziweiStatus, ziweiExporting,
+      ziweiChart, ziweiAnalysis, ziweiHistory, ziweiHistoryCountText, ziweiFocusTracks, ziweiFocusTrackCount, ziweiStatus, ziweiExporting,
       generateZiweiChart, copyZiweiChartText, exportZiweiChartImage,
       focusZiweiBranch, loadZiweiHistory, removeZiweiHistory, clearZiweiHistory, formatZiweiHistoryTime,
       // Shared
