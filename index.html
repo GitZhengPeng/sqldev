@@ -1620,7 +1620,7 @@ $$;</pre>
                     <div class="ziwei-timeline-label">流年</div>
                     <div class="ziwei-timeline-cell" v-for="item in ziweiChart.liuNianTimeline" :key="'zw-ln-'+item.year+'-'+item.age">
                       <strong>{{ item.year }}年</strong>
-                      <span>{{ item.ganzhi }} {{ item.age }}岁</span>
+                      <span>{{ item.ganzhi }} {{ item.age }}岁 · {{ item.branch || '--' }} {{ item.palaceName || '' }}</span>
                     </div>
                   </div>
                 </div>

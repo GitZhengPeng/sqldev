@@ -351,7 +351,7 @@ Last updated: 2026-04-15
   - now subtracts one year when current date is before birthday.
 - Added configurable clock correction pipeline in ZiWei input:
   - new options:
-    - `校时模式`: `标准时间` / `真太阳时（粗校）`
+    - `校时模式`: `标准时间` / `真太阳时（经度+时差方程）`
     - `时区` (UTC, supports half-hour offsets)
     - `出生地经度`
   - true-solar mode applies minute correction:
@@ -368,3 +368,35 @@ Last updated: 2026-04-15
   - history save/load now includes `clockMode/timezoneOffset/longitude/xiaoXianRule/liuNianRule`.
 - Added chart-center and text-export transparency fields:
   - shows clock mode, correction detail, small-limit rule, annual rule, and original input time for auditability.
+
+## 2026-04-16: LiuNian Rule Chain Consistency Fix
+- Fixed inconsistency between:
+  - palace-level `流年序列`
+  - bottom `流年总览` timeline.
+- Added `app.js::_zwFindLiuNianBranchByAge(...)` and upgraded `_zwBuildLiuNianTimeline(...)`:
+  - timeline now receives `liuNianFirstAgeMap + palaceNameByBranch`
+  - each yearly item now includes resolved `branch/palaceName`, aligned with selected `流年起法`.
+- Updated ZiWei timeline UI in `index.html`:
+  - bottom `流年` row now displays:
+    - `年份 + 干支 + 年龄 + 落宫`
+- Updated text export in `app.js::_zwBuildChartText(chart)`:
+  - `流年总览` lines now include branch/palace when available.
+
+## 2026-04-16: True-Solar Correction Upgrade (EoT)
+- Upgraded `真太阳时` from longitude-only rough correction to:
+  - `总修正 = 经度修正 + 时差方程(EoT)`
+- Implementation changes in `app.js`:
+  - added `_zwGetDayOfYear(...)`
+  - added `_zwComputeEquationOfTimeMinutes(...)`
+  - enhanced `_zwApplyClockCorrection(...)` to return:
+    - `correctionMinutes`
+    - `longitudeCorrectionMinutes`
+    - `equationOfTimeMinutes`
+- Updated labels and hints:
+  - `真太阳时（经度+时差方程）`
+  - UI hint now explicitly explains EoT participation.
+- Updated transparency outputs:
+  - center panel + text export now include correction breakdown:
+    - longitude component
+    - equation-of-time component
+  - status success message now reports total corrected minutes with decimal precision.
