@@ -1930,6 +1930,8 @@ body:not(.splash-active) #app{
   max-width:100%;
   overflow-x:hidden;
   margin:0 auto;
+  /* Splash first paint should use local fonts to avoid refresh-time font jumping */
+  font-family:"PingFang SC","Microsoft YaHei UI","Microsoft YaHei","Segoe UI",sans-serif;
 }
 
 /* — Nav (fixed top bar) — */
@@ -1950,7 +1952,7 @@ body:not(.splash-active) #app{
 }
 .sp-nav-logo{display:flex;align-items:center;gap:10px}
 .sp-nav-logo-mark{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#4f7df9,#8b5cf6);display:grid;place-items:center;font-family:var(--font-code);font-size:8px;font-weight:700;color:#fff;letter-spacing:.5px}
-.sp-nav-logo-text{font-family:"DM Sans","Noto Sans SC",sans-serif;font-size:14px;font-weight:600;color:#d6dced;letter-spacing:-.2px}
+.sp-nav-logo-text{font-family:inherit;font-size:14px;font-weight:600;color:#d6dced;letter-spacing:-.2px}
 .sp-nav-actions{display:flex;align-items:center;gap:8px}
 .sp-nav-theme{
   width:32px;
@@ -1990,7 +1992,7 @@ body:not(.splash-active) #app{
 @keyframes spPulse{0%,100%{opacity:1}50%{opacity:.4}}
 .sp-hero-badge span{font-family:var(--font-code);font-size:11px;color:#6b7a99;letter-spacing:.06em}
 .sp-hero-title{
-  font-family:"DM Sans","Noto Sans SC","PingFang SC","Microsoft YaHei UI","Segoe UI",sans-serif;
+  font-family:inherit;
   font-weight:500;
   font-size:clamp(40px,6.2vw,76px);
   line-height:1.08;

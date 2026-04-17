@@ -519,3 +519,13 @@ Last updated: 2026-04-15
 - Cache/version bumps in `index.html`:
   - `style.css?v=20260417m`
   - `auth.js?v=20260417c`.
+
+## 2026-04-17: Splash Font Jitter Fix on Refresh
+- Fixed visible font jump (large/small flicker) on splash refresh:
+  - set splash page to local-font-first rendering:
+    - `style.css`: `.sp-page` now uses local system Chinese font stack
+    - `.sp-nav-logo-text` and `.sp-hero-title` switched to inherit local stack
+  - changed Google Fonts loading behavior from `display=swap` to `display=optional`
+    to avoid late forced font replacement on first paint.
+- Cache/version update:
+  - `index.html`: `style.css?v=20260417n`.
