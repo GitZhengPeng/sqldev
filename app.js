@@ -2536,7 +2536,93 @@ const app = createApp({
       { value: 'mysql', label: 'MySQL', abbr: 'MY' },
       { value: 'postgresql', label: 'PostgreSQL', abbr: 'PG' }
     ];
-    const activePage = ref('ddl');
+    const PAGE_ROUTE_SEGMENTS = Object.freeze({
+      ddl: 'ddl',
+      func: 'function',
+      proc: 'procedure',
+      idTool: 'id-tool',
+      ziweiTool: 'ziwei',
+      rules: 'rules',
+      bodyRules: 'body-rules'
+    });
+    const ROUTE_SEGMENT_TO_PAGE = Object.freeze((function() {
+      var map = {};
+      var keys = Object.keys(PAGE_ROUTE_SEGMENTS);
+      for (var i = 0; i < keys.length; i++) {
+        map[PAGE_ROUTE_SEGMENTS[keys[i]]] = keys[i];
+      }
+      return map;
+    })());
+    const ROUTE_WORKBENCH_PREFIX = '/workbench';
+    const ROUTE_SPLASH_PATH = '/splash';
+    const ROUTE_PAGE_KEYS = Object.freeze(Object.keys(PAGE_ROUTE_SEGMENTS));
+
+    function normalizePageKey(page) {
+      var key = String(page || '').trim();
+      return ROUTE_PAGE_KEYS.indexOf(key) >= 0 ? key : 'ddl';
+    }
+
+    function normalizeRoutePath(path) {
+      var value = String(path || '').trim();
+      if (!value) return '/';
+      if (value.charAt(0) !== '/') value = '/' + value;
+      value = value.replace(/\/{2,}/g, '/').replace(/\/+$/, '');
+      return value || '/';
+    }
+
+    function parseRouteInfoFromPath(path) {
+      var normalized = normalizeRoutePath(path);
+      if (/(?:^|\/)splash(?:\/)?$/i.test(normalized)) {
+        return { view: 'splash' };
+      }
+      var match = normalized.match(/(?:^|\/)workbench(?:\/([^/?#]+))?/i);
+      if (!match) return null;
+      var segment = String(match[1] || 'ddl').toLowerCase();
+      return { view: 'workbench', page: ROUTE_SEGMENT_TO_PAGE[segment] || 'ddl' };
+    }
+
+    function parseRouteInfoFromLocation() {
+      if (typeof window === 'undefined' || !window.location) return null;
+      var hashPath = normalizeRoutePath(String(window.location.hash || '').replace(/^#/, ''));
+      var infoFromHash = parseRouteInfoFromPath(hashPath);
+      if (infoFromHash) return infoFromHash;
+      return parseRouteInfoFromPath(window.location.pathname || '/');
+    }
+
+    function buildWorkbenchHash(page) {
+      var normalizedPage = normalizePageKey(page);
+      var segment = PAGE_ROUTE_SEGMENTS[normalizedPage] || PAGE_ROUTE_SEGMENTS.ddl;
+      return '#' + ROUTE_WORKBENCH_PREFIX + '/' + segment;
+    }
+
+    function syncRouteForPage(page, replaceUrl) {
+      if (typeof window === 'undefined' || !window.location) return;
+      var targetHash = buildWorkbenchHash(page);
+      var currentHashRaw = String(window.location.hash || '').replace(/^#/, '');
+      var currentHash = currentHashRaw ? ('#' + normalizeRoutePath(currentHashRaw)) : '';
+      if (currentHash === targetHash) return;
+      var nextUrl = window.location.pathname + window.location.search + targetHash;
+      try {
+        if (window.history) {
+          if (replaceUrl && typeof window.history.replaceState === 'function') {
+            window.history.replaceState({ view: 'workbench', page: normalizePageKey(page) }, '', nextUrl);
+            return;
+          }
+          if (!replaceUrl && typeof window.history.pushState === 'function') {
+            window.history.pushState({ view: 'workbench', page: normalizePageKey(page) }, '', nextUrl);
+            return;
+          }
+        }
+      } catch (_historyErr) {}
+      window.location.hash = targetHash.slice(1);
+    }
+
+    const initialRouteInfo = parseRouteInfoFromLocation();
+    const activePage = ref(
+      initialRouteInfo && initialRouteInfo.view === 'workbench'
+        ? normalizePageKey(initialRouteInfo.page)
+        : 'ddl'
+    );
     const sidebarOpen = ref(false);
     const sidebarCollapsed = ref(false);
     function handleSidebarHover(open) {
@@ -2550,22 +2636,56 @@ const app = createApp({
     }
     const NAV_PAGES = ['ddl', 'func', 'proc'];
     const TEST_TOOL_PAGES = ['idTool', 'ziweiTool'];
-    const testToolsExpanded = ref(false);
+    const testToolsExpanded = ref(TEST_TOOL_PAGES.indexOf(activePage.value) >= 0);
     function toggleTestToolsMenu() {
       testToolsExpanded.value = !testToolsExpanded.value;
       if (!testToolsExpanded.value && TEST_TOOL_PAGES.indexOf(activePage.value) >= 0) {
         setPage('ddl');
       }
     }
-    function setPage(page) {
-      activePage.value = page;
-      if (TEST_TOOL_PAGES.indexOf(page) >= 0) {
+    function applyPageState(page, options) {
+      var opts = options || {};
+      var normalizedPage = normalizePageKey(page);
+      activePage.value = normalizedPage;
+      if (TEST_TOOL_PAGES.indexOf(normalizedPage) >= 0) {
         testToolsExpanded.value = true;
       }
-      if (page === 'idTool') {
+      if (normalizedPage === 'idTool') {
         ensureRegionDataLoaded();
       }
-      if (window.innerWidth <= 1024) sidebarOpen.value = false;
+      if (opts.syncRoute !== false) {
+        syncRouteForPage(normalizedPage, !!opts.replaceRoute);
+      }
+      if (!opts.keepSidebarOnMobile && window.innerWidth <= 1024) sidebarOpen.value = false;
+    }
+    function setPage(page) {
+      applyPageState(page, { syncRoute: true, replaceRoute: false });
+    }
+    function ensureWorkbenchVisibleForRoute() {
+      if (typeof document === 'undefined') return;
+      if (!document.body.classList.contains('splash-active')) return;
+      if (typeof window !== 'undefined' && window.splashApi && typeof window.splashApi.enterWorkbench === 'function') {
+        window.splashApi.enterWorkbench(true);
+        return;
+      }
+      document.documentElement.classList.add('startup-workbench');
+      document.body.classList.remove('splash-active');
+      var poster = document.getElementById('splash-poster');
+      if (poster) poster.style.display = 'none';
+    }
+    function applyRouteFromLocation() {
+      var routeInfo = parseRouteInfoFromLocation();
+      if (!routeInfo) return;
+      if (routeInfo.view === 'splash') {
+        if (typeof document !== 'undefined' && !document.body.classList.contains('splash-active')) {
+          goSplashHome();
+        }
+        return;
+      }
+      ensureWorkbenchVisibleForRoute();
+      if (routeInfo.page !== activePage.value) {
+        applyPageState(routeInfo.page, { syncRoute: false, keepSidebarOnMobile: true });
+      }
     }
     /* navKeydown removed: sidebar is now role="navigation" with aria-current, not tablist */
     const showRulesMenu = ref(false);
@@ -6882,6 +7002,18 @@ const app = createApp({
         document.body.classList.add('splash-active');
         try { window.scrollTo(0, 0); } catch (_scrollErr) {}
       }
+      try {
+        var splashHash = '#' + ROUTE_SPLASH_PATH;
+        var currentHash = String(window.location.hash || '');
+        if (currentHash !== splashHash) {
+          var splashUrl = window.location.pathname + window.location.search + splashHash;
+          if (window.history && typeof window.history.replaceState === 'function') {
+            window.history.replaceState({ view: 'splash' }, '', splashUrl);
+          } else {
+            window.location.hash = splashHash.slice(1);
+          }
+        }
+      } catch (_routeErr) {}
       statusText.value = '\u5df2\u8fd4\u56de\u9996\u9875';
       showRulesMenu.value = false;
     }
@@ -6977,6 +7109,7 @@ const app = createApp({
     let scrollHandler;
     let keyHandler;
     let outsideClickHandler;
+    let routeChangeHandler;
     let _scrollTicking = false;
     onMounted(() => {
       scrollHandler = () => {
@@ -7032,11 +7165,26 @@ const app = createApp({
       window.addEventListener('mousemove', _onDragMove);
       window.addEventListener('mouseup', _onDragEnd);
       scheduleRegionWarmup();
+      routeChangeHandler = function() {
+        applyRouteFromLocation();
+      };
+      window.addEventListener('popstate', routeChangeHandler);
+      window.addEventListener('hashchange', routeChangeHandler);
+      var initialRoute = parseRouteInfoFromLocation();
+      if (initialRoute) {
+        applyRouteFromLocation();
+      } else if (!document.body.classList.contains('splash-active')) {
+        syncRouteForPage(activePage.value, true);
+      }
     });
     onUnmounted(() => {
       if (scrollHandler) window.removeEventListener('scroll', scrollHandler);
       if (keyHandler) window.removeEventListener('keydown', keyHandler);
       if (outsideClickHandler) document.removeEventListener('click', outsideClickHandler);
+      if (routeChangeHandler) {
+        window.removeEventListener('popstate', routeChangeHandler);
+        window.removeEventListener('hashchange', routeChangeHandler);
+      }
       window.removeEventListener('mousemove', _onDragMove);
       window.removeEventListener('mouseup', _onDragEnd);
       if (idCopyTimer) clearTimeout(idCopyTimer);

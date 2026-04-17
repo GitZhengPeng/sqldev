@@ -13,11 +13,47 @@
   var themeOrder = ['system', 'dark', 'light'];
   var VIEW_KEY = 'sqldev_last_view';
   var START_IN_WORKBENCH = window.__SQDEV_STARTUP_VIEW === 'workbench';
+  var ROUTE_SPLASH = '#/splash';
+  var ROUTE_WORKBENCH_PREFIX = '#/workbench';
+  var ROUTE_WORKBENCH_DEFAULT = '#/workbench/ddl';
   var tokenIntervalId = 0;
   var tokenSeedTimeouts = [];
   var tokenStarted = false;
   var orbAnimationId = 0;
   var orbStarted = false;
+
+  function normalizeHash(value) {
+    var hash = String(value || '').trim();
+    if (!hash) return '';
+    if (hash.charAt(0) !== '#') hash = '#' + hash;
+    hash = hash.replace(/\/{2,}/g, '/');
+    return hash;
+  }
+
+  function replaceHashRoute(hash, state) {
+    var target = normalizeHash(hash);
+    if (!target) return;
+    try {
+      var current = normalizeHash(window.location.hash || '');
+      if (current === target) return;
+      var nextUrl = window.location.pathname + window.location.search + target;
+      if (window.history && typeof window.history.replaceState === 'function') {
+        window.history.replaceState(state || null, '', nextUrl);
+      } else {
+        window.location.hash = target.slice(1);
+      }
+    } catch (_err) {}
+  }
+
+  function ensureWorkbenchRoute() {
+    var current = normalizeHash(window.location.hash || '');
+    if (current.indexOf(ROUTE_WORKBENCH_PREFIX) === 0) return;
+    replaceHashRoute(ROUTE_WORKBENCH_DEFAULT, { view: 'workbench', page: 'ddl' });
+  }
+
+  function ensureSplashRoute() {
+    replaceHashRoute(ROUTE_SPLASH, { view: 'splash' });
+  }
 
   function resolveTheme(mode) {
     if (mode === 'dark' || mode === 'light') return mode;
@@ -85,6 +121,7 @@
   }
 
   function enterWorkbench(skipMotion) {
+    ensureWorkbenchRoute();
     setLastView('workbench');
     document.documentElement.classList.add('startup-workbench');
     stopVisualEffects();
@@ -104,6 +141,7 @@
   }
 
   function showSplashHome() {
+    ensureSplashRoute();
     setLastView('splash');
     document.documentElement.classList.remove('startup-workbench');
     applyTheme(localStorage.getItem('theme') || 'system');

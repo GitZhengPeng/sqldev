@@ -459,3 +459,28 @@ Last updated: 2026-04-15
 - Result: supports both styles safely:
   - `https://api.moonshot.cn/v1`
   - `https://api.moonshot.cn/v1/chat/completions`
+
+## 2026-04-17: Workbench Per-Page URL Routing
+- Added URL routing for each main workbench view (hash-path based):
+  - `#/workbench/ddl`
+  - `#/workbench/function`
+  - `#/workbench/procedure`
+  - `#/workbench/id-tool`
+  - `#/workbench/ziwei`
+  - `#/workbench/rules`
+  - `#/workbench/body-rules`
+- Updated `app.js`:
+  - introduced route <-> page mapping and normalization helpers
+  - `setPage(...)` now updates browser URL via `history.pushState`
+  - startup now reads URL route to set initial `activePage`
+  - added `popstate` + `hashchange` listeners to support back/forward navigation
+  - route can force splash/workbench view switching when needed.
+- Updated startup behavior in `startup-view.js`:
+  - startup view now prioritizes explicit URL route (`/workbench...` or `#/workbench...`)
+    over `sqldev_last_view`.
+- Updated `splash.js`:
+  - entering workbench now ensures a canonical workbench route hash exists
+  - returning splash now syncs URL to `#/splash`.
+- Cache/version updates:
+  - bumped `bootstrap.js` `ASSET_VERSION` to `20260417a` so new `app.js` is fetched
+  - updated `index.html` script versions for `startup-view.js`, `splash.js`, `bootstrap.js`.
