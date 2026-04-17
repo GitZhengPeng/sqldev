@@ -484,3 +484,12 @@ Last updated: 2026-04-15
 - Cache/version updates:
   - bumped `bootstrap.js` `ASSET_VERSION` to `20260417a` so new `app.js` is fetched
   - updated `index.html` script versions for `startup-view.js`, `splash.js`, `bootstrap.js`.
+
+## 2026-04-17: Startup View Rule Adjustment
+- Fixed splash refresh behavior:
+  - removed `startup-view.js` fallback that auto-entered workbench from `localStorage.sqldev_last_view`.
+  - startup selection now only follows explicit URL route:
+    - workbench route => start in workbench
+    - otherwise => start in splash.
+- Updated `index.html` startup script cache version:
+  - `startup-view.js?v=20260417b`.

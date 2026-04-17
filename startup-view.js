@@ -1,5 +1,4 @@
 (function () {
-  var KEY = 'sqldev_last_view';
   var root = document.documentElement;
   var WORKBENCH_RE = /\/workbench(?:\/|$)/i;
   var SPLASH_RE = /\/splash(?:\/|$)/i;
@@ -38,12 +37,6 @@
     var pathname = readPathname();
     if (WORKBENCH_RE.test(pathname)) return 'workbench';
     if (SPLASH_RE.test(pathname)) return 'splash';
-
-    try {
-      if (window.localStorage && localStorage.getItem(KEY) === 'workbench') {
-        return 'workbench';
-      }
-    } catch (_err) {}
     return 'splash';
   }
 
