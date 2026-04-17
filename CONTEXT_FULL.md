@@ -493,3 +493,29 @@ Last updated: 2026-04-15
     - otherwise => start in splash.
 - Updated `index.html` startup script cache version:
   - `startup-view.js?v=20260417b`.
+
+## 2026-04-17: Splash Refresh Jump-to-DDL Fix (Auth Event Gate)
+- Root cause:
+  - `auth.js` fired `auth:login-success` during session restore (`INITIAL_SESSION`) on page load.
+  - `splash.js` listens to `auth:login-success` and auto-enters workbench, so splash refresh jumped to DDL.
+- Fix:
+  - in `auth.js`, `auth:login-success` is now dispatched only for explicit `SIGNED_IN` events.
+  - keeps normal post-login auto-enter behavior, but prevents refresh/session-restore from forcing workbench.
+- Cache update:
+  - bumped `index.html` auth script to `auth.js?v=20260417b`.
+
+## 2026-04-17: Splash Login CTA Visibility + Hero Title Polish
+- Homepage top-right auth CTA adjusted:
+  - in `auth.js::updatePosterCta()`, splash button is no longer hidden after login
+  - label now changes by state:
+    - logged out: `注册 / 登录`
+    - logged in: `进入工作台`.
+- Homepage hero title visual refinement:
+  - reduced heavy weight and size of `跨数据库 SQL 翻译`
+  - updated typography to softer hierarchy:
+    - `font-weight` from 700 -> 500
+    - smaller max size and tighter letter spacing tuning
+    - lighter accent gradient and subtle text shadow.
+- Cache/version bumps in `index.html`:
+  - `style.css?v=20260417m`
+  - `auth.js?v=20260417c`.

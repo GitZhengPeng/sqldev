@@ -1989,8 +1989,26 @@ body:not(.splash-active) #app{
 .sp-hero-badge-dot{width:6px;height:6px;border-radius:50%;background:#22d3ee;animation:spPulse 2s infinite}
 @keyframes spPulse{0%,100%{opacity:1}50%{opacity:.4}}
 .sp-hero-badge span{font-family:var(--font-code);font-size:11px;color:#6b7a99;letter-spacing:.06em}
-.sp-hero-title{font-family:"Microsoft YaHei UI","Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;font-weight:700;font-size:clamp(42px,7vw,84px);line-height:1.05;color:#edf2fc;margin-bottom:6px;letter-spacing:-.02em;animation:spFadeUp .8s .35s both}
-.sp-hero-title em,.sp-title-accent{font-style:normal;background:linear-gradient(135deg,#22d3ee,#4f7df9,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sp-hero-title{
+  font-family:"DM Sans","Noto Sans SC","PingFang SC","Microsoft YaHei UI","Segoe UI",sans-serif;
+  font-weight:500;
+  font-size:clamp(40px,6.2vw,76px);
+  line-height:1.08;
+  color:#edf2fc;
+  margin-bottom:8px;
+  letter-spacing:-.012em;
+  text-wrap:balance;
+  text-shadow:0 10px 34px rgba(7,12,26,.22);
+  animation:spFadeUp .8s .35s both
+}
+.sp-hero-title em,.sp-title-accent{
+  font-style:normal;
+  font-weight:600;
+  background:linear-gradient(135deg,#7dd3fc,#60a5fa,#818cf8);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text
+}
 .sp-hero-sub{font-size:clamp(16px,2.2vw,20px);color:#6b7a99;max-width:560px;margin:0 auto 34px;line-height:1.7;animation:spFadeUp .8s .5s both}
 
 /* — DB Triangle Visualization — */

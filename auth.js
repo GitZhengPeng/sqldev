@@ -336,8 +336,8 @@
     refreshHeaderRefs();
     var loggedIn = !!user;
     if (splashAuthBtn) {
-      splashAuthBtn.textContent = '注册 / 登录';
-      splashAuthBtn.hidden = loggedIn;
+      splashAuthBtn.textContent = loggedIn ? '进入工作台' : '注册 / 登录';
+      splashAuthBtn.hidden = false;
     }
     if (splashAuthHeroBtn) splashAuthHeroBtn.hidden = loggedIn;
     if (splashEnterBtn) splashEnterBtn.textContent = '立即体验';
@@ -668,7 +668,12 @@
       updatePosterCta();
       emit();
 
-      if (user && !passwordRegistering && !passwordResetting) {
+      var authEvent = String(_event || '').toUpperCase();
+      // IMPORTANT: INITIAL_SESSION happens on page load/session restore.
+      // We only treat explicit sign-in as "login success" to avoid
+      // splash page refresh being forced back to workbench.
+      var shouldNotifyLoginSuccess = authEvent === 'SIGNED_IN';
+      if (user && !passwordRegistering && !passwordResetting && shouldNotifyLoginSuccess) {
         if (authCode) authCode.value = '';
         closeAuthModal();
         window.dispatchEvent(new CustomEvent('auth:login-success', { detail: { user: user } }));
