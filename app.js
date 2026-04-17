@@ -2556,10 +2556,49 @@ const app = createApp({
     const ROUTE_WORKBENCH_PREFIX = '/workbench';
     const ROUTE_SPLASH_PATH = '/splash';
     const ROUTE_PAGE_KEYS = Object.freeze(Object.keys(PAGE_ROUTE_SEGMENTS));
+    function normalizeEmail(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+    function parseEmailAllowList(raw) {
+      if (Array.isArray(raw)) {
+        return raw.map(normalizeEmail).filter(Boolean);
+      }
+      if (typeof raw === 'string') {
+        return raw.split(',').map(normalizeEmail).filter(Boolean);
+      }
+      return [];
+    }
+    const ZIWEI_ALLOWED_EMAILS = Object.freeze((function() {
+      if (typeof window === 'undefined') return [];
+      var configured = window.SQDEV_ZIWEI_ALLOWED_EMAILS;
+      if (configured == null || configured === '') configured = window.__SQDEV_ZIWEI_ALLOWED_EMAILS;
+      return parseEmailAllowList(configured);
+    })());
+    function readCurrentAuthEmail() {
+      try {
+        if (typeof window === 'undefined' || !window.authApi || typeof window.authApi.getUserSync !== 'function') return '';
+        var authUser = window.authApi.getUserSync();
+        return normalizeEmail(authUser && authUser.email);
+      } catch (_err) {
+        return '';
+      }
+    }
+    const currentUserEmail = ref(readCurrentAuthEmail());
+    const canAccessZiweiTool = computed(function() {
+      if (!ZIWEI_ALLOWED_EMAILS.length) return false;
+      var email = normalizeEmail(currentUserEmail.value);
+      if (!email) return false;
+      return ZIWEI_ALLOWED_EMAILS.indexOf(email) >= 0;
+    });
 
     function normalizePageKey(page) {
       var key = String(page || '').trim();
       return ROUTE_PAGE_KEYS.indexOf(key) >= 0 ? key : 'ddl';
+    }
+    function normalizeAccessiblePage(page) {
+      var key = normalizePageKey(page);
+      if (key === 'ziweiTool' && !canAccessZiweiTool.value) return 'idTool';
+      return key;
     }
 
     function normalizeRoutePath(path) {
@@ -2620,7 +2659,7 @@ const app = createApp({
     const initialRouteInfo = parseRouteInfoFromLocation();
     const activePage = ref(
       initialRouteInfo && initialRouteInfo.view === 'workbench'
-        ? normalizePageKey(initialRouteInfo.page)
+        ? normalizeAccessiblePage(initialRouteInfo.page)
         : 'ddl'
     );
     const sidebarOpen = ref(false);
@@ -2645,7 +2684,7 @@ const app = createApp({
     }
     function applyPageState(page, options) {
       var opts = options || {};
-      var normalizedPage = normalizePageKey(page);
+      var normalizedPage = normalizeAccessiblePage(page);
       activePage.value = normalizedPage;
       if (TEST_TOOL_PAGES.indexOf(normalizedPage) >= 0) {
         testToolsExpanded.value = true;
@@ -2683,6 +2722,10 @@ const app = createApp({
         return;
       }
       ensureWorkbenchVisibleForRoute();
+      if (routeInfo.page === 'ziweiTool' && !canAccessZiweiTool.value) {
+        applyPageState('idTool', { syncRoute: true, replaceRoute: true, keepSidebarOnMobile: true });
+        return;
+      }
       if (routeInfo.page !== activePage.value) {
         applyPageState(routeInfo.page, { syncRoute: false, keepSidebarOnMobile: true });
       }
@@ -5993,6 +6036,12 @@ const app = createApp({
     }
 
     const statusText = ref('工作台已就绪');
+    watch(canAccessZiweiTool, function(allowed) {
+      if (!allowed && activePage.value === 'ziweiTool') {
+        applyPageState('idTool', { syncRoute: true, replaceRoute: true, keepSidebarOnMobile: true });
+        statusText.value = '当前账号无权限访问紫微斗数命盘工具';
+      }
+    }, { immediate: true });
     var _persistWarnShown = false;
     var _frontendRulesRevision = 0;
     var _frontendRulesCache = { revision: -1, payload: null };
@@ -7110,6 +7159,7 @@ const app = createApp({
     let keyHandler;
     let outsideClickHandler;
     let routeChangeHandler;
+    let authStateChangeHandler;
     let _scrollTicking = false;
     onMounted(() => {
       scrollHandler = () => {
@@ -7165,6 +7215,16 @@ const app = createApp({
       window.addEventListener('mousemove', _onDragMove);
       window.addEventListener('mouseup', _onDragEnd);
       scheduleRegionWarmup();
+      authStateChangeHandler = function(e) {
+        var detail = e && e.detail ? e.detail : {};
+        var authUser = detail.user || null;
+        if (authUser && authUser.email) {
+          currentUserEmail.value = normalizeEmail(authUser.email);
+          return;
+        }
+        currentUserEmail.value = readCurrentAuthEmail();
+      };
+      window.addEventListener('auth:state-changed', authStateChangeHandler);
       routeChangeHandler = function() {
         applyRouteFromLocation();
       };
@@ -7185,6 +7245,9 @@ const app = createApp({
         window.removeEventListener('popstate', routeChangeHandler);
         window.removeEventListener('hashchange', routeChangeHandler);
       }
+      if (authStateChangeHandler) {
+        window.removeEventListener('auth:state-changed', authStateChangeHandler);
+      }
       window.removeEventListener('mousemove', _onDragMove);
       window.removeEventListener('mouseup', _onDragEnd);
       if (idCopyTimer) clearTimeout(idCopyTimer);
@@ -7198,6 +7261,7 @@ const app = createApp({
 
     return {
       activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, handleSidebarHover, setPage,
+      canAccessZiweiTool,
       testToolsExpanded, toggleTestToolsMenu,
       sidebarSettingsOpen, actionBarCollapsed,
       // DB Picker

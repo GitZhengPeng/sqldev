@@ -397,7 +397,7 @@
           <span class="nav-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="10" y="2" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="5.5" y="10" width="5" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 6v2h4.5M12.5 6v2h-4.5M8 8v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           <span class="nav-text">存储过程</span>
         </button>
-        <div class="nav-group" :class="{active: activePage==='idTool' || activePage==='ziweiTool', expanded: testToolsExpanded}">
+        <div class="nav-group" :class="{active: activePage==='idTool' || (canAccessZiweiTool && activePage==='ziweiTool'), expanded: testToolsExpanded}">
           <button class="nav-item nav-item-parent" type="button" :aria-expanded="String(testToolsExpanded)" @click.stop="toggleTestToolsMenu" title="测试工具">
             <span class="nav-icon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -417,7 +417,7 @@
               <span class="nav-sub-dot" aria-hidden="true"></span>
               <span class="nav-sub-text">证件号码生成</span>
             </button>
-            <button class="nav-sub-item" type="button" :aria-current="activePage==='ziweiTool'?'page':null" :class="{active: activePage==='ziweiTool'}" @click.stop="setPage('ziweiTool')" title="紫微斗数命盘">
+            <button class="nav-sub-item" type="button" v-if="canAccessZiweiTool" :aria-current="activePage==='ziweiTool'?'page':null" :class="{active: activePage==='ziweiTool'}" @click.stop="setPage('ziweiTool')" title="紫微斗数命盘">
               <span class="nav-sub-dot" aria-hidden="true"></span>
               <span class="nav-sub-text">紫微斗数命盘</span>
             </button>
@@ -662,6 +662,7 @@
                 <span class="panel-dot" :class="sourceDb"></span>
                 <h2 class="panel-title">{{sourceLabel}} &#36755;&#20837;</h2>
               </div>
+              <span class="panel-paste-hint">支持粘贴 SQL · Ctrl / ⌘ + V</span>
               <span class="panel-meta">{{inputLineCount}} &#34892;</span>
             </div>
             <p class="panel-desc">&#31896;&#36148; {{sourceLabel}} &#24314;&#34920;&#35821;&#21477;&#65288;CREATE TABLE&#12289;COMMENT&#12289;CREATE INDEX&#12289;&#20998;&#21306;&#31561;&#65289;</p>
@@ -826,6 +827,7 @@
                 <span class="panel-dot" :class="funcSourceDb"></span>
                 <h2 class="panel-title">{{funcSourceLabel}} &#20989;&#25968;&#36755;&#20837;</h2>
               </div>
+              <span class="panel-paste-hint">支持粘贴 SQL · Ctrl / ⌘ + V</span>
               <span class="panel-meta">{{funcInputLineCount}} &#34892;</span>
             </div>
             <p class="panel-desc">&#31896;&#36148; {{funcSourceLabel}} &#20989;&#25968;&#23450;&#20041;&#65288;CREATE FUNCTION / CREATE OR REPLACE FUNCTION&#65289;</p>
@@ -999,6 +1001,7 @@ $$;</pre>
                 <span class="panel-dot" :class="procSourceDb"></span>
                 <h2 class="panel-title">{{procSourceLabel}} &#23384;&#20648;&#36807;&#31243;&#36755;&#20837;</h2>
               </div>
+              <span class="panel-paste-hint">支持粘贴 SQL · Ctrl / ⌘ + V</span>
               <span class="panel-meta">{{procInputLineCount}} &#34892;</span>
             </div>
             <p class="panel-desc">&#31896;&#36148; {{procSourceLabel}} &#23384;&#20648;&#36807;&#31243;&#65288;CREATE PROCEDURE / CREATE OR REPLACE PROCEDURE&#65289;</p>
@@ -1323,7 +1326,7 @@ $$;</pre>
       </template>
 
       <!-- ==================== ZI WEI DOU SHU PAGE ==================== -->
-      <template v-if="activePage==='ziweiTool'">
+      <template v-if="activePage==='ziweiTool' && canAccessZiweiTool">
         <section class="ziwei-page" id="panel-ziwei-tool" role="region" aria-label="紫微斗数命盘">
           <article class="ziwei-input-card">
             <div class="ziwei-input-head">
