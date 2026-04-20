@@ -29,7 +29,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=optional" rel="stylesheet"/>
 <link rel="stylesheet" href="vendor/codemirror.min.css"/>
 <link rel="icon" href="favicon.svg" type="image/svg+xml"/>
-<link rel="stylesheet" href="style.css?v=20260417n"/>
+<link rel="stylesheet" href="style.css?v=20260420a"/>
 <link rel="prefetch" href="region_codes_2024.json" as="fetch"/>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"SQL 翻译工作台","url":"https://gitzhengpeng.github.io/sqldev/","description":"Oracle / MySQL / PostgreSQL SQL 翻译工作台 — DDL建表语句、函数、存储过程在线互转","applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
@@ -1326,7 +1326,7 @@ $$;</pre>
       </template>
 
       <!-- ==================== ZI WEI DOU SHU PAGE ==================== -->
-      <template v-if="activePage==='ziweiTool' && canAccessZiweiTool">
+      <template v-if="false && activePage==='ziweiTool' && canAccessZiweiTool">
         <section class="ziwei-page" id="panel-ziwei-tool" role="region" aria-label="紫微斗数命盘">
           <article class="ziwei-input-card">
             <div class="ziwei-input-head">
@@ -1807,6 +1807,403 @@ $$;</pre>
         </section>
       </template>
 
+      <template v-if="activePage==='ziweiTool' && canAccessZiweiTool">
+        <section class="ziwei-page" id="panel-ziwei-tool-v3" role="region" aria-label="紫微斗数命盘">
+          <div class="ziwei-layout">
+            <aside class="ziwei-input-card">
+              <div class="ziwei-actions ziwei-actions-top">
+                <button class="idtool-btn primary ziwei-action-btn" type="button" :disabled="ziweiGenerating" @click="generateZiweiChart">{{ ziweiGenerateButtonLabel }}</button>
+                <button class="idtool-btn ghost ziwei-action-btn" type="button" @click="copyZiweiChartText">{{ ziweiCopyButtonLabel }}</button>
+                <button class="idtool-btn ghost ziwei-action-btn" type="button" :disabled="ziweiExporting" @click="exportZiweiChartImage">{{ ziweiExportButtonLabel }}</button>
+              </div>
+              <div class="ziwei-left-scroll">
+                <section class="ziwei-left-section">
+                  <div class="ziwei-input-head">
+                    <h3 class="ziwei-input-title">排盘步骤</h3>
+                    <div class="ziwei-flow" aria-label="排盘步骤">
+                      <span class="ziwei-flow-step"><em>1</em><b>填写出生信息</b></span>
+                      <span class="ziwei-flow-step"><em>2</em><b>点击排盘</b></span>
+                      <span class="ziwei-flow-step"><em>3</em><b>先看白话摘要</b></span>
+                      <span class="ziwei-flow-step"><em>4</em><b>再看专业细解</b></span>
+                    </div>
+                  </div>
+                </section>
+                <section class="ziwei-left-section">
+                  <div class="ziwei-input-head">
+                    <h3 class="ziwei-input-title">出生信息</h3>
+                  </div>
+                  <div class="ziwei-form-grid">
+                    <label class="idtool-field ziwei-profile-field full">
+                      <span>命例名称（可选）</span>
+                      <input class="ziwei-profile-input" type="text" v-model="ziweiProfileName" maxlength="64" placeholder="例如：张明远 1990-06-15 寅时"/>
+                      <small class="ziwei-mode-hint">可手动输入命例名称；不加载历史命例时，手输内容会保留。</small>
+                    </label>
+                    <label class="idtool-field ziwei-history-field full" v-if="ziweiHistoryNameOptions.length">
+                      <span>快速加载历史命例</span>
+                      <select v-model="ziweiHistoryPickedId" @change="applyZiweiHistoryFromSelect">
+                        <option value="">选择历史命例...</option>
+                        <option v-for="item in ziweiHistoryNameOptions" :key="'zw-history-select-'+item.id" :value="item.id">{{ item.label }}（{{ item.meta.replace('保存时间：','') }}）</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field full">
+                      <span>历法输入</span>
+                      <select class="ziwei-calendar-select" v-model="ziweiCalendarType">
+                        <option value="solar">公历输入</option>
+                        <option value="lunar">农历输入</option>
+                      </select>
+                    </label>
+                    <template v-if="ziweiCalendarType==='solar'">
+                      <label class="idtool-field">
+                        <span>公历年份</span>
+                        <select v-model="ziweiSolarYear">
+                          <option v-for="y in ziweiYearOptions" :key="'zw-sy-'+y" :value="y">{{ y }} 年</option>
+                        </select>
+                      </label>
+                      <label class="idtool-field">
+                        <span>月份</span>
+                        <select v-model="ziweiSolarMonth">
+                          <option v-for="m in ziweiMonthOptions" :key="'zw-sm-'+m.value" :value="m.value">{{ m.label }} 月</option>
+                        </select>
+                      </label>
+                      <label class="idtool-field">
+                        <span>日期</span>
+                        <select v-model="ziweiSolarDay">
+                          <option v-for="d in ziweiSolarDayOptions" :key="'zw-sd-'+d.value" :value="d.value">{{ d.label }} 日</option>
+                        </select>
+                      </label>
+                    </template>
+                    <template v-else>
+                      <label class="idtool-field">
+                        <span>农历年份</span>
+                        <select v-model="ziweiLunarYear">
+                          <option v-for="y in ziweiYearOptions" :key="'zw-ly-'+y" :value="y">{{ y }} 年</option>
+                        </select>
+                      </label>
+                      <label class="idtool-field">
+                        <span>农历月份</span>
+                        <select v-model="ziweiLunarMonth">
+                          <option v-for="m in ziweiMonthOptions" :key="'zw-lm-'+m.value" :value="String(Number(m.value))">{{ Number(m.value) }} 月</option>
+                        </select>
+                      </label>
+                      <label class="idtool-field">
+                        <span>农历日期</span>
+                        <select v-model="ziweiLunarDay">
+                          <option v-for="d in ziweiLunarDayOptions" :key="'zw-ld-'+d.value" :value="d.value">{{ d.label }}</option>
+                        </select>
+                      </label>
+                      <label class="idtool-field full">
+                        <span>闰月</span>
+                        <div class="ziwei-leap-row">
+                          <label class="idtool-radio">
+                            <input type="checkbox" v-model="ziweiLunarLeap" :disabled="!ziweiCanUseLeapMonth"/>
+                            闰月（{{ ziweiCanUseLeapMonth ? ('本年闰' + ziweiLeapMonthForYear + '月，可启用') : '本月无闰月' }}）
+                          </label>
+                        </div>
+                      </label>
+                    </template>
+                    <label class="idtool-field">
+                      <span>出生小时（24h）</span>
+                      <select v-model="ziweiBirthHour">
+                        <option v-for="h in ziweiHourOptions" :key="'zw-h-'+h.value" :value="h.value">{{ h.label }} 时</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>出生分钟</span>
+                      <select v-model="ziweiBirthMinute">
+                        <option v-for="m in ziweiMinuteOptions" :key="'zw-min-'+m.value" :value="m.value">{{ m.label }} 分</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>性别</span>
+                      <div class="idtool-inline">
+                        <label class="idtool-radio"><input type="radio" value="male" v-model="ziweiGender"/> 男</label>
+                        <label class="idtool-radio"><input type="radio" value="female" v-model="ziweiGender"/> 女</label>
+                      </div>
+                    </label>
+                    <label class="idtool-field full">
+                      <span>展示模式</span>
+                      <div class="ziwei-mode-switch" role="radiogroup" aria-label="展示模式">
+                        <button class="ziwei-mode-btn" :class="{active: !ziweiProMode}" type="button" @click="ziweiProMode=false">简洁模式</button>
+                        <button class="ziwei-mode-btn" :class="{active: ziweiProMode}" type="button" @click="ziweiProMode=true">专业模式</button>
+                      </div>
+                    </label>
+                    <label class="idtool-field full">
+                      <span>流派模式</span>
+                      <div class="ziwei-toggle ziwei-toggle-school">
+                        <button class="ziwei-toggle-btn" :class="{active: ziweiSchool==='traditional'}" type="button" @click="ziweiSchool='traditional'">传统四化</button>
+                        <button class="ziwei-toggle-btn" :class="{active: ziweiSchool==='flying'}" type="button" @click="ziweiSchool='flying'">飞星四化</button>
+                      </div>
+                    </label>
+                  </div>
+                </section>
+                <section class="ziwei-left-section">
+                  <div class="ziwei-input-head">
+                    <h3 class="ziwei-input-title">高级参数</h3>
+                  </div>
+                  <button class="ziwei-advanced-toggle" type="button" :aria-expanded="String(ziweiAdvancedOpen)" @click="ziweiAdvancedOpen=!ziweiAdvancedOpen">
+                    <strong>{{ ziweiAdvancedOpen ? '收起高级设置' : '展开高级设置' }}</strong>
+                    <em>{{ ziweiAdvancedSummary }}</em>
+                  </button>
+                  <div class="ziwei-form-grid ziwei-advanced-grid" v-if="ziweiAdvancedOpen">
+                    <label class="idtool-field">
+                      <span>校时模式</span>
+                      <select v-model="ziweiClockMode">
+                        <option v-for="item in ziweiClockModeOptions" :key="'zw-clock-'+item.value" :value="item.value">{{ item.label }}</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>时区</span>
+                      <select v-model="ziweiTimezoneOffset" :disabled="ziweiClockMode!=='trueSolar'">
+                        <option v-for="item in ziweiTimezoneOptions" :key="'zw-tz-'+item.value" :value="item.value">{{ item.label }}</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>出生地经度</span>
+                      <input type="number" step="0.001" min="-180" max="180" v-model="ziweiLongitude" :disabled="ziweiClockMode!=='trueSolar'" placeholder="例如 121.473"/>
+                    </label>
+                    <label class="idtool-field">
+                      <span>小限起法</span>
+                      <select v-model="ziweiXiaoXianRule">
+                        <option v-for="item in ziweiXiaoXianRuleOptions" :key="'zw-xs-'+item.value" :value="item.value">{{ item.label }}</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field">
+                      <span>流年起法</span>
+                      <select v-model="ziweiLiuNianRule">
+                        <option v-for="item in ziweiLiuNianRuleOptions" :key="'zw-lnrule-'+item.value" :value="item.value">{{ item.label }}</option>
+                      </select>
+                    </label>
+                    <label class="idtool-field full">
+                      <span>校时说明</span>
+                      <small class="ziwei-mode-hint">{{ ziweiClockHint }}</small>
+                    </label>
+                  </div>
+                </section>
+              </div>
+              <p class="idtool-result" :class="ziweiStatus.type" v-if="ziweiStatus.text">{{ ziweiStatus.text }}</p>
+            </aside>
+
+            <main class="ziwei-chart-wrap">
+              <article class="ziwei-empty" v-if="!ziweiChart">
+                <h4>等待排盘</h4>
+                <p>选择出生信息后点击“排盘”，将生成完整紫微斗数方盘（含主星、辅星、杂曜、四化、大限与小限）。</p>
+              </article>
+              <section class="ziwei-image-panel" id="ziwei-image-export" v-else>
+                <header class="ziwei-panel-head">
+                  <h4>图片命盘 — 支持导出 PNG</h4>
+                  <span>{{ ziweiChart.center.yearGanZhi }} · {{ ziweiChart.center.bureauLabel }} · {{ ziweiChart.center.genderLabel }}命</span>
+                </header>
+                <div class="ziwei-board-shell">
+                  <div class="ziwei-board-compass ziwei-board-compass-top">正南方</div>
+                  <div class="ziwei-board-compass ziwei-board-compass-right">正西方</div>
+                  <div class="ziwei-board-compass ziwei-board-compass-bottom">正北方</div>
+                  <div class="ziwei-board-compass ziwei-board-compass-left">正东方</div>
+                  <div class="ziwei-board">
+                    <section
+                      v-for="cell in ziweiChart.boardCells"
+                      :key="'zw-cell-'+cell.branch"
+                      class="ziwei-palace"
+                      :class="[cell.area, {ming: cell.isMing, shen: cell.isShen, active: ziweiFocusBranch===cell.branch, linked: ziweiSifangBranches.includes(cell.branch)}]"
+                      @click="focusZiweiBranch(cell.branch)"
+                    >
+                      <header class="ziwei-palace-head">
+                        <span class="ziwei-palace-name">{{ cell.palaceName || '--' }}</span>
+                        <span class="ziwei-palace-gz">{{ cell.stemBranch }}</span>
+                      </header>
+                      <div class="ziwei-age-series">
+                        <span class="ziwei-age-line">流年: {{ cell.liuNianSeriesText || '--' }}</span>
+                        <span class="ziwei-age-line">小限: {{ cell.xiaoXianSeriesText || '--' }}</span>
+                      </div>
+                      <div class="ziwei-star-row main">
+                        <span class="ziwei-star main" v-for="star in cell.mainStars" :key="'zw-main-'+cell.branch+'-'+star.name">
+                          <strong>★{{ star.name }}</strong>
+                          <em class="ziwei-brightness" :class="star.brightnessClass" v-if="star.brightness">{{ star.brightness }}</em>
+                          <span class="ziwei-hua-tag" v-for="tag in star.huaTags" :key="'zw-hua-main-'+cell.branch+'-'+star.name+'-'+tag" :data-hua="tag">{{ tag }}</span>
+                        </span>
+                      </div>
+                      <div class="ziwei-star-row assist">
+                        <span class="ziwei-star" v-for="star in cell.assistStars" :key="'zw-assist-'+cell.branch+'-'+star.name">
+                          {{ star.name }}
+                          <span class="ziwei-hua-tag" v-for="tag in star.huaTags" :key="'zw-hua-assist-'+cell.branch+'-'+star.name+'-'+tag" :data-hua="tag">{{ tag }}</span>
+                        </span>
+                      </div>
+                      <div class="ziwei-star-row misc">
+                        <span class="ziwei-star" v-for="star in cell.miscStars" :key="'zw-misc-'+cell.branch+'-'+star.name">
+                          {{ star.name }}
+                          <span class="ziwei-hua-tag" v-for="tag in star.huaTags" :key="'zw-hua-misc-'+cell.branch+'-'+star.name+'-'+tag" :data-hua="tag">{{ tag }}</span>
+                        </span>
+                      </div>
+                      <footer class="ziwei-palace-foot">
+                        <span>{{ cell.changSheng || '--' }}</span>
+                        <span>{{ cell.daXian }}</span>
+                        <span>{{ cell.branch }}</span>
+                      </footer>
+                      <div class="ziwei-track-chip" v-if="ziweiProMode && ziweiSchool==='flying'">
+                        <span>飞出 {{ cell.outgoingHuaCount }}</span>
+                        <span>飞入 {{ cell.incomingHuaCount }}</span>
+                      </div>
+                    </section>
+                    <section class="ziwei-center">
+                      <h4>命盘信息</h4>
+                      <p><strong>姓名：</strong>{{ ziweiProfileName || '--' }}</p>
+                      <p><strong>公历：</strong>{{ ziweiChart.center.solarText }}</p>
+                      <p><strong>农历：</strong>{{ ziweiChart.center.lunarText }}</p>
+                      <p><strong>年干支：</strong>{{ ziweiChart.center.yearGanZhi }}</p>
+                      <p><strong>五行局：</strong>{{ ziweiChart.center.bureauLabel }}</p>
+                      <p><strong>命主 / 身主：</strong>{{ ziweiChart.center.mingZhu }} / {{ ziweiChart.center.shenZhu }}</p>
+                      <p><strong>命宫 / 身宫：</strong>{{ ziweiChart.center.mingBranch }} / {{ ziweiChart.center.shenBranch }}</p>
+                      <p><strong>身宫所落：</strong>{{ ziweiChart.center.shenPalaceName }}</p>
+                      <div class="ziwei-center-hua" v-if="ziweiChart.center.huaSummary && ziweiChart.center.huaSummary.length">
+                        <span class="ziwei-hua-tag ziwei-hua-summary" v-for="item in ziweiChart.center.huaSummary" :key="'zw-center-hua-'+item.tag" :data-hua="item.tag">{{ item.label }}</span>
+                      </div>
+                      <p class="ziwei-center-note" v-if="ziweiChart.center.shiftedByZiHour">已按子时（23:00后）换日规则排盘</p>
+                    </section>
+                  </div>
+                </div>
+                <div class="ziwei-timeline">
+                  <div class="ziwei-timeline-row">
+                    <div class="ziwei-timeline-label">大限</div>
+                    <div class="ziwei-timeline-cell" v-for="item in ziweiChart.daXianTimeline" :key="'zw-dx-'+item.range">
+                      <strong>{{ item.range }}</strong>
+                      <span>{{ item.branch }} {{ item.palaceName }}</span>
+                    </div>
+                  </div>
+                  <div class="ziwei-timeline-row">
+                    <div class="ziwei-timeline-label">流年</div>
+                    <div class="ziwei-timeline-cell" v-for="item in ziweiChart.liuNianTimeline" :key="'zw-ln-'+item.year+'-'+item.age">
+                      <strong>{{ item.year }}年</strong>
+                      <span>{{ item.ganzhi }} {{ item.age }}岁 · {{ item.branch || '--' }} {{ item.palaceName || '' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </main>
+
+            <aside class="ziwei-pro-grid">
+              <section class="ziwei-pro-card ziwei-ai-card">
+                <header class="ziwei-pro-head ziwei-ai-head">
+                  <div>
+                    <p class="ziwei-ai-badge">AI POWERED</p>
+                    <h4>AI 个性化解盘</h4>
+                    <span>基于当前命盘生成 · {{ ziweiAiUpdatedAtText ? ('更新于 ' + ziweiAiUpdatedAtText) : '未生成' }}</span>
+                  </div>
+                </header>
+                <div class="ziwei-ai-top-actions">
+                  <button class="idtool-btn ghost ziwei-ai-btn" type="button" :disabled="ziweiAiLoading" @click="copyZiweiAnalysisText">{{ ziweiAiCopyButtonLabel }}</button>
+                  <button class="idtool-btn ghost ziwei-ai-btn" type="button" :disabled="!ziweiChart || ziweiAiLoading" @click="requestZiweiAiAnalysis({force:true})">{{ ziweiAiButtonLabel }}</button>
+                </div>
+                <p class="ziwei-ai-disclaimer-top">本分析仅供参考娱乐，不替代专业建议，重大决策请结合实际审慎判断。</p>
+                <div class="ziwei-pro-body ziwei-ai-body">
+                  <p class="ziwei-ai-overview" v-if="ziweiAiResult && ziweiAiResult.overview">{{ ziweiAiResult.overview }}</p>
+                  <p class="ziwei-ai-overview" v-else-if="ziweiActiveAnalysis">{{ ziweiActiveAnalysis.text }}</p>
+                  <p class="ziwei-ai-overview" v-else>先点击“排盘”，再生成 AI 深度解盘。</p>
+                  <template v-if="ziweiAiResult">
+                    <article class="ziwei-ai-section" v-for="(sec, idx) in ziweiAiResult.sections" :key="'zw-ai-sec-'+idx+'-'+sec.title">
+                      <h5>{{ sec.title }}</h5>
+                      <p>{{ sec.summary }}</p>
+                      <p v-if="sec.evidence && sec.evidence.length"><strong>依据：</strong>{{ sec.evidence.join('；') }}</p>
+                      <p v-if="sec.advice && sec.advice.length"><strong>建议：</strong>{{ sec.advice.join('；') }}</p>
+                    </article>
+                  </template>
+                  <div class="ziwei-ai-block" v-if="ziweiAiResult && ziweiAiResult.yearFocus">
+                    <h6>年度焦点</h6>
+                    <p>{{ ziweiAiResult.yearFocus.summary }}</p>
+                    <p v-if="ziweiAiResult.yearFocus.opportunities && ziweiAiResult.yearFocus.opportunities.length"><strong>机会：</strong>{{ ziweiAiResult.yearFocus.opportunities.join('；') }}</p>
+                    <p v-if="ziweiAiResult.yearFocus.risks && ziweiAiResult.yearFocus.risks.length"><strong>风险：</strong>{{ ziweiAiResult.yearFocus.risks.join('；') }}</p>
+                  </div>
+                </div>
+              </section>
+              <section class="ziwei-pro-card">
+                <header class="ziwei-pro-head">
+                  <h4>摘要解盘</h4>
+                  <span>{{ ziweiAnalysis.length }} 条</span>
+                </header>
+                <div class="ziwei-pro-body ziwei-analysis-body" v-if="ziweiAnalysis.length">
+                  <div class="ziwei-analysis-list" role="tablist" aria-label="摘要条目">
+                    <button class="ziwei-analysis-item" :class="{active: ziweiActiveAnalysis && ziweiActiveAnalysis.key===item.key}" type="button" v-for="item in ziweiAnalysis" :key="'zw-analysis-'+item.key" @click="toggleZiweiAnalysis(item.key)">
+                      <span class="ziwei-analysis-item-title">{{ item.title }}</span>
+                      <span class="ziwei-analysis-item-text">{{ item.text }}</span>
+                      <span class="ziwei-analysis-item-level">{{ item.level || '点击查看详情' }}</span>
+                    </button>
+                  </div>
+                  <article class="ziwei-analysis-detail" v-if="ziweiActiveAnalysis">
+                    <h5>{{ ziweiActiveAnalysis.title }}</h5>
+                    <p class="ziwei-analysis-detail-summary">{{ ziweiActiveAnalysis.text }}</p>
+                    <div class="ziwei-analysis-metrics" v-if="ziweiActiveAnalysis.metrics && ziweiActiveAnalysis.metrics.length">
+                      <span class="ziwei-analysis-metric" v-for="metric in ziweiActiveAnalysis.metrics" :key="'zw-analysis-m-'+ziweiActiveAnalysis.key+'-'+metric.label">
+                        <strong>{{ metric.label }}</strong>
+                        <em>{{ metric.value }}</em>
+                      </span>
+                    </div>
+                    <div class="ziwei-analysis-detail-block ziwei-analysis-detail-block-plain" v-if="ziweiActiveAnalysis.plain && ziweiActiveAnalysis.plain.length">
+                      <h6>先看这个（白话版）</h6>
+                      <p v-for="(line, idx) in ziweiActiveAnalysis.plain" :key="'zw-analysis-p-'+ziweiActiveAnalysis.key+'-'+idx">{{ line }}</p>
+                    </div>
+                    <div class="ziwei-analysis-detail-block" v-if="ziweiActiveAnalysis.evidence && ziweiActiveAnalysis.evidence.length">
+                      <h6>依据</h6>
+                      <p v-for="(line, idx) in ziweiActiveAnalysis.evidence" :key="'zw-analysis-e-'+ziweiActiveAnalysis.key+'-'+idx">{{ line }}</p>
+                    </div>
+                    <div class="ziwei-analysis-detail-block" v-if="ziweiActiveAnalysis.explain && ziweiActiveAnalysis.explain.length">
+                      <h6>专业解读</h6>
+                      <p v-for="(line, idx) in ziweiActiveAnalysis.explain" :key="'zw-analysis-x-'+ziweiActiveAnalysis.key+'-'+idx">{{ line }}</p>
+                    </div>
+                    <div class="ziwei-analysis-detail-block" v-if="ziweiActiveAnalysis.suggestions && ziweiActiveAnalysis.suggestions.length">
+                      <h6>行动建议</h6>
+                      <p v-for="(line, idx) in ziweiActiveAnalysis.suggestions" :key="'zw-analysis-s-'+ziweiActiveAnalysis.key+'-'+idx">{{ line }}</p>
+                    </div>
+                    <div class="ziwei-analysis-detail-block" v-if="ziweiActiveAnalysis.risks && ziweiActiveAnalysis.risks.length">
+                      <h6>风险提示</h6>
+                      <p v-for="(line, idx) in ziweiActiveAnalysis.risks" :key="'zw-analysis-r-'+ziweiActiveAnalysis.key+'-'+idx">{{ line }}</p>
+                    </div>
+                  </article>
+                </div>
+                <div class="ziwei-pro-body" v-else>
+                  <p>暂无分析内容，请先排盘。</p>
+                </div>
+              </section>
+              <section class="ziwei-pro-card" v-if="ziweiProMode">
+                <header class="ziwei-pro-head">
+                  <h4>宫位详情</h4>
+                  <span v-if="ziweiFocusCell">{{ ziweiFocusCell.palaceName }} · {{ ziweiFocusCell.branch }}</span>
+                </header>
+                <div class="ziwei-pro-body" v-if="ziweiFocusCell">
+                  <p><strong>天干地支：</strong>{{ ziweiFocusCell.stemBranch }}</p>
+                  <p><strong>主星：</strong>{{ ziweiFocusCell.mainStarsText }}</p>
+                  <p><strong>辅星：</strong>{{ ziweiFocusCell.assistStarsText }}</p>
+                  <p><strong>杂曜：</strong>{{ ziweiFocusCell.miscStarsText }}</p>
+                  <p><strong>十二长生：</strong>{{ ziweiFocusCell.changSheng || '--' }}</p>
+                  <p><strong>大限：</strong>{{ ziweiFocusCell.daXian || '--' }}</p>
+                  <p><strong>流年序列：</strong>{{ ziweiFocusCell.liuNianSeriesText || '--' }}</p>
+                  <p><strong>小限序列：</strong>{{ ziweiFocusCell.xiaoXianSeriesText || '--' }}</p>
+                  <p><strong>三方四正：</strong>
+                    <span class="ziwei-sifang-tag" v-for="item in ziweiSifangCells" :key="'zw-sf-'+item.branch">
+                      {{ item.branch }} {{ item.palaceName }}
+                    </span>
+                  </p>
+                </div>
+                <div class="ziwei-pro-body" v-else>
+                  <p>点击任一宫位查看详细信息。</p>
+                </div>
+              </section>
+              <section class="ziwei-pro-card" v-if="ziweiProMode">
+                <header class="ziwei-pro-head">
+                  <h4>飞化落宫追踪</h4>
+                  <span>{{ ziweiFocusTrackCount }}</span>
+                </header>
+                <div class="ziwei-pro-body">
+                  <article class="ziwei-track-item" v-for="(track, idx) in ziweiFocusTracks" :key="'zw-track-'+idx+'-'+track.tag+'-'+track.star+'-'+track.sourceBranch+'-'+track.targetBranch">
+                    <strong class="ziwei-hua-tag" :data-hua="track.tag">化{{ track.tag }}</strong>
+                    <span class="ziwei-track-star">{{ track.star }}</span>
+                    <span class="ziwei-track-arrow">{{ track.sourceText }} → {{ track.targetText }}</span>
+                  </article>
+                  <p v-if="!ziweiFocusTracks.length">暂无可追踪飞化数据。</p>
+                </div>
+              </section>
+            </aside>
+          </div>
+        </section>
+      </template>
+
 
       <!-- ==================== RULES PAGE ==================== -->
       <template v-if="activePage==='rules'">
@@ -1955,5 +2352,5 @@ $$;</pre>
 <script defer src="auth.js?v=20260417c"></script>
 <script defer src="feedback.js?v=20260415f"></script>
 <!-- Non-critical heavy modules are loaded in idle time by bootstrap.js -->
-<script defer src="bootstrap.js?v=20260417a"></script>
+<script defer src="bootstrap.js?v=20260420a"></script>
 </body></html>

@@ -2881,6 +2881,7 @@ const app = createApp({
     let usccCopyTimer = 0;
     let usccVerifyTimer = 0;
     let ziweiCopyTimer = 0;
+    let ziweiAiCopyTimer = 0;
     let ziweiGenerateTimer = 0;
 
     // Zi Wei Dou Shu state
@@ -3055,6 +3056,7 @@ const app = createApp({
     const ziweiGenerating = ref(false);
     const ziweiGenerateDone = ref(false);
     const ziweiCopyDone = ref(false);
+    const ziweiAiCopyDone = ref(false);
     const ziweiLastGenerateSignature = ref('');
     const ZW_HISTORY_KEY = 'sqldev_ziwei_history_v1';
     const ziweiIntlSupported = typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function';
@@ -3370,6 +3372,9 @@ const app = createApp({
     });
     const ziweiCopyButtonLabel = computed(function() {
       return ziweiCopyDone.value ? '\u5df2\u590d\u5236' : '\u590d\u5236\u6587\u5b57\u547d\u76d8';
+    });
+    const ziweiAiCopyButtonLabel = computed(function() {
+      return ziweiAiCopyDone.value ? '\u5df2\u590d\u5236\u89e3\u8bfb' : '\u590d\u5236\u89e3\u8bfb';
     });
     const ziweiExportButtonLabel = computed(function() {
       return ziweiExporting.value ? '\u5bfc\u51fa\u4e2d...' : '\u5bfc\u51fa\u547d\u76d8\u56fe\u7247';
@@ -3780,6 +3785,12 @@ const app = createApp({
         if (ziweiCopyTimer) clearTimeout(ziweiCopyTimer);
         flagRef.value = true;
         ziweiCopyTimer = window.setTimeout(function() { flagRef.value = false; }, durationMs || 1400);
+        return;
+      }
+      if (timerName === 'ziweiAiCopy') {
+        if (ziweiAiCopyTimer) clearTimeout(ziweiAiCopyTimer);
+        flagRef.value = true;
+        ziweiAiCopyTimer = window.setTimeout(function() { flagRef.value = false; }, durationMs || 1400);
         return;
       }
       if (timerName === 'ziweiGenerate') {
@@ -5965,6 +5976,51 @@ const app = createApp({
       });
     }
 
+    function copyZiweiAnalysisText() {
+      var lines = ['【AI个性化解盘】'];
+      var ai = ziweiAiResult.value;
+      if (ai && typeof ai === 'object') {
+        if (ai.overview) lines.push(String(ai.overview));
+        if (Array.isArray(ai.sections)) {
+          ai.sections.forEach(function(sec) {
+            if (!sec) return;
+            if (sec.title) lines.push('\n【' + String(sec.title) + '】');
+            if (sec.summary) lines.push(String(sec.summary));
+            if (Array.isArray(sec.evidence) && sec.evidence.length) lines.push('依据：' + sec.evidence.join('；'));
+            if (Array.isArray(sec.advice) && sec.advice.length) lines.push('建议：' + sec.advice.join('；'));
+          });
+        }
+        if (ai.yearFocus && typeof ai.yearFocus === 'object') {
+          lines.push('\n【年度焦点】');
+          if (ai.yearFocus.summary) lines.push(String(ai.yearFocus.summary));
+          if (Array.isArray(ai.yearFocus.opportunities) && ai.yearFocus.opportunities.length) {
+            lines.push('机会：' + ai.yearFocus.opportunities.join('；'));
+          }
+          if (Array.isArray(ai.yearFocus.risks) && ai.yearFocus.risks.length) {
+            lines.push('风险：' + ai.yearFocus.risks.join('；'));
+          }
+        }
+      } else if (ziweiActiveAnalysis.value) {
+        var active = ziweiActiveAnalysis.value;
+        lines.push(String(active.title || '摘要解盘'));
+        lines.push(String(active.text || ''));
+      } else {
+        ziweiStatus.value = { type: 'info', text: '暂无可复制的解读内容，请先排盘并生成 AI 解读。' };
+        return;
+      }
+      var payload = lines.join('\n').trim();
+      if (!payload) {
+        ziweiStatus.value = { type: 'info', text: '暂无可复制的解读内容，请先排盘并生成 AI 解读。' };
+        return;
+      }
+      clipboardWrite(payload).then(function(ok) {
+        if (ok) _flashButtonState(ziweiAiCopyDone, 'ziweiAiCopy');
+        ziweiStatus.value = ok
+          ? { type: 'success', text: 'AI 解读已复制。' }
+          : { type: 'error', text: '复制失败，请手动复制。' };
+      });
+    }
+
     var _zwHtml2CanvasLoader = null;
     function _zwEnsureHtml2Canvas() {
       if (typeof window === 'undefined') return Promise.reject(new Error('当前环境不支持导出'));
@@ -7255,6 +7311,7 @@ const app = createApp({
       if (usccCopyTimer) clearTimeout(usccCopyTimer);
       if (usccVerifyTimer) clearTimeout(usccVerifyTimer);
       if (ziweiCopyTimer) clearTimeout(ziweiCopyTimer);
+      if (ziweiAiCopyTimer) clearTimeout(ziweiAiCopyTimer);
       if (ziweiGenerateTimer) clearTimeout(ziweiGenerateTimer);
       cancelRegionWarmup();
     });
@@ -7312,8 +7369,8 @@ const app = createApp({
       ziweiChart, ziweiAnalysis, ziweiHistory, ziweiHistoryCountText, ziweiHistoryNameOptions, ziweiFocusTracks, ziweiFocusTrackCount, ziweiStatus,
       ziweiActiveAnalysis, ziweiAnalysisActiveKey,
       ziweiExporting, ziweiGenerating, ziweiAiLoading, ziweiAiDone, ziweiAiError, ziweiAiResult, ziweiAiUpdatedAtText,
-      ziweiGenerateButtonLabel, ziweiCopyButtonLabel, ziweiExportButtonLabel, ziweiAiButtonLabel,
-      generateZiweiChart, copyZiweiChartText, exportZiweiChartImage, requestZiweiAiAnalysis,
+      ziweiGenerateButtonLabel, ziweiCopyButtonLabel, ziweiAiCopyButtonLabel, ziweiExportButtonLabel, ziweiAiButtonLabel,
+      generateZiweiChart, copyZiweiChartText, copyZiweiAnalysisText, exportZiweiChartImage, requestZiweiAiAnalysis,
       focusZiweiBranch, toggleZiweiAnalysis, applyZiweiHistoryFromInput, applyZiweiHistoryFromSelect, loadZiweiHistory, removeZiweiHistory, clearZiweiHistory, formatZiweiHistoryTime,
       // Shared
       statusText, fileInput, fileEncoding, ENCODING_OPTIONS, uploadFile, handleFileUpload,

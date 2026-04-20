@@ -529,3 +529,21 @@ Last updated: 2026-04-15
     to avoid late forced font replacement on first paint.
 - Cache/version update:
   - `index.html`: `style.css?v=20260417n`.
+
+## 2026-04-20: ZiWei UI V3 Redesign (Three-Column, Light/Dark Matched)
+- Implemented a new ZiWei page layout to match provided reference HTML and preview images:
+  - left panel: actions + birth input flow + advanced params (collapsible)
+  - center panel: board-focused chart canvas + timeline
+  - right panel: AI analysis panel with sticky visual hierarchy.
+- Kept existing core chart-generation algorithm and data model unchanged (`ziweiChart`, `ziweiAnalysis`, `ziweiAiResult`), focusing on UI/interaction reuse.
+- Added a dedicated AI copy action:
+  - new function `copyZiweiAnalysisText()` in `app.js`
+  - copies structured AI解读 text (overview/sections/year focus), falls back to active summary analysis when AI data is unavailable.
+  - added button-state feedback label `ziweiAiCopyButtonLabel` and timer lifecycle cleanup.
+- Updated assets/versioning to avoid stale cache mismatch:
+  - `bootstrap.js` `ASSET_VERSION` -> `20260420a`
+  - `index.html`:
+    - `style.css?v=20260420a`
+    - `bootstrap.js?v=20260420a`
+- Notes:
+  - legacy ZiWei template block is temporarily disabled in `index.html` (`v-if="false && ...`) while new V3 template is active, to keep rollback-safe migration during this round.
