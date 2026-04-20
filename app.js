@@ -3308,6 +3308,36 @@ const app = createApp({
       });
       return out;
     });
+    const ziweiCenterTitle = computed(function() {
+      var chart = ziweiChart.value;
+      if (!chart || !Array.isArray(chart.boardCells)) return '命盘信息';
+      var mingBranch = chart.center && chart.center.mingBranch ? String(chart.center.mingBranch) : '';
+      var mingCell = null;
+      for (var i = 0; i < chart.boardCells.length; i++) {
+        var cell = chart.boardCells[i];
+        if (cell && String(cell.branch) === mingBranch) {
+          mingCell = cell;
+          break;
+        }
+      }
+      var stars = mingCell && Array.isArray(mingCell.mainStars) ? mingCell.mainStars : [];
+      var names = stars.slice(0, 2).map(function(st) { return st && st.name ? String(st.name) : ''; }).filter(Boolean);
+      return names.length ? names.join('') : '命盘信息';
+    });
+    const ziweiCenterDaXianPreview = computed(function() {
+      var chart = ziweiChart.value;
+      if (!chart || !Array.isArray(chart.daXianTimeline)) return [];
+      var activeLabel = chart.center && chart.center.currentDaXianLabel ? String(chart.center.currentDaXianLabel) : '';
+      return chart.daXianTimeline.slice(0, 8).map(function(item) {
+        var range = item && item.range ? String(item.range) : '--';
+        return {
+          range: range,
+          branch: item && item.branch ? String(item.branch) : '--',
+          palaceName: item && item.palaceName ? String(item.palaceName) : '',
+          active: activeLabel && activeLabel.indexOf(range) === 0
+        };
+      });
+    });
     const ziweiFocusTracks = computed(function() {
       var chart = ziweiChart.value;
       if (!chart || !Array.isArray(chart.huaTracks)) return [];
@@ -4373,6 +4403,102 @@ const app = createApp({
       return String(stem || '') + String(branch || '');
     }
 
+    function _zwMod(n, m) {
+      var x = Number(n);
+      var y = Number(m);
+      if (!Number.isFinite(x) || !Number.isFinite(y) || y === 0) return 0;
+      var r = x % y;
+      return r < 0 ? r + y : r;
+    }
+
+    function _zwGetMonthBranchByLunarMonth(lunarMonth) {
+      var m = Number(lunarMonth);
+      if (!Number.isInteger(m) || m < 1 || m > 12) m = 1;
+      return ZW_RING[m - 1] || '寅';
+    }
+
+    // Approximation for jieqi month branch:
+    // 1) Feb starts 寅月, Jan is 丑月
+    // 2) If day<4, fallback to previous month branch to reduce boundary error.
+    function _zwGetMonthBranchBySolarApprox(solarMonth, solarDay) {
+      var sm = Number(solarMonth);
+      var sd = Number(solarDay);
+      if (!Number.isInteger(sm) || sm < 1 || sm > 12) sm = 1;
+      if (!Number.isInteger(sd) || sd < 1 || sd > 31) sd = 15;
+      var idx = _zwMod(sm + 10, 12);
+      if (sd < 4) idx = _zwMod(idx - 1, 12);
+      return ZW_RING[idx] || '寅';
+    }
+
+    function _zwGetMonthGanZhiByYearStem(yearStem, monthBranch) {
+      var ys = String(yearStem || '').slice(0, 1);
+      var mb = String(monthBranch || '');
+      var startStem = ZW_WUHU_START_STEM[ys] || '丙';
+      var startIdx = ZW_STEMS.indexOf(startStem);
+      if (startIdx < 0) startIdx = 2;
+      var monthIndex = ZW_RING.indexOf(mb);
+      if (monthIndex < 0) monthIndex = 0;
+      var stem = ZW_STEMS[_zwMod(startIdx + monthIndex, 10)] || '';
+      return stem + mb;
+    }
+
+    // Gregorian -> day ganzhi (1900-2100 practical range).
+    function _zwGetDayGanZhiBySolar(year, month, day) {
+      var y = Number(year);
+      var m = Number(month);
+      var d = Number(day);
+      if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) return '';
+      if (m < 1 || m > 12 || d < 1 || d > 31) return '';
+      var yy = y;
+      var mm = m;
+      if (mm <= 2) {
+        yy -= 1;
+        mm += 12;
+      }
+      var c = Math.floor(yy / 100);
+      var y2 = yy % 100;
+      var g = _zwMod((4 * c) + Math.floor(c / 4) + 5 * y2 + Math.floor(y2 / 4) + Math.floor((3 * (mm + 1)) / 5) + d - 3, 10);
+      var z = _zwMod((8 * c) + Math.floor(c / 4) + 5 * y2 + Math.floor(y2 / 4) + Math.floor((3 * (mm + 1)) / 5) + d + 7, 12);
+      return (ZW_STEMS[g] || '') + (ZW_BRANCHES[z] || '');
+    }
+
+    function _zwGetHourGanZhiByDayGan(dayGanZhi, hour) {
+      var gz = String(dayGanZhi || '');
+      if (!gz) return '';
+      var dayStem = gz.slice(0, 1);
+      var baseStem = '甲';
+      if (dayStem === '甲' || dayStem === '己') baseStem = '甲';
+      else if (dayStem === '乙' || dayStem === '庚') baseStem = '丙';
+      else if (dayStem === '丙' || dayStem === '辛') baseStem = '戊';
+      else if (dayStem === '丁' || dayStem === '壬') baseStem = '庚';
+      else if (dayStem === '戊' || dayStem === '癸') baseStem = '壬';
+      var baseStemIdx = ZW_STEMS.indexOf(baseStem);
+      if (baseStemIdx < 0) baseStemIdx = 0;
+      var idx0 = _zwGetShiChenIndex0(hour);
+      if (idx0 < 0) idx0 = 0;
+      var stem = ZW_STEMS[_zwMod(baseStemIdx + idx0, 10)] || '';
+      var branch = ZW_BRANCHES[idx0] || '';
+      return stem + branch;
+    }
+
+    function _zwSplitGanZhi(gz) {
+      var text = String(gz || '');
+      return {
+        stem: text.slice(0, 1) || '--',
+        branch: text.slice(1, 2) || '--',
+        text: text || '--'
+      };
+    }
+
+    function _zwGetJieQiYearApprox(solarYear, solarMonth, solarDay) {
+      var y = Number(solarYear);
+      var m = Number(solarMonth);
+      var d = Number(solarDay);
+      if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) return y;
+      if (m < 2 || (m === 2 && d < 4)) return y - 1;
+      return y;
+    }
+
     function _zwResolveBureauByGanZhi(gz) {
       var nayin = ZW_NAYIN_BY_JIAZI[gz] || '';
       var element = '';
@@ -5312,6 +5438,8 @@ const app = createApp({
           miscStars: _zwTrimText(cell && cell.miscStarsText, 140),
           daXian: String(cell && cell.daXian || ''),
           xiaoXian: String(cell && cell.xiaoXian || ''),
+          currentLiuNian: Number(cell && cell.currentLiuNian || 0),
+          currentXiaoXian: Number(cell && cell.currentXiaoXian || 0),
           liuNianSeries: _zwTrimText(cell && cell.liuNianSeriesText, 220),
           xiaoXianSeries: _zwTrimText(cell && cell.xiaoXianSeriesText, 220)
         };
@@ -5331,20 +5459,40 @@ const app = createApp({
         profileName: _zwTrimText(ziweiProfileName.value, 80),
         center: {
           genderLabel: String(center.genderLabel || ''),
+          yinYangGenderLabel: String(center.yinYangGenderLabel || ''),
           calendarInputType: String(center.calendarInputType || ''),
           schoolLabel: String(center.schoolLabel || ''),
           solarText: String(center.solarText || ''),
+          inputClockText: String(center.inputClockText || ''),
           lunarText: String(center.lunarText || ''),
           yearGanZhi: String(center.yearGanZhi || ''),
           bureauLabel: String(center.bureauLabel || ''),
           mingBranch: String(center.mingBranch || ''),
+          mingPalaceName: String(center.mingPalaceName || ''),
           shenBranch: String(center.shenBranch || ''),
           shenPalaceName: String(center.shenPalaceName || ''),
+          ziweiBranch: String(center.ziweiBranch || ''),
+          tianfuBranch: String(center.tianfuBranch || ''),
+          monthLabel: String(center.monthLabel || ''),
+          shichenLabel: String(center.shichenLabel || ''),
           mingZhu: String(center.mingZhu || ''),
           shenZhu: String(center.shenZhu || ''),
           daXianDirectionLabel: String(center.daXianDirectionLabel || ''),
+          clockMode: String(center.clockMode || ''),
+          clockModeLabel: String(center.clockModeLabel || ''),
+          timeCorrectionText: String(center.timeCorrectionText || ''),
+          timezoneOffset: String(center.timezoneOffset || ''),
+          longitude: Number(center.longitude || 0),
+          longitudeCorrectionMinutes: Number(center.longitudeCorrectionMinutes || 0),
+          equationOfTimeMinutes: Number(center.equationOfTimeMinutes || 0),
           xiaoXianRuleLabel: String(center.xiaoXianRuleLabel || ''),
           liuNianRuleLabel: String(center.liuNianRuleLabel || ''),
+          currentYearLabel: String(center.currentYearLabel || ''),
+          currentYearGanZhiLabel: String(center.currentYearGanZhiLabel || ''),
+          currentAgeLabel: String(center.currentAgeLabel || ''),
+          currentDaXianLabel: String(center.currentDaXianLabel || ''),
+          currentLiuNianPalaceLabel: String(center.currentLiuNianPalaceLabel || ''),
+          shiftedByZiHour: Boolean(center.shiftedByZiHour),
           huaSummary: Array.isArray(center.huaSummary) ? center.huaSummary.map(function(item) {
             return String(item && item.label || '');
           }) : []
@@ -5677,6 +5825,17 @@ const app = createApp({
       var yearGanZhi = _zwGetYearGanZhi(effectiveLunar.lunarYear);
       var yearStem = yearGanZhi.slice(0, 1);
       var yearBranch = yearGanZhi.slice(1, 2);
+      var lunarMonthBranch = _zwGetMonthBranchByLunarMonth(lunarMonth);
+      var lunarMonthGanZhi = _zwGetMonthGanZhiByYearStem(yearStem, lunarMonthBranch);
+      var dayGanZhi = _zwGetDayGanZhiBySolar(effectiveSolar.year, effectiveSolar.month, effectiveSolar.day);
+      var hourGanZhi = _zwGetHourGanZhiByDayGan(dayGanZhi, calcHour);
+      var jieqiYear = _zwGetJieQiYearApprox(effectiveSolar.year, effectiveSolar.month, effectiveSolar.day);
+      var jieqiYearGanZhi = _zwGetYearGanZhi(jieqiYear);
+      var jieqiYearStem = jieqiYearGanZhi.slice(0, 1);
+      var jieqiMonthBranch = _zwGetMonthBranchBySolarApprox(effectiveSolar.month, effectiveSolar.day);
+      var jieqiMonthGanZhi = _zwGetMonthGanZhiByYearStem(jieqiYearStem, jieqiMonthBranch);
+      var nonJieqiPillars = [yearGanZhi, lunarMonthGanZhi, dayGanZhi, hourGanZhi];
+      var jieqiPillars = [jieqiYearGanZhi, jieqiMonthGanZhi, dayGanZhi, hourGanZhi];
       var currentSchool = ziweiSchool.value === 'flying' ? 'flying' : 'traditional';
       if (!yearStem || !yearBranch) {
         ziweiStatus.value = { type: 'error', text: '生年干支计算失败。' };
@@ -5851,6 +6010,8 @@ const app = createApp({
           miscStarsText: miscStarsText,
           liuNianSeriesText: liuSeries.length ? liuSeries.join(',') : '',
           xiaoXianSeriesText: xiaoSeries.length ? xiaoSeries.join(',') : '',
+          currentLiuNian: null,
+          currentXiaoXian: null,
           outgoingHuaCount: outgoingTracks.length,
           incomingHuaCount: incomingTracks.length
         };
@@ -5887,8 +6048,63 @@ const app = createApp({
           (eotCm >= 0 ? '+' : '') + eotCm.toFixed(2) + '；经度 ' + lon.toFixed(3) +
           '°，时区 UTC' + (tz >= 0 ? '+' : '') + String(tz) + '）';
       }
+      var nowDate = new Date();
+      var currentYearNum = Number(nowDate.getFullYear());
+      var currentAge = currentYearNum - Number(baseSolar.year);
+      var nowMonth = Number(nowDate.getMonth()) + 1;
+      var nowDay = Number(nowDate.getDate());
+      if (nowMonth < Number(baseSolar.month) || (nowMonth === Number(baseSolar.month) && nowDay < Number(baseSolar.day))) {
+        currentAge -= 1;
+      }
+      if (!Number.isFinite(currentAge) || currentAge < 0) currentAge = 0;
+      var currentDaXianItem = null;
+      for (var di = 0; di < daXianTimeline.length; di++) {
+        var diItem = daXianTimeline[di];
+        if (!diItem || !diItem.range) continue;
+        var rg = String(diItem.range).match(/(\d+)\s*-\s*(\d+)/);
+        if (!rg) continue;
+        var rf = Number(rg[1]);
+        var rt = Number(rg[2]);
+        if (Number.isFinite(rf) && Number.isFinite(rt) && currentAge >= rf && currentAge <= rt) {
+          currentDaXianItem = diItem;
+          break;
+        }
+      }
+      if (!currentDaXianItem && daXianTimeline.length) currentDaXianItem = daXianTimeline[0];
+      var currentLiuNianItem = null;
+      for (var li = 0; li < liuNianTimeline.length; li++) {
+        var ln = liuNianTimeline[li];
+        if (ln && Number(ln.year) === currentYearNum) {
+          currentLiuNianItem = ln;
+          break;
+        }
+      }
+      for (var ci = 0; ci < boardCells.length; ci++) {
+        var cell = boardCells[ci];
+        var liuSeriesCur = Array.isArray(cell.liuNianSeries) ? cell.liuNianSeries : [];
+        var xiaoSeriesCur = Array.isArray(cell.xiaoXianSeries) ? cell.xiaoXianSeries : [];
+        cell.currentLiuNian = liuSeriesCur.indexOf(currentYearNum) >= 0
+          ? currentYearNum
+          : (liuSeriesCur.length ? liuSeriesCur[0] : null);
+        cell.currentXiaoXian = xiaoSeriesCur.indexOf(currentAge) >= 0
+          ? currentAge
+          : (xiaoSeriesCur.length ? xiaoSeriesCur[0] : null);
+      }
+      var decadeMarks = daXianTimeline.slice(0, 8).map(function(item) {
+        var range = String(item && item.range || '--');
+        var startAgeMatch = range.match(/^\d+/);
+        var startAge = startAgeMatch ? Number(startAgeMatch[0]) : NaN;
+        var markerYear = Number(baseSolar.year) + (Number.isFinite(startAge) ? startAge : 0);
+        return {
+          year: Number.isFinite(markerYear) && markerYear > 0 ? String(markerYear) : '--',
+          ganzhi: Number.isFinite(markerYear) && markerYear > 0 ? _zwGetYearGanZhi(markerYear) : '--',
+          range: range
+        };
+      });
+      var qiYunText = '出生后' + String(Math.max(2, Number(bureauNum) || 2)) + '岁起运';
       var center = {
         genderLabel: isMale ? '男' : '女',
+        yinYangGenderLabel: String(ZW_YEAR_STEM_YINYANG[yearStem] || '') + (isMale ? '男' : '女'),
         solarText: solarText,
         lunarText: lunarText,
         inputClockText: inputClockText,
@@ -5898,12 +6114,17 @@ const app = createApp({
         shenZhu: ZW_SHENZHU_BY_YEAR_BRANCH[yearBranch] || '',
         bureauLabel: bureauLabel,
         mingBranch: mingBranch,
+        mingPalaceName: palaceNameByBranch[mingBranch] || '',
         shenBranch: shenBranch,
         shenPalaceName: palaceNameByBranch[shenBranch] || '',
         ziweiBranch: ziweiBranch,
         tianfuBranch: tianfuBranch,
         monthLabel: lunarMonthLabel + '月',
         shichenLabel: _zwGetShiChenLabel(calcHour),
+        nonJieqiPillars: nonJieqiPillars.map(_zwSplitGanZhi),
+        jieqiPillars: jieqiPillars.map(_zwSplitGanZhi),
+        qiYunText: qiYunText,
+        decadeMarks: decadeMarks,
         daXianDirectionLabel: daXianDirection > 0 ? '顺行' : '逆行',
         clockMode: clockMode,
         clockModeLabel: _zwClockModeToLabel(clockMode),
@@ -5917,6 +6138,15 @@ const app = createApp({
         xiaoXianRuleLabel: _zwXiaoXianRuleToLabel(xiaoXianRule),
         liuNianRule: liuNianRule,
         liuNianRuleLabel: _zwLiuNianRuleToLabel(liuNianRule),
+        currentYearLabel: String(currentYearNum) + '年',
+        currentAgeLabel: String(currentAge) + '岁',
+        currentYearGanZhiLabel: _zwGetYearGanZhi(currentYearNum),
+        currentDaXianLabel: currentDaXianItem
+          ? ((currentDaXianItem.range || '--') + ' ' + (currentDaXianItem.branch || '--') + (currentDaXianItem.palaceName ? ('·' + currentDaXianItem.palaceName) : ''))
+          : '--',
+        currentLiuNianPalaceLabel: currentLiuNianItem
+          ? ((currentLiuNianItem.branch || '--') + (currentLiuNianItem.palaceName ? ('·' + currentLiuNianItem.palaceName) : ''))
+          : '--',
         birthYearForAge: Number(baseSolar.year),
         birthMonthForAge: Number(baseSolar.month),
         birthDayForAge: Number(baseSolar.day),
@@ -7364,7 +7594,7 @@ const app = createApp({
       ziweiXiaoXianRule, ziweiXiaoXianRuleOptions,
       ziweiLiuNianRule, ziweiLiuNianRuleOptions,
       ziweiProfileName, ziweiHistoryPickedId, ziweiProMode, ziweiSchool, ziweiSchoolLabel, ziweiFocusBranch, ziweiFocusCell,
-      ziweiSifangBranches, ziweiSifangCells,
+      ziweiSifangBranches, ziweiSifangCells, ziweiCenterTitle, ziweiCenterDaXianPreview,
       ziweiYearOptions, ziweiMonthOptions, ziweiHourOptions, ziweiMinuteOptions,
       ziweiChart, ziweiAnalysis, ziweiHistory, ziweiHistoryCountText, ziweiHistoryNameOptions, ziweiFocusTracks, ziweiFocusTrackCount, ziweiStatus,
       ziweiActiveAnalysis, ziweiAnalysisActiveKey,

@@ -1814,18 +1814,15 @@ $$;</pre>
               <div class="ziwei-actions ziwei-actions-top">
                 <button class="idtool-btn primary ziwei-action-btn" type="button" :disabled="ziweiGenerating" @click="generateZiweiChart">{{ ziweiGenerateButtonLabel }}</button>
                 <button class="idtool-btn ghost ziwei-action-btn" type="button" :disabled="!ziweiChart || ziweiAiLoading" @click="requestZiweiAiAnalysis({force:true})">{{ ziweiAiButtonLabel }}</button>
-                <button class="idtool-btn ghost ziwei-action-btn" type="button" @click="copyZiweiChartText">{{ ziweiCopyButtonLabel }}</button>
-                <button class="idtool-btn ghost ziwei-action-btn" type="button" :disabled="ziweiExporting" @click="exportZiweiChartImage">{{ ziweiExportButtonLabel }}</button>
               </div>
               <div class="ziwei-left-scroll">
                 <section class="ziwei-left-section">
                   <div class="ziwei-input-head">
                     <h3 class="ziwei-input-title">排盘步骤</h3>
                     <div class="ziwei-flow" aria-label="排盘步骤">
-                      <span class="ziwei-flow-step"><em>1</em><b>填写出生信息</b></span>
+                      <span class="ziwei-flow-step"><em>1</em><b>填写出生时间</b></span>
                       <span class="ziwei-flow-step"><em>2</em><b>点击排盘</b></span>
-                      <span class="ziwei-flow-step"><em>3</em><b>查看文字与图片命盘</b></span>
-                      <span class="ziwei-flow-step"><em>4</em><b>按需生成 AI 深度解盘</b></span>
+                      <span class="ziwei-flow-step"><em>3</em><b>点击 AI 解读</b></span>
                     </div>
                   </div>
                 </section>
@@ -1854,7 +1851,7 @@ $$;</pre>
                       </select>
                     </label>
                     <template v-if="ziweiCalendarType==='solar'">
-                      <label class="idtool-field">
+                      <label class="idtool-field full">
                         <span>公历年份</span>
                         <select v-model="ziweiSolarYear">
                           <option v-for="y in ziweiYearOptions" :key="'zw-sy-'+y" :value="y">{{ y }} 年</option>
@@ -1874,7 +1871,7 @@ $$;</pre>
                       </label>
                     </template>
                     <template v-else>
-                      <label class="idtool-field">
+                      <label class="idtool-field full">
                         <span>农历年份</span>
                         <select v-model="ziweiLunarYear">
                           <option v-for="y in ziweiYearOptions" :key="'zw-ly-'+y" :value="y">{{ y }} 年</option>
@@ -1914,20 +1911,12 @@ $$;</pre>
                         <option v-for="m in ziweiMinuteOptions" :key="'zw-min-'+m.value" :value="m.value">{{ m.label }} 分</option>
                       </select>
                     </label>
-                    <label class="idtool-field">
+                    <label class="idtool-field full">
                       <span>性别</span>
                       <div class="idtool-inline">
                         <label class="idtool-radio"><input type="radio" value="male" v-model="ziweiGender"/> 男</label>
                         <label class="idtool-radio"><input type="radio" value="female" v-model="ziweiGender"/> 女</label>
                       </div>
-                    </label>
-                    <label class="idtool-field full">
-                      <span>展示模式</span>
-                      <div class="ziwei-mode-switch" role="radiogroup" aria-label="展示模式">
-                        <button class="ziwei-mode-btn" :class="{active: !ziweiProMode}" type="button" @click="ziweiProMode=false">简洁模式</button>
-                        <button class="ziwei-mode-btn" :class="{active: ziweiProMode}" type="button" @click="ziweiProMode=true">专业模式</button>
-                      </div>
-                      <small class="ziwei-mode-hint">默认简洁模式，信息更清爽；需要更深分析时再切专业模式。</small>
                     </label>
                     <label class="idtool-field full">
                       <span>流派模式</span>
@@ -1943,8 +1932,7 @@ $$;</pre>
                     <h3 class="ziwei-input-title">高级参数</h3>
                   </div>
                   <button class="ziwei-advanced-toggle" type="button" :aria-expanded="String(ziweiAdvancedOpen)" @click="ziweiAdvancedOpen=!ziweiAdvancedOpen">
-                    <strong>{{ ziweiAdvancedOpen ? '收起高级设置' : '展开高级设置' }}</strong>
-                    <em>{{ ziweiAdvancedSummary }}</em>
+                    <strong>{{ ziweiAdvancedOpen ? '折叠' : '展示' }}</strong>
                   </button>
                   <div class="ziwei-form-grid ziwei-advanced-grid" v-if="ziweiAdvancedOpen">
                     <label class="idtool-field">
@@ -1992,7 +1980,7 @@ $$;</pre>
               </article>
               <section class="ziwei-image-panel" id="ziwei-image-export" v-else>
                 <header class="ziwei-panel-head">
-                  <h4>图片命盘 — 支持导出 PNG</h4>
+                  <h4>图片命盘</h4>
                   <span>{{ ziweiChart.center.yearGanZhi }} · {{ ziweiChart.center.bureauLabel }} · {{ ziweiChart.center.genderLabel }}命</span>
                 </header>
                 <div class="ziwei-board-shell">
@@ -2013,8 +2001,7 @@ $$;</pre>
                         <span class="ziwei-palace-gz">{{ cell.stemBranch }}</span>
                       </header>
                       <div class="ziwei-age-series">
-                        <span class="ziwei-age-line">流年: {{ cell.liuNianSeriesText || '--' }}</span>
-                        <span class="ziwei-age-line">小限: {{ cell.xiaoXianSeriesText || '--' }}</span>
+                        <span class="ziwei-age-line">流年: {{ (cell.currentLiuNian || (cell.liuNianSeries && cell.liuNianSeries.length ? cell.liuNianSeries[0] : '--')) }} · 小限: {{ (cell.currentXiaoXian || (cell.xiaoXianSeries && cell.xiaoXianSeries.length ? cell.xiaoXianSeries[0] : '--')) }}</span>
                       </div>
                       <div class="ziwei-star-row main">
                         <span class="ziwei-star main" v-for="star in cell.mainStars" :key="'zw-main-'+cell.branch+'-'+star.name">
@@ -2040,36 +2027,71 @@ $$;</pre>
                         <span>{{ cell.daXian }}</span>
                         <span>{{ cell.branch }}</span>
                       </footer>
-                      <div class="ziwei-track-chip" v-if="ziweiProMode && ziweiSchool==='flying'">
-                        <span>飞出 {{ cell.outgoingHuaCount }}</span>
-                        <span>飞入 {{ cell.incomingHuaCount }}</span>
-                      </div>
                     </section>
                     <section class="ziwei-center">
-                      <h4>命盘信息</h4>
-                      <p><strong>姓名：</strong>{{ ziweiProfileName || '--' }}</p>
-                      <p><strong>性别：</strong>{{ ziweiChart.center.genderLabel }}</p>
-                      <p><strong>输入历法：</strong>{{ ziweiChart.center.calendarInputType }}</p>
-                      <p><strong>流派：</strong>{{ ziweiChart.center.schoolLabel }}</p>
-                      <p><strong>校时模式：</strong>{{ ziweiChart.center.clockModeLabel || '标准时间' }}</p>
-                      <p v-if="ziweiChart.center.timeCorrectionText"><strong>校时修正：</strong>{{ ziweiChart.center.timeCorrectionText }}</p>
-                      <p><strong>公历：</strong>{{ ziweiChart.center.solarText }}</p>
-                      <p v-if="ziweiChart.center.inputClockText && ziweiChart.center.inputClockText!==ziweiChart.center.solarText"><strong>原始时刻：</strong>{{ ziweiChart.center.inputClockText }}</p>
-                      <p><strong>农历：</strong>{{ ziweiChart.center.lunarText }}</p>
-                      <p><strong>农历月令 / 时辰：</strong>{{ ziweiChart.center.monthLabel || '--' }} / {{ ziweiChart.center.shichenLabel || '--' }}</p>
-                      <p><strong>年干支：</strong>{{ ziweiChart.center.yearGanZhi }}</p>
-                      <p><strong>五行局：</strong>{{ ziweiChart.center.bureauLabel }}</p>
-                      <p><strong>紫微 / 天府落宫：</strong>{{ ziweiChart.center.ziweiBranch || '--' }} / {{ ziweiChart.center.tianfuBranch || '--' }}</p>
-                      <p><strong>小限起法：</strong>{{ ziweiChart.center.xiaoXianRuleLabel || '--' }}</p>
-                      <p><strong>流年起法：</strong>{{ ziweiChart.center.liuNianRuleLabel || '--' }}</p>
-                      <p><strong>大限方向：</strong>{{ ziweiChart.center.daXianDirectionLabel }}</p>
-                      <p><strong>命主 / 身主：</strong>{{ ziweiChart.center.mingZhu }} / {{ ziweiChart.center.shenZhu }}</p>
-                      <p><strong>命宫 / 身宫：</strong>{{ ziweiChart.center.mingBranch }} / {{ ziweiChart.center.shenBranch }}</p>
-                      <p><strong>身宫所落：</strong>{{ ziweiChart.center.shenPalaceName }}</p>
-                      <p><strong>时区 / 经度：</strong>UTC{{ Number(ziweiChart.center.timezoneOffset) >= 0 ? '+' : '' }}{{ ziweiChart.center.timezoneOffset }} / {{ Number(ziweiChart.center.longitude || 0).toFixed(3) }}°</p>
-                      <p v-if="ziweiChart.center.clockMode==='trueSolar'"><strong>校时细项：</strong>经度修正 {{ Number(ziweiChart.center.longitudeCorrectionMinutes || 0) >= 0 ? '+' : '' }}{{ Number(ziweiChart.center.longitudeCorrectionMinutes || 0).toFixed(2) }} 分；时差方程 {{ Number(ziweiChart.center.equationOfTimeMinutes || 0) >= 0 ? '+' : '' }}{{ Number(ziweiChart.center.equationOfTimeMinutes || 0).toFixed(2) }} 分</p>
+                      <h4>{{ ziweiCenterTitle }}</h4>
+                      <p class="ziwei-center-meta">{{ ziweiChart.center.yinYangGenderLabel || '--' }} · {{ ziweiChart.center.bureauLabel || '--' }} · {{ ziweiChart.center.schoolLabel || '--' }}</p>
+                      <div class="ziwei-center-info">
+                        <p><strong>姓名：</strong><span>{{ ziweiProfileName || '--' }}</span></p>
+                        <p><strong>阴阳：</strong><span>{{ ziweiChart.center.yinYangGenderLabel || '--' }}</span></p>
+                        <p><strong>五行局：</strong><span>{{ ziweiChart.center.bureauLabel || '--' }}</span></p>
+                        <p><strong>历法：</strong><span>{{ ziweiChart.center.calendarInputType || '--' }}</span></p>
+                        <p><strong>真太阳时：</strong><span>{{ ziweiChart.center.solarText || '--' }}</span></p>
+                        <p><strong>钟表时间：</strong><span>{{ ziweiChart.center.inputClockText || '--' }}</span></p>
+                        <p><strong>农历：</strong><span>{{ ziweiChart.center.lunarText || '--' }}</span></p>
+                        <p><strong>命主：</strong><span>{{ ziweiChart.center.mingZhu || '--' }}</span></p>
+                        <p><strong>身主：</strong><span>{{ ziweiChart.center.shenZhu || '--' }}</span></p>
+                        <p><strong>命宫：</strong><span>{{ (ziweiChart.center.mingBranch || '--') + (ziweiChart.center.mingPalaceName ? ('·' + ziweiChart.center.mingPalaceName) : '') }}</span></p>
+                        <p><strong>身宫：</strong><span>{{ (ziweiChart.center.shenBranch || '--') + (ziweiChart.center.shenPalaceName ? ('·' + ziweiChart.center.shenPalaceName) : '') }}</span></p>
+                        <p><strong>流年：</strong><span>{{ (ziweiChart.center.currentYearLabel || '--') + ' ' + (ziweiChart.center.currentYearGanZhiLabel || '') }}</span></p>
+                      </div>
+                      <div class="ziwei-center-divider"></div>
+                      <div class="ziwei-center-pillars">
+                        <div class="ziwei-center-pillar-col">
+                          <p class="ziwei-center-pillar-title">节气四柱</p>
+                          <div class="ziwei-center-pillar-cells">
+                            <span class="ziwei-center-pillar-cell" v-for="(p,idx) in (ziweiChart.center.jieqiPillars || [])" :key="'zw-jieqi-p-'+idx"><em>{{ p.stem }}</em>{{ p.branch }}</span>
+                          </div>
+                        </div>
+                        <div class="ziwei-center-pillar-col">
+                          <p class="ziwei-center-pillar-title">非节气四柱</p>
+                          <div class="ziwei-center-pillar-cells">
+                            <span class="ziwei-center-pillar-cell" v-for="(p,idx) in (ziweiChart.center.nonJieqiPillars || [])" :key="'zw-nonjieqi-p-'+idx"><em>{{ p.stem }}</em>{{ p.branch }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <p class="ziwei-center-qiyun">{{ ziweiChart.center.qiYunText || '--' }}</p>
+                      <div class="ziwei-center-da-preview" v-if="ziweiChart.center.decadeMarks && ziweiChart.center.decadeMarks.length">
+                        <span class="ziwei-center-da-chip" v-for="(item,idx) in ziweiChart.center.decadeMarks" :key="'zw-center-year-'+idx">
+                          <strong>{{ item.year }}</strong>
+                          <em>{{ item.ganzhi }}</em>
+                        </span>
+                      </div>
+                      <p class="ziwei-center-meta">{{ ziweiChart.center.yinYangGenderLabel || '--' }} · {{ ziweiChart.center.bureauLabel || '--' }} · {{ ziweiChart.center.schoolLabel || '--' }}</p>
+                      <div class="ziwei-center-grid" v-if="false">
+                        <div class="ziwei-center-item"><strong>姓名</strong><span>{{ ziweiProfileName || '--' }}</span></div>
+                        <div class="ziwei-center-item"><strong>性别</strong><span>{{ ziweiChart.center.genderLabel || '--' }}</span></div>
+                        <div class="ziwei-center-item"><strong>公历</strong><span>{{ ziweiChart.center.solarText || '--' }}</span></div>
+                        <div class="ziwei-center-item"><strong>农历</strong><span>{{ ziweiChart.center.lunarText || '--' }}</span></div>
+                        <div class="ziwei-center-item"><strong>年干支</strong><span>{{ ziweiChart.center.yearGanZhi || '--' }}</span></div>
+                        <div class="ziwei-center-item"><strong>月令时辰</strong><span>{{ (ziweiChart.center.monthLabel || '--') + ' / ' + (ziweiChart.center.shichenLabel || '--') }}</span></div>
+                        <div class="ziwei-center-item"><strong>命主身主</strong><span>{{ (ziweiChart.center.mingZhu || '--') + ' / ' + (ziweiChart.center.shenZhu || '--') }}</span></div>
+                        <div class="ziwei-center-item"><strong>命宫身宫</strong><span>{{ (ziweiChart.center.mingBranch || '--') + (ziweiChart.center.mingPalaceName ? (' ' + ziweiChart.center.mingPalaceName) : '') + ' / ' + (ziweiChart.center.shenBranch || '--') + (ziweiChart.center.shenPalaceName ? (' ' + ziweiChart.center.shenPalaceName) : '') }}</span></div>
+                        <div class="ziwei-center-item"><strong>当前年龄</strong><span>{{ ziweiChart.center.currentAgeLabel || '--' }}</span></div>
+                        <div class="ziwei-center-item"><strong>当前流年</strong><span>{{ (ziweiChart.center.currentYearLabel || '--') + ' ' + (ziweiChart.center.currentYearGanZhiLabel || '') }}</span></div>
+                        <div class="ziwei-center-item"><strong>当前大限</strong><span>{{ ziweiChart.center.currentDaXianLabel || '--' }}</span></div>
+                        <div class="ziwei-center-item"><strong>流年落宫</strong><span>{{ ziweiChart.center.currentLiuNianPalaceLabel || '--' }}</span></div>
+                        <div class="ziwei-center-item"><strong>紫微天府</strong><span>{{ (ziweiChart.center.ziweiBranch || '--') + ' / ' + (ziweiChart.center.tianfuBranch || '--') }}</span></div>
+                        <div class="ziwei-center-item"><strong>起法</strong><span>{{ (ziweiChart.center.xiaoXianRuleLabel || '--') + ' · ' + (ziweiChart.center.liuNianRuleLabel || '--') }}</span></div>
+                      </div>
                       <div class="ziwei-center-hua" v-if="ziweiChart.center.huaSummary && ziweiChart.center.huaSummary.length">
                         <span class="ziwei-hua-tag ziwei-hua-summary" v-for="item in ziweiChart.center.huaSummary" :key="'zw-center-hua-'+item.tag" :data-hua="item.tag">{{ item.label }}</span>
+                      </div>
+                      <div class="ziwei-center-da-preview" v-if="false && ziweiCenterDaXianPreview && ziweiCenterDaXianPreview.length">
+                        <span class="ziwei-center-da-chip" :class="{active:item.active}" v-for="item in ziweiCenterDaXianPreview" :key="'zw-center-dx-'+item.range">
+                          <strong>{{ item.range }}</strong>
+                          <em>{{ item.branch }}{{ item.palaceName ? ('·' + item.palaceName) : '' }}</em>
+                        </span>
                       </div>
                       <p class="ziwei-center-note" v-if="ziweiChart.center.shiftedByZiHour">已按子时（23:00后）换日规则排盘</p>
                     </section>
@@ -2104,7 +2126,6 @@ $$;</pre>
                   </div>
                 </header>
                 <div class="ziwei-ai-top-actions">
-                  <button class="idtool-btn ghost ziwei-ai-btn" type="button" :disabled="ziweiAiLoading" @click="copyZiweiAnalysisText">{{ ziweiAiCopyButtonLabel }}</button>
                   <button class="idtool-btn ghost ziwei-ai-btn" type="button" :disabled="!ziweiChart || ziweiAiLoading" @click="requestZiweiAiAnalysis({force:true})">{{ ziweiAiButtonLabel }}</button>
                 </div>
                 <p class="ziwei-ai-disclaimer-top">本分析仅供参考娱乐，不替代专业建议，重大决策请结合实际审慎判断。</p>

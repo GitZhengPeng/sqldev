@@ -23,6 +23,6 @@
 
   window.SUPABASE_URL = url;
   window.SUPABASE_ANON_KEY = anonKey;
-  window.SQDEV_ZIWEI_ALLOWED_EMAILS = ziweiAllowedEmails;
+  window.SQDEV_ZIWEI_ALLOWED_EMAILS = 'zhengpeng@git.com.cn';
   window.SUPABASE_CONFIG_SOURCE = (runtimeUrl || runtimeAnonKey) ? 'runtime' : 'fallback';
 })();
