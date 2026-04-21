@@ -547,3 +547,47 @@ Last updated: 2026-04-15
     - `bootstrap.js?v=20260420a`
 - Notes:
   - legacy ZiWei template block is temporarily disabled in `index.html` (`v-if="false && ...`) while new V3 template is active, to keep rollback-safe migration during this round.
+
+## 2026-04-21: ZiWei QA/Board Alignment Refinement (Reference HTML Follow-up)
+- QA panel interaction updated (right AI column):
+  - moved `问 AI 命盘问题` input block above AI interpretation content.
+  - after clicking QA send, UI now clears existing AI interpretation content first, then renders the new QA answer.
+  - loading copy kept as `AI思考中...`.
+- Board visual density reduced (center column):
+  - narrowed overall board dominance by adjusting 3-column proportions and center panel spacing.
+  - reduced palace min-height and tightened board shell padding for improved at-a-glance readability.
+  - constrained image panel width with centered layout to avoid over-expansion on wide screens.
+- Center card content aligned closer to reference `ziwei-chart (3).html`:
+  - center info now follows reference-style key fields (姓名/阴阳/五行局/历法/真太阳时/钟表时间/农历/命主/身主/命宫/身宫/五行).
+  - added `naYinLabel` to chart center model (`app.js`) and rendered as `五行`.
+  - pillar display changed to dual-row textual style (节气四柱 / 非节气四柱) with aggregated text lines.
+- Palace card content normalized toward reference rhythm:
+  - removed in-card `命宫/身宫` badges from main palace content area.
+  - kept top age line as `流年 + 小限` primary line; retained footer for长生/大限/地支.
+- Files touched in this round:
+  - `app.js` (center fields/computed exports, QA send clear behavior, payload extension)
+  - `index.html` (QA block order + center/palace content structure)
+  - `style.css` (layout proportion tuning + board/center typography and spacing refinement)
+
+## 2026-04-21: ZiWei AI Request Guard + Thinking Duration + Share Poster Mode
+- AI deep analysis interaction hardening:
+  - deep-analysis button now calls `requestZiweiAiAnalysis()` (removed forced cache bypass).
+  - added in-flight single-flight guard (`_ziweiAiInFlightPromise`) to prevent repeated click bursts from creating parallel AI requests.
+  - deep-analysis request payload switched to compact builder (`_zwBuildAiPayloadCompact`) to reduce request body size and improve response speed.
+- Thinking duration:
+  - added `ziweiAiLastDurationMs` and `ziweiAiDurationText` (`X分YY秒`) for post-analysis timing display.
+  - duration now updates after AI response completes (and on error path for diagnostics).
+  - duration label rendered in right AI panel header area.
+- ZiWei palace content alignment:
+  - palace `流年` block expanded to multi-line metadata (流年/小限 + 大限/长生 + 流年序列), and related visual spacing tightened.
+- Share poster feature:
+  - added `generateZiweiSharePoster()` + modal preview UI + download action.
+  - poster generation uses existing html2canvas path and auto-copies share URL.
+  - added `ziwei_share` link mode (`?ziwei_share=1#/workbench/ziwei`), intended for shared access entry.
+- Share-link constrained interface:
+  - introduced `ziweiShareMode` route flag parsing.
+  - when share mode is active, app normalizes route/page access to `ziweiTool` and applies shell-level UI lock style (hide sidebar/header/footer, keep ZiWei-only canvas view).
+- Files touched in this round:
+  - `app.js`
+  - `index.html`
+  - `style.css`

@@ -2583,12 +2583,33 @@ const app = createApp({
         return '';
       }
     }
+    function _readZiweiShareModeFromLocation() {
+      try {
+        if (typeof window === 'undefined' || !window.location) return false;
+        var search = new URLSearchParams(String(window.location.search || ''));
+        var raw = search.get('ziwei_share') || search.get('zwshare') || '';
+        if (!raw && String(window.location.hash || '').indexOf('?') >= 0) {
+          var hashQuery = String(window.location.hash || '').split('?')[1] || '';
+          var hashParams = new URLSearchParams(hashQuery);
+          raw = hashParams.get('ziwei_share') || hashParams.get('zwshare') || '';
+        }
+        var flag = String(raw || '').trim().toLowerCase();
+        return flag === '1' || flag === 'true' || flag === 'yes';
+      } catch (_err) {
+        return false;
+      }
+    }
+    const ziweiShareMode = ref(_readZiweiShareModeFromLocation());
     const currentUserEmail = ref(readCurrentAuthEmail());
     const canAccessZiweiTool = computed(function() {
+      if (ziweiShareMode.value) return true;
       if (!ZIWEI_ALLOWED_EMAILS.length) return false;
       var email = normalizeEmail(currentUserEmail.value);
       if (!email) return false;
       return ZIWEI_ALLOWED_EMAILS.indexOf(email) >= 0;
+    });
+    const isZiweiShareMode = computed(function() {
+      return ziweiShareMode.value === true;
     });
 
     function normalizePageKey(page) {
@@ -2597,6 +2618,7 @@ const app = createApp({
     }
     function normalizeAccessiblePage(page) {
       var key = normalizePageKey(page);
+      if (ziweiShareMode.value) return 'ziweiTool';
       if (key === 'ziweiTool' && !canAccessZiweiTool.value) return 'idTool';
       return key;
     }
@@ -2713,15 +2735,27 @@ const app = createApp({
       if (poster) poster.style.display = 'none';
     }
     function applyRouteFromLocation() {
+      ziweiShareMode.value = _readZiweiShareModeFromLocation();
       var routeInfo = parseRouteInfoFromLocation();
       if (!routeInfo) return;
       if (routeInfo.view === 'splash') {
+        if (ziweiShareMode.value) {
+          ensureWorkbenchVisibleForRoute();
+          applyPageState('ziweiTool', { syncRoute: true, replaceRoute: true, keepSidebarOnMobile: true });
+          return;
+        }
         if (typeof document !== 'undefined' && !document.body.classList.contains('splash-active')) {
           goSplashHome();
         }
         return;
       }
       ensureWorkbenchVisibleForRoute();
+      if (ziweiShareMode.value) {
+        if (activePage.value !== 'ziweiTool') {
+          applyPageState('ziweiTool', { syncRoute: true, replaceRoute: true, keepSidebarOnMobile: true });
+        }
+        return;
+      }
       if (routeInfo.page === 'ziweiTool' && !canAccessZiweiTool.value) {
         applyPageState('idTool', { syncRoute: true, replaceRoute: true, keepSidebarOnMobile: true });
         return;
@@ -3049,9 +3083,12 @@ const app = createApp({
     const ziweiAiError = ref('');
     const ziweiAiResult = ref(null);
     const ziweiAiUpdatedAt = ref(0);
+    const ziweiAiLastDurationMs = ref(0);
     const ziweiLastAiSignature = ref('');
     const _ziweiAiCache = new Map();
     const _ZIWEI_AI_CACHE_MAX = 12;
+    var _ziweiAiInFlightPromise = null;
+    var _ziweiAiInFlightSignature = '';
     /*
     const LEGACY_UNUSED_QA_LIST = [
       '请解读我今年事业和收入变化重点',
@@ -3091,6 +3128,8 @@ const app = createApp({
     const ziweiAiSuggestionPlacement = ref('down');
     const ziweiAiSuggestionMaxHeight = ref(320);
     const ziweiExporting = ref(false);
+    const ziweiSharing = ref(false);
+    const ziweiSharePosterDataUrl = ref('');
     const ziweiGenerating = ref(false);
     const ziweiGenerateDone = ref(false);
     const ziweiCopyDone = ref(false);
@@ -3479,12 +3518,21 @@ const app = createApp({
     const ziweiExportButtonLabel = computed(function() {
       return ziweiExporting.value ? '\u5bfc\u51fa\u4e2d...' : '\u5bfc\u51fa\u547d\u76d8\u56fe\u7247';
     });
+    const ziweiShareButtonLabel = computed(function() {
+      return ziweiSharing.value ? '生成中...' : '分享海报';
+    });
     const ziweiAiButtonLabel = computed(function() {
       if (ziweiAiLoading.value) return 'AI 解读中...';
       return ziweiAiDone.value ? '已生成 AI 解读' : 'AI 深度解盘';
     });
     const ziweiAiUpdatedAtText = computed(function() {
       return ziweiAiUpdatedAt.value ? formatZiweiHistoryTime(ziweiAiUpdatedAt.value) : '';
+    });
+    const ziweiAiDurationText = computed(function() {
+      return formatZiweiDurationText(ziweiAiLastDurationMs.value);
+    });
+    const ziweiShareLink = computed(function() {
+      return buildZiweiShareLink();
     });
     const ziweiAiSuggestionsFiltered = computed(function() {
       var source = Array.isArray(ziweiAiQaSuggestions.value) ? ziweiAiQaSuggestions.value : [];
@@ -5515,6 +5563,22 @@ const app = createApp({
       return y + '-' + m + '-' + day + ' ' + hh + ':' + mm;
     }
 
+    function formatZiweiDurationText(ms) {
+      var value = Number(ms || 0);
+      if (!Number.isFinite(value) || value <= 0) return '';
+      var totalSeconds = Math.max(1, Math.round(value / 1000));
+      var minutes = Math.floor(totalSeconds / 60);
+      var seconds = totalSeconds % 60;
+      return String(minutes) + '分' + String(seconds).padStart(2, '0') + '秒';
+    }
+
+    function buildZiweiShareLink() {
+      if (typeof window === 'undefined' || !window.location) return '';
+      var origin = window.location.origin || '';
+      var path = window.location.pathname || '/';
+      return origin + path + '?ziwei_share=1#/workbench/ziwei';
+    }
+
     function focusZiweiBranch(branch) {
       var b = String(branch || '');
       if (!b) return;
@@ -5628,6 +5692,8 @@ const app = createApp({
       ziweiAiDone.value = false;
       ziweiAiError.value = '';
       ziweiAiQuestionAnswer.value = '';
+      var startedAt = Date.now();
+      var silent = true;
       ziweiStatus.value = { type: 'info', text: 'AI 正在思考中，请稍后...' };
       try {
         var signature = _zwBuildAiSignature(ziweiChart.value) + '|qa|' + question.slice(0, 64);
@@ -5652,6 +5718,13 @@ const app = createApp({
         if (!answer) throw new Error('AI 未返回可用问答内容');
         ziweiAiQuestionAnswer.value = answer;
         ziweiStatus.value = { type: 'success', text: 'AI 问答已生成。' };
+        // legacy placeholder kept for compatibility
+        var elapsedMs = Date.now() - startedAt;
+        ziweiAiLastDurationMs.value = elapsedMs;
+        if (!silent) ziweiStatus.value = { type: 'success', text: 'AI 个性化解盘已生成（思考耗时 ' + formatZiweiDurationText(elapsedMs) + '）。' };
+        var elapsedMs = Date.now() - startedAt;
+        ziweiAiLastDurationMs.value = elapsedMs;
+        if (!silent) ziweiStatus.value = { type: 'success', text: 'AI 个性化解盘已生成（思考耗时 ' + formatZiweiDurationText(elapsedMs) + '）。' };
       } catch (err) {
         var msg = String((err && err.message) || err || 'AI 问答失败');
         ziweiStatus.value = { type: 'error', text: 'AI 问答失败：' + msg };
@@ -5839,6 +5912,31 @@ const app = createApp({
       };
     }
 
+    function _zwBuildAiPayloadCompact(chart) {
+      var payload = _zwBuildAiPayload(chart);
+      if (!payload || typeof payload !== 'object') return payload;
+      payload.payloadVersion = 'ziwei-ai-v2-compact';
+      payload.chartText = '';
+      payload.ruleSummary = Array.isArray(payload.ruleSummary) ? payload.ruleSummary.slice(0, 4) : [];
+      payload.huaTracks = Array.isArray(payload.huaTracks) ? payload.huaTracks.slice(0, 48) : [];
+      payload.liuNianTimeline = Array.isArray(payload.liuNianTimeline) ? payload.liuNianTimeline.slice(0, 12) : [];
+      payload.daXianTimeline = Array.isArray(payload.daXianTimeline) ? payload.daXianTimeline.slice(0, 8) : [];
+      payload.palaces = Array.isArray(payload.palaces)
+        ? payload.palaces.map(function(item) {
+          var palace = Object.assign({}, item || {});
+          palace.mainStars = Array.isArray(palace.mainStars) ? palace.mainStars.slice(0, 6) : [];
+          palace.assistStars = Array.isArray(palace.assistStars) ? palace.assistStars.slice(0, 8) : [];
+          palace.miscStars = Array.isArray(palace.miscStars) ? palace.miscStars.slice(0, 8) : [];
+          palace.liuNianSeries = Array.isArray(palace.liuNianSeries) ? palace.liuNianSeries.slice(0, 4) : [];
+          palace.xiaoXianSeries = Array.isArray(palace.xiaoXianSeries) ? palace.xiaoXianSeries.slice(0, 4) : [];
+          palace.liuNianSeriesText = '';
+          palace.xiaoXianSeriesText = '';
+          return palace;
+        })
+        : [];
+      return payload;
+    }
+
     async function _zwParseInvokeError(err) {
       var status = 0;
       var detail = '';
@@ -5897,6 +5995,10 @@ const app = createApp({
         if (!silent) ziweiStatus.value = { type: 'success', text: '已加载缓存的 AI 个性化解盘。' };
         return;
       }
+      if (_ziweiAiInFlightPromise) {
+        if (!silent) ziweiStatus.value = { type: 'info', text: 'AI 正在思考中，请勿重复点击。' };
+        return _ziweiAiInFlightPromise;
+      }
       if (ziweiAiLoading.value) {
         if (!silent) ziweiStatus.value = { type: 'info', text: 'AI 解读正在生成中，请稍候...' };
         return;
@@ -5904,13 +6006,17 @@ const app = createApp({
 
       ziweiAiLoading.value = true;
       ziweiAiError.value = '';
+      ziweiAiLastDurationMs.value = 0;
+      var startedAt = Date.now();
       if (!silent) ziweiStatus.value = { type: 'info', text: '正在生成 AI 个性化解盘，请稍候...' };
       try {
-        var result = await window.authApi.invokeFunction('ziwei-analysis', {
+        _ziweiAiInFlightSignature = aiSignature;
+        _ziweiAiInFlightPromise = window.authApi.invokeFunction('ziwei-analysis', {
           signature: aiSignature,
           style: 'pro',
-          chart: _zwBuildAiPayload(ziweiChart.value)
+          chart: _zwBuildAiPayloadCompact(ziweiChart.value)
         });
+        var result = await _ziweiAiInFlightPromise;
 
         if (result && result.error) {
           var parsed = await _zwParseInvokeError(result.error);
@@ -5936,14 +6042,19 @@ const app = createApp({
             if (firstKey) _ziweiAiCache.delete(firstKey);
           }
         }
+        var elapsedMs = Date.now() - startedAt;
+        ziweiAiLastDurationMs.value = elapsedMs;
         if (!silent) ziweiStatus.value = { type: 'success', text: 'AI 个性化解盘已生成。' };
       } catch (err) {
         var msg = String((err && err.message) || err || 'AI 请求失败');
         ziweiAiDone.value = false;
         ziweiAiError.value = msg;
+        ziweiAiLastDurationMs.value = Date.now() - startedAt;
         if (!silent) ziweiStatus.value = { type: 'error', text: 'AI 深度解盘失败：' + msg };
       } finally {
         ziweiAiLoading.value = false;
+        _ziweiAiInFlightPromise = null;
+        _ziweiAiInFlightSignature = '';
       }
     }
 
@@ -6682,6 +6793,104 @@ const app = createApp({
         ziweiStatus.value = { type: 'error', text: '命盘图片导出失败：' + String((err && err.message) || err || '') };
       } finally {
         ziweiExporting.value = false;
+      }
+    }
+
+    function closeZiweiSharePoster() {
+      ziweiSharePosterDataUrl.value = '';
+    }
+
+    function downloadZiweiSharePoster() {
+      if (!ziweiSharePosterDataUrl.value) return;
+      var link = document.createElement('a');
+      link.href = ziweiSharePosterDataUrl.value;
+      link.download = 'ziwei-share-poster.png';
+      link.click();
+    }
+
+    async function generateZiweiSharePoster() {
+      if (!ziweiChart.value) {
+        ziweiStatus.value = { type: 'info', text: '请先完成排盘。' };
+        return;
+      }
+      var target = document.getElementById('ziwei-image-export') || document.getElementById('ziwei-board-export');
+      if (!target) {
+        ziweiStatus.value = { type: 'error', text: '未找到命盘区域，无法生成分享海报。' };
+        return;
+      }
+      ziweiSharing.value = true;
+      try {
+        var html2canvas = await _zwEnsureHtml2Canvas();
+        var sourceCanvas = await html2canvas(target, {
+          backgroundColor: null,
+          scale: Math.min(window.devicePixelRatio || 1.5, 2),
+          useCORS: true,
+          logging: false
+        });
+        var posterW = 1080;
+        var posterH = 1680;
+        var poster = document.createElement('canvas');
+        poster.width = posterW;
+        poster.height = posterH;
+        var ctx = poster.getContext('2d');
+        if (!ctx) throw new Error('海报画布创建失败');
+
+        var bgGradient = ctx.createLinearGradient(0, 0, posterW, posterH);
+        bgGradient.addColorStop(0, '#0b1126');
+        bgGradient.addColorStop(1, '#161f3d');
+        ctx.fillStyle = bgGradient;
+        ctx.fillRect(0, 0, posterW, posterH);
+
+        ctx.fillStyle = '#d8e2ff';
+        ctx.font = '700 42px "Noto Sans SC", "PingFang SC", sans-serif';
+        ctx.fillText('紫微斗数命盘分享', 64, 98);
+        ctx.fillStyle = 'rgba(184,201,244,.9)';
+        ctx.font = '500 24px "Noto Sans SC", "PingFang SC", sans-serif';
+        ctx.fillText('通过下方链接仅进入紫微界面', 64, 138);
+
+        var cardX = 48;
+        var cardY = 176;
+        var cardW = posterW - 96;
+        var cardH = 1180;
+        ctx.fillStyle = 'rgba(11,20,44,.82)';
+        ctx.strokeStyle = 'rgba(120,146,232,.55)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(cardX, cardY, cardW, cardH, 20);
+        ctx.fill();
+        ctx.stroke();
+
+        var imgMaxW = cardW - 36;
+        var imgMaxH = cardH - 36;
+        var ratio = Math.min(imgMaxW / sourceCanvas.width, imgMaxH / sourceCanvas.height);
+        var drawW = Math.floor(sourceCanvas.width * ratio);
+        var drawH = Math.floor(sourceCanvas.height * ratio);
+        var drawX = cardX + Math.floor((cardW - drawW) / 2);
+        var drawY = cardY + Math.floor((cardH - drawH) / 2);
+        ctx.drawImage(sourceCanvas, drawX, drawY, drawW, drawH);
+
+        var shareLink = buildZiweiShareLink();
+        ctx.fillStyle = '#b9c7ef';
+        ctx.font = '600 22px "Noto Sans SC", "PingFang SC", sans-serif';
+        ctx.fillText('分享链接：', 64, 1410);
+        ctx.fillStyle = '#f0f5ff';
+        ctx.font = '500 20px "JetBrains Mono", "Noto Sans SC", monospace';
+        var linkText = shareLink.length > 78 ? (shareLink.slice(0, 78) + '...') : shareLink;
+        ctx.fillText(linkText, 64, 1450);
+        ctx.fillStyle = 'rgba(180,196,236,.9)';
+        ctx.font = '500 20px "Noto Sans SC", "PingFang SC", sans-serif';
+        ctx.fillText('打开该链接后将锁定到紫微命盘界面。', 64, 1500);
+
+        ziweiSharePosterDataUrl.value = poster.toDataURL('image/png');
+        clipboardWrite(shareLink).then(function(ok) {
+          ziweiStatus.value = ok
+            ? { type: 'success', text: '分享海报已生成，分享链接已复制。' }
+            : { type: 'success', text: '分享海报已生成。' };
+        });
+      } catch (err) {
+        ziweiStatus.value = { type: 'error', text: '生成分享海报失败：' + String((err && err.message) || err || '') };
+      } finally {
+        ziweiSharing.value = false;
       }
     }
 
@@ -7935,7 +8144,7 @@ const app = createApp({
 
     return {
       activePage, sidebarOpen, sidebarCollapsed, toggleSidebar, handleSidebarHover, setPage,
-      canAccessZiweiTool,
+      canAccessZiweiTool, isZiweiShareMode,
       testToolsExpanded, toggleTestToolsMenu,
       sidebarSettingsOpen, actionBarCollapsed,
       // DB Picker
@@ -7985,12 +8194,12 @@ const app = createApp({
       ziweiYearOptions, ziweiMonthOptions, ziweiHourOptions, ziweiMinuteOptions,
       ziweiChart, ziweiAnalysis, ziweiHistory, ziweiHistoryCountText, ziweiHistoryNameOptions, ziweiFocusTracks, ziweiFocusTrackCount, ziweiStatus,
       ziweiActiveAnalysis, ziweiAnalysisActiveKey,
-      ziweiExporting, ziweiGenerating, ziweiAiLoading, ziweiAiDone, ziweiAiError, ziweiAiResult, ziweiAiUpdatedAtText,
+      ziweiExporting, ziweiSharing, ziweiSharePosterDataUrl, ziweiGenerating, ziweiAiLoading, ziweiAiDone, ziweiAiError, ziweiAiResult, ziweiAiUpdatedAtText, ziweiAiDurationText, ziweiShareLink,
       ziweiAiQuestionInput, ziweiAiQuestionAnswer, ziweiAiQuestionLoading, ziweiAiSuggestionOpen,
       ziweiAiQaInputWrapRef, ziweiAiSuggestionPlacement, ziweiAiSuggestionMaxHeight,
       ziweiAiSuggestionsFiltered,
-      ziweiGenerateButtonLabel, ziweiCopyButtonLabel, ziweiAiCopyButtonLabel, ziweiExportButtonLabel, ziweiAiButtonLabel,
-      generateZiweiChart, copyZiweiChartText, copyZiweiAnalysisText, exportZiweiChartImage, requestZiweiAiAnalysis,
+      ziweiGenerateButtonLabel, ziweiCopyButtonLabel, ziweiAiCopyButtonLabel, ziweiExportButtonLabel, ziweiShareButtonLabel, ziweiAiButtonLabel,
+      generateZiweiChart, copyZiweiChartText, copyZiweiAnalysisText, exportZiweiChartImage, generateZiweiSharePoster, closeZiweiSharePoster, downloadZiweiSharePoster, requestZiweiAiAnalysis,
       openZiweiAiSuggestions, pickZiweiAiSuggestion, submitZiweiAiQuestion,
       focusZiweiBranch, toggleZiweiAnalysis, applyZiweiHistoryFromInput, applyZiweiHistoryFromSelect, loadZiweiHistory, removeZiweiHistory, clearZiweiHistory, formatZiweiHistoryTime,
       // Shared

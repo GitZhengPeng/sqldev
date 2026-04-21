@@ -374,7 +374,7 @@
 
 <a href="#main-content" class="skip-link">跳转到主要内容</a>
 <div id="app" v-cloak>
-  <div class="shell" :class="{'sidebar-is-collapsed': sidebarCollapsed}">
+  <div class="shell" :class="{'sidebar-is-collapsed': sidebarCollapsed, 'ziwei-share-shell': isZiweiShareMode}">
     <!-- ======== SIDEBAR OVERLAY (mobile) ======== -->
     <div class="sidebar-overlay" :class="{open: sidebarOpen}" @click="sidebarOpen=false"></div>
 
@@ -1297,6 +1297,7 @@ $$;</pre>
                   <div class="idtool-output">
                     <input type="text" :value="usccGeneratedCode" readonly :placeholder="usccOutputPlaceholder"/>
                     <button class="idtool-btn ghost" type="button" @click="copyGeneratedUsccCode">{{ usccCopyButtonLabel }}</button>
+                    <span class="ziwei-ai-duration" v-if="ziweiAiDurationText">思考耗时 {{ ziweiAiDurationText }}</span>
                   </div>
                   <div class="idtool-legacy-block" v-if="usccLegacyGenerated">
                     <p><strong>工商注册号：</strong>{{ usccLegacyGenerated.businessRegNo }}</p>
@@ -1543,7 +1544,7 @@ $$;</pre>
 
             <div class="ziwei-actions">
               <button class="idtool-btn primary ziwei-action-btn" type="button" :disabled="ziweiGenerating" @click="generateZiweiChart">{{ ziweiGenerateButtonLabel }}</button>
-              <button class="idtool-btn ghost ziwei-action-btn" type="button" :disabled="!ziweiChart || ziweiAiLoading" @click="requestZiweiAiAnalysis({force:true})">{{ ziweiAiButtonLabel }}</button>
+              <button class="idtool-btn ghost ziwei-action-btn" type="button" :disabled="!ziweiChart || ziweiAiLoading" @click="requestZiweiAiAnalysis()">{{ ziweiAiButtonLabel }}</button>
               <button class="idtool-btn ghost ziwei-action-btn" type="button" @click="copyZiweiChartText">{{ ziweiCopyButtonLabel }}</button>
               <button class="idtool-btn ghost ziwei-action-btn" type="button" :disabled="ziweiExporting" @click="exportZiweiChartImage">{{ ziweiExportButtonLabel }}</button>
             </div>
@@ -1813,6 +1814,7 @@ $$;</pre>
             <aside class="ziwei-input-card">
               <div class="ziwei-actions ziwei-actions-top">
                 <button class="idtool-btn primary ziwei-action-btn" type="button" :disabled="ziweiGenerating" @click="generateZiweiChart">{{ ziweiGenerateButtonLabel }}</button>
+                <button class="idtool-btn ghost ziwei-action-btn" type="button" :disabled="!ziweiChart || ziweiSharing" @click="generateZiweiSharePoster">{{ ziweiShareButtonLabel }}</button>
               </div>
               <div class="ziwei-left-scroll">
                 <section class="ziwei-left-section">
@@ -2004,6 +2006,8 @@ $$;</pre>
                       </header>
                       <div class="ziwei-age-series">
                         <span class="ziwei-age-line">流年: {{ (cell.currentLiuNian || (cell.liuNianSeries && cell.liuNianSeries.length ? cell.liuNianSeries[0] : '--')) }} · 小限: {{ (cell.currentXiaoXian || (cell.xiaoXianSeries && cell.xiaoXianSeries.length ? cell.xiaoXianSeries[0] : '--')) }}</span>
+                        <span class="ziwei-age-line">大限: {{ cell.daXian || '--' }} · 长生: {{ cell.changSheng || '--' }}</span>
+                        <span class="ziwei-age-line">流年序列: {{ cell.liuNianSeriesText || '--' }}</span>
                       </div>
                       <div class="ziwei-star-row main">
                         <span class="ziwei-star main" v-for="star in cell.mainStars" :key="'zw-main-'+cell.branch+'-'+star.name">
@@ -2105,12 +2109,13 @@ $$;</pre>
                 <header class="ziwei-pro-head ziwei-ai-head">
                   <div>
                     <p class="ziwei-ai-badge">AI POWERED</p>
+                    <span class="ziwei-ai-duration" v-if="ziweiAiDurationText">思考耗时 {{ ziweiAiDurationText }}</span>
                     <h4>AI 个性化解盘</h4>
                     <span>基于当前命盘生成 · {{ ziweiAiUpdatedAtText ? ('更新于 ' + ziweiAiUpdatedAtText) : '未生成' }}</span>
                   </div>
                 </header>
                 <div class="ziwei-ai-top-actions">
-                  <button class="idtool-btn ghost ziwei-ai-btn" type="button" :disabled="!ziweiChart || ziweiAiLoading" @click="requestZiweiAiAnalysis({force:true})">
+                  <button class="idtool-btn ghost ziwei-ai-btn" type="button" :disabled="!ziweiChart || ziweiAiLoading" @click="requestZiweiAiAnalysis()">
                     <span class="ziwei-loading-dot" v-if="ziweiAiLoading"></span>
                     <span>{{ ziweiAiButtonLabel }}</span>
                   </button>
@@ -2176,6 +2181,20 @@ $$;</pre>
                 </div>
               </section>
             </aside>
+          </div>
+          <div class="ziwei-share-modal" v-if="ziweiSharePosterDataUrl" @click.self="closeZiweiSharePoster">
+            <div class="ziwei-share-dialog" role="dialog" aria-modal="true" aria-label="分享海报">
+              <header class="ziwei-share-head">
+                <h4>分享海报</h4>
+                <button class="ziwei-share-close" type="button" @click="closeZiweiSharePoster">×</button>
+              </header>
+              <img class="ziwei-share-preview" :src="ziweiSharePosterDataUrl" alt="紫微命盘分享海报"/>
+              <p class="ziwei-share-link">{{ ziweiShareLink }}</p>
+              <div class="ziwei-share-actions">
+                <button class="idtool-btn ghost" type="button" @click="downloadZiweiSharePoster">下载海报</button>
+                <button class="idtool-btn" type="button" @click="closeZiweiSharePoster">关闭</button>
+              </div>
+            </div>
           </div>
         </section>
       </template>

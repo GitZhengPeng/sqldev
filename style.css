@@ -6158,3 +6158,121 @@ input[type="password"]::-webkit-credentials-auto-fill-button{
 [data-theme="light"] .feedback-success-desc{
   color:#64748b;
 }
+
+/* ===== Ziwei AI performance + share ===== */
+.ziwei-ai-duration{
+  display:block;
+  margin:4px 0 0;
+  color:#8ea4d7;
+  font:500 11px/1.35 var(--font-body);
+}
+.ziwei-ai-body.qa-open{
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+.ziwei-pro-grid.qa-open{
+  overflow:auto;
+}
+.ziwei-page .ziwei-age-series{
+  min-height:16px;
+  margin-bottom:4px;
+}
+.ziwei-page .ziwei-age-line{
+  display:block;
+}
+.ziwei-page .ziwei-star-row{
+  min-height:16px;
+  line-height:1.25;
+  align-items:flex-start;
+}
+.ziwei-share-modal{
+  position:fixed;
+  inset:0;
+  z-index:120;
+  background:rgba(6,10,20,.72);
+  backdrop-filter:blur(4px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.ziwei-share-dialog{
+  width:min(92vw,720px);
+  max-height:90vh;
+  overflow:auto;
+  border-radius:16px;
+  border:1px solid rgba(129,140,248,.35);
+  background:linear-gradient(180deg,rgba(13,19,40,.96),rgba(9,14,31,.96));
+  box-shadow:0 24px 48px rgba(2,6,23,.48);
+  padding:14px;
+}
+.ziwei-share-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+.ziwei-share-head h4{
+  margin:0;
+  color:#e6edff;
+  font:600 16px/1.2 var(--font-body);
+}
+.ziwei-share-close{
+  border:none;
+  background:transparent;
+  color:#b7c5e8;
+  font-size:24px;
+  line-height:1;
+  cursor:pointer;
+}
+.ziwei-share-preview{
+  width:100%;
+  height:auto;
+  display:block;
+  border-radius:12px;
+  border:1px solid rgba(129,140,248,.24);
+}
+.ziwei-share-link{
+  margin:10px 2px 0;
+  color:#9fb2dd;
+  font:500 11.5px/1.55 "JetBrains Mono","Noto Sans SC",monospace;
+  word-break:break-all;
+}
+.ziwei-share-actions{
+  margin-top:10px;
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+}
+.shell.ziwei-share-shell .sidebar,
+.shell.ziwei-share-shell .sidebar-overlay,
+.shell.ziwei-share-shell .header,
+.shell.ziwei-share-shell .app-footer{
+  display:none !important;
+}
+.shell.ziwei-share-shell .main-content{
+  margin-left:0 !important;
+}
+.shell.ziwei-share-shell .workspace{
+  min-height:100vh;
+}
+[data-theme="light"] .ziwei-ai-duration{
+  color:#5b6e96;
+}
+[data-theme="light"] .ziwei-share-modal{
+  background:rgba(250,252,255,.68);
+}
+[data-theme="light"] .ziwei-share-dialog{
+  border-color:rgba(99,102,241,.25);
+  background:linear-gradient(180deg,#ffffff,#f7f9ff);
+  box-shadow:0 20px 44px rgba(15,23,42,.16);
+}
+[data-theme="light"] .ziwei-share-head h4{
+  color:#1e293b;
+}
+[data-theme="light"] .ziwei-share-close{
+  color:#475569;
+}
+[data-theme="light"] .ziwei-share-link{
+  color:#475569;
+}
