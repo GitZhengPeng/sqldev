@@ -6174,16 +6174,46 @@ input[type="password"]::-webkit-credentials-auto-fill-button{
   overflow:auto;
 }
 .ziwei-page .ziwei-age-series{
-  min-height:16px;
-  margin-bottom:4px;
+  min-height:14px;
+  margin-bottom:3px;
 }
 .ziwei-page .ziwei-age-line{
   display:block;
+  color:#8fa5d2;
+  letter-spacing:.1px;
 }
 .ziwei-page .ziwei-star-row{
-  min-height:16px;
+  min-height:17px;
   line-height:1.25;
   align-items:flex-start;
+  display:flex;
+  flex-wrap:wrap;
+  gap:2px 4px;
+}
+.ziwei-page .ziwei-star-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+}
+.ziwei-page .ziwei-star-placeholder{
+  color:#667ca8;
+  font:500 10px/1.2 "JetBrains Mono","Noto Sans SC",monospace;
+}
+.ziwei-center-pillar-data .ziwei-center-pillar-cell{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  align-items:center;
+}
+.ziwei-center-pillar-data .ziwei-center-pillar-cell b{
+  font:700 9px/1.25 "JetBrains Mono","Noto Sans SC",monospace;
+  color:#dbe7ff;
+  letter-spacing:.35px;
+}
+.ziwei-center-pillar-data .ziwei-center-pillar-cell em{
+  font:600 9px/1.25 "JetBrains Mono","Noto Sans SC",monospace;
+  color:#afc2ea;
+  font-style:normal;
 }
 .ziwei-share-modal{
   position:fixed;
@@ -6258,6 +6288,27 @@ input[type="password"]::-webkit-credentials-auto-fill-button{
 }
 [data-theme="light"] .ziwei-ai-duration{
   color:#5b6e96;
+}
+[data-theme="light"] .ziwei-page .ziwei-age-line{
+  color:#334155;
+}
+[data-theme="light"] .ziwei-page .ziwei-star{
+  color:#1e293b;
+}
+[data-theme="light"] .ziwei-page .ziwei-star-row.misc .ziwei-star{
+  color:#475569;
+}
+[data-theme="light"] .ziwei-page .ziwei-brightness{
+  color:#1f2937;
+}
+[data-theme="light"] .ziwei-page .ziwei-star-placeholder{
+  color:#64748b;
+}
+[data-theme="light"] .ziwei-center-pillar-data .ziwei-center-pillar-cell b{
+  color:#1e1b4b;
+}
+[data-theme="light"] .ziwei-center-pillar-data .ziwei-center-pillar-cell em{
+  color:#334155;
 }
 [data-theme="light"] .ziwei-share-modal{
   background:rgba(250,252,255,.68);

@@ -3433,6 +3433,41 @@ const app = createApp({
         .filter(Boolean)
         .join(' ');
     });
+    function _zwBuildPillarPartText(list, part) {
+      var source = Array.isArray(list) ? list : [];
+      if (!source.length) return '--';
+      var tokens = source
+        .slice(0, 4)
+        .map(function(item) {
+          if (item && typeof item === 'object') {
+            if (part === 'stem') return String(item.stem || '').trim();
+            if (part === 'branch') return String(item.branch || '').trim();
+            return String(item.text || '').trim();
+          }
+          var raw = String(item || '');
+          if (part === 'stem') return raw.slice(0, 1).trim();
+          if (part === 'branch') return raw.slice(1, 2).trim();
+          return raw.trim();
+        })
+        .filter(Boolean);
+      return tokens.length ? tokens.join(' ') : '--';
+    }
+    const ziweiJieqiPillarStemText = computed(function() {
+      var center = ziweiChart.value && ziweiChart.value.center ? ziweiChart.value.center : null;
+      return _zwBuildPillarPartText(center && center.jieqiPillars, 'stem');
+    });
+    const ziweiJieqiPillarBranchText = computed(function() {
+      var center = ziweiChart.value && ziweiChart.value.center ? ziweiChart.value.center : null;
+      return _zwBuildPillarPartText(center && center.jieqiPillars, 'branch');
+    });
+    const ziweiNonJieqiPillarStemText = computed(function() {
+      var center = ziweiChart.value && ziweiChart.value.center ? ziweiChart.value.center : null;
+      return _zwBuildPillarPartText(center && center.nonJieqiPillars, 'stem');
+    });
+    const ziweiNonJieqiPillarBranchText = computed(function() {
+      var center = ziweiChart.value && ziweiChart.value.center ? ziweiChart.value.center : null;
+      return _zwBuildPillarPartText(center && center.nonJieqiPillars, 'branch');
+    });
     const ziweiCenterDaXianPreview = computed(function() {
       var chart = ziweiChart.value;
       if (!chart || !Array.isArray(chart.daXianTimeline)) return [];
@@ -5662,26 +5697,35 @@ const app = createApp({
       }
     }
 
+    async function _legacySubmitZiweiAiQuestionOne() {
+      return submitZiweiAiQuestion();
+    }
+
+    async function _legacySubmitZiweiAiQuestionTwo() {
+      return submitZiweiAiQuestion();
+    }
+
     async function submitZiweiAiQuestion() {
       if (!ziweiChart.value) {
-        ziweiStatus.value = { type: 'info', text: '请先完成排盘。' };
+        ziweiStatus.value = { type: 'info', text: '\u8bf7\u5148\u5b8c\u6210\u6392\u76d8\u3002' };
         return;
       }
       if (ziweiAiQuestionLoading.value) return;
       if (!window.authApi || typeof window.authApi.invokeFunction !== 'function') {
-        ziweiStatus.value = { type: 'error', text: '认证模块未初始化，无法发送 AI 问答。' };
+        ziweiStatus.value = { type: 'error', text: '\u8ba4\u8bc1\u6a21\u5757\u672a\u521d\u59cb\u5316\uff0c\u65e0\u6cd5\u53d1\u9001 AI \u95ee\u7b54\u3002' };
         return;
       }
       if (typeof window.authApi.getUserSync === 'function' && !window.authApi.getUserSync()) {
         if (typeof window.authApi.openAuthModal === 'function') {
-          window.authApi.openAuthModal('请先登录后再使用 AI 问答');
+          window.authApi.openAuthModal('\u8bf7\u5148\u767b\u5f55\u540e\u518d\u4f7f\u7528 AI \u95ee\u7b54');
         }
-        ziweiStatus.value = { type: 'error', text: '未登录，无法使用 AI 问答。' };
+        ziweiStatus.value = { type: 'error', text: '\u672a\u767b\u5f55\uff0c\u65e0\u6cd5\u4f7f\u7528 AI \u95ee\u7b54\u3002' };
         return;
       }
+
       var question = String(ziweiAiQuestionInput.value || '').trim();
       if (!question) {
-        ziweiStatus.value = { type: 'info', text: '请输入问题后再发送。' };
+        ziweiStatus.value = { type: 'info', text: '\u8bf7\u8f93\u5165\u95ee\u9898\u540e\u518d\u53d1\u9001\u3002' };
         openZiweiAiSuggestions();
         return;
       }
@@ -5692,9 +5736,8 @@ const app = createApp({
       ziweiAiDone.value = false;
       ziweiAiError.value = '';
       ziweiAiQuestionAnswer.value = '';
+      ziweiStatus.value = { type: 'info', text: 'AI \u6b63\u5728\u601d\u8003\u4e2d\uff0c\u8bf7\u7a0d\u540e...' };
       var startedAt = Date.now();
-      var silent = true;
-      ziweiStatus.value = { type: 'info', text: 'AI 正在思考中，请稍后...' };
       try {
         var signature = _zwBuildAiSignature(ziweiChart.value) + '|qa|' + question.slice(0, 64);
         var result = await window.authApi.invokeFunction('ziwei-analysis', {
@@ -5702,12 +5745,12 @@ const app = createApp({
           style: 'pro',
           mode: 'qa',
           question: question,
-          chart: _zwBuildAiPayload(ziweiChart.value)
+          chart: _zwBuildAiPayloadCompact(ziweiChart.value)
         });
         if (result && result.error) {
           var parsed = await _zwParseInvokeError(result.error);
-          var detail = String(parsed.detail || (result.error && result.error.message) || result.error || '请求失败');
-          throw new Error(detail || '请求失败');
+          var detail = String(parsed.detail || (result.error && result.error.message) || result.error || '\u8bf7\u6c42\u5931\u8d25');
+          throw new Error(detail || '\u8bf7\u6c42\u5931\u8d25');
         }
         var data = result ? result.data : null;
         var answer = '';
@@ -5715,19 +5758,14 @@ const app = createApp({
         if (!answer && data && data.analysis && typeof data.analysis.overview === 'string') {
           answer = String(data.analysis.overview || '').trim();
         }
-        if (!answer) throw new Error('AI 未返回可用问答内容');
+        if (!answer) throw new Error('\u0041\u0049 \u672a\u8fd4\u56de\u53ef\u7528\u95ee\u7b54\u5185\u5bb9');
         ziweiAiQuestionAnswer.value = answer;
-        ziweiStatus.value = { type: 'success', text: 'AI 问答已生成。' };
-        // legacy placeholder kept for compatibility
         var elapsedMs = Date.now() - startedAt;
         ziweiAiLastDurationMs.value = elapsedMs;
-        if (!silent) ziweiStatus.value = { type: 'success', text: 'AI 个性化解盘已生成（思考耗时 ' + formatZiweiDurationText(elapsedMs) + '）。' };
-        var elapsedMs = Date.now() - startedAt;
-        ziweiAiLastDurationMs.value = elapsedMs;
-        if (!silent) ziweiStatus.value = { type: 'success', text: 'AI 个性化解盘已生成（思考耗时 ' + formatZiweiDurationText(elapsedMs) + '）。' };
+        ziweiStatus.value = { type: 'success', text: '\u0041\u0049 \u95ee\u7b54\u5df2\u751f\u6210\uff08\u601d\u8003\u8017\u65f6 ' + formatZiweiDurationText(elapsedMs) + '\uff09\u3002' };
       } catch (err) {
-        var msg = String((err && err.message) || err || 'AI 问答失败');
-        ziweiStatus.value = { type: 'error', text: 'AI 问答失败：' + msg };
+        var msg = String((err && err.message) || err || '\u0041\u0049 \u95ee\u7b54\u5931\u8d25');
+        ziweiStatus.value = { type: 'error', text: '\u0041\u0049 \u95ee\u7b54\u5931\u8d25\uff1a' + msg };
       } finally {
         ziweiAiQuestionLoading.value = false;
       }
@@ -5912,7 +5950,7 @@ const app = createApp({
       };
     }
 
-    function _zwBuildAiPayloadCompact(chart) {
+    function _zwLegacyBuildAiPayloadCompact(chart) {
       var payload = _zwBuildAiPayload(chart);
       if (!payload || typeof payload !== 'object') return payload;
       payload.payloadVersion = 'ziwei-ai-v2-compact';
@@ -5961,25 +5999,100 @@ const app = createApp({
       if (!detail) detail = String((err && err.message) || err || '');
       return { status: status, detail: detail };
     }
+    function _zwIsComputeResourceErrorMessage(raw) {
+      var text = String(raw || '').toLowerCase();
+      if (!text) return false;
+      return text.indexOf('compute resources') >= 0
+        || text.indexOf('not having enough compute resources') >= 0
+        || text.indexOf('out of memory') >= 0
+        || text.indexOf('memory limit') >= 0
+        || text.indexOf('resource exhausted') >= 0;
+    }
+
+    async function _zwLegacyRequestZiweiAiAnalysis(options) {
+      return requestZiweiAiAnalysis(options);
+    }
+
+    function _zwBuildAiPayloadCompact(chart) {
+      var payload = _zwBuildAiPayload(chart);
+      if (!payload || typeof payload !== 'object') return payload;
+      payload.payloadVersion = 'ziwei-ai-v2-compact-v2';
+      payload.chartText = '';
+      payload.ruleSummary = [];
+      payload.huaTracks = Array.isArray(payload.huaTracks) ? payload.huaTracks.slice(0, 20) : [];
+      payload.liuNianTimeline = Array.isArray(payload.liuNianTimeline) ? payload.liuNianTimeline.slice(0, 8) : [];
+      payload.daXianTimeline = Array.isArray(payload.daXianTimeline) ? payload.daXianTimeline.slice(0, 6) : [];
+      if (payload.center && typeof payload.center === 'object') {
+        payload.center.timeCorrectionText = '';
+        payload.center.longitude = 0;
+        payload.center.longitudeCorrectionMinutes = 0;
+        payload.center.equationOfTimeMinutes = 0;
+        payload.center.nonJieqiPillars = [];
+        payload.center.jieqiPillars = [];
+        payload.center.decadeMarks = [];
+      }
+      payload.palaces = Array.isArray(payload.palaces)
+        ? payload.palaces.map(function(item) {
+          return {
+            branch: String(item && item.branch || ''),
+            palaceName: String(item && item.palaceName || ''),
+            stemBranch: String(item && item.stemBranch || ''),
+            daXian: String(item && item.daXian || ''),
+            xiaoXian: String(item && item.xiaoXian || ''),
+            currentLiuNian: Number(item && item.currentLiuNian || 0),
+            mainStars: Array.isArray(item && item.mainStars) ? item.mainStars.slice(0, 4) : [],
+            assistStars: Array.isArray(item && item.assistStars) ? item.assistStars.slice(0, 4) : [],
+            miscStars: Array.isArray(item && item.miscStars) ? item.miscStars.slice(0, 4) : []
+          };
+        })
+        : [];
+      return payload;
+    }
+
+    function _zwBuildAiPayloadLite(chart) {
+      var payload = _zwBuildAiPayloadCompact(chart);
+      if (!payload || typeof payload !== 'object') return payload;
+      payload.payloadVersion = 'ziwei-ai-v2-lite-v2';
+      payload.huaTracks = [];
+      payload.liuNianTimeline = [];
+      payload.daXianTimeline = [];
+      payload.palaces = Array.isArray(payload.palaces)
+        ? payload.palaces.map(function(item) {
+          return {
+            branch: String(item && item.branch || ''),
+            palaceName: String(item && item.palaceName || ''),
+            stemBranch: String(item && item.stemBranch || ''),
+            mainStars: Array.isArray(item && item.mainStars) ? item.mainStars.slice(0, 2) : [],
+            assistStars: Array.isArray(item && item.assistStars) ? item.assistStars.slice(0, 2) : [],
+            miscStars: Array.isArray(item && item.miscStars) ? item.miscStars.slice(0, 2) : []
+          };
+        })
+        : [];
+      return payload;
+    }
+
+    async function _zwLegacyRequestZiweiAiAnalysisV2(options) {
+      return requestZiweiAiAnalysis(options);
+    }
 
     async function requestZiweiAiAnalysis(options) {
       var opt = options || {};
       var force = opt.force === true;
       var silent = opt.silent === true;
       if (!ziweiChart.value) {
-        if (!silent) ziweiStatus.value = { type: 'info', text: '请先完成排盘。' };
+        if (!silent) ziweiStatus.value = { type: 'info', text: '\u8bf7\u5148\u5b8c\u6210\u6392\u76d8\u3002' };
         return;
       }
       if (!window.authApi || typeof window.authApi.invokeFunction !== 'function') {
-        if (!silent) ziweiStatus.value = { type: 'error', text: '认证模块未初始化，无法调用 AI 解盘。' };
+        if (!silent) ziweiStatus.value = { type: 'error', text: '\u8ba4\u8bc1\u6a21\u5757\u672a\u521d\u59cb\u5316\uff0c\u65e0\u6cd5\u8c03\u7528 AI \u89e3\u8bfb\u3002' };
         return;
       }
       if (typeof window.authApi.getUserSync === 'function' && !window.authApi.getUserSync()) {
         if (!silent) {
           if (typeof window.authApi.openAuthModal === 'function') {
-            window.authApi.openAuthModal('请先登录后再使用 AI 深度解盘');
+            window.authApi.openAuthModal('\u8bf7\u5148\u767b\u5f55\u540e\u518d\u4f7f\u7528 AI \u6df1\u5ea6\u89e3\u76d8');
           }
-          ziweiStatus.value = { type: 'error', text: '未登录，无法调用 AI 深度解盘。' };
+          ziweiStatus.value = { type: 'error', text: '\u672a\u767b\u5f55\uff0c\u65e0\u6cd5\u8c03\u7528 AI \u6df1\u5ea6\u89e3\u76d8\u3002' };
         }
         return;
       }
@@ -5992,42 +6105,57 @@ const app = createApp({
         ziweiAiError.value = '';
         ziweiAiUpdatedAt.value = Date.now();
         ziweiLastAiSignature.value = aiSignature;
-        if (!silent) ziweiStatus.value = { type: 'success', text: '已加载缓存的 AI 个性化解盘。' };
+        if (!silent) ziweiStatus.value = { type: 'success', text: '\u5df2\u52a0\u8f7d\u7f13\u5b58\u7684 AI \u4e2a\u6027\u5316\u89e3\u76d8\u3002' };
         return;
       }
       if (_ziweiAiInFlightPromise) {
-        if (!silent) ziweiStatus.value = { type: 'info', text: 'AI 正在思考中，请勿重复点击。' };
+        if (!silent) ziweiStatus.value = { type: 'info', text: 'AI \u6b63\u5728\u601d\u8003\u4e2d\uff0c\u8bf7\u52ff\u91cd\u590d\u70b9\u51fb\u3002' };
         return _ziweiAiInFlightPromise;
       }
       if (ziweiAiLoading.value) {
-        if (!silent) ziweiStatus.value = { type: 'info', text: 'AI 解读正在生成中，请稍候...' };
+        if (!silent) ziweiStatus.value = { type: 'info', text: 'AI \u6b63\u5728\u601d\u8003\u4e2d\uff0c\u8bf7\u7a0d\u540e...' };
         return;
       }
+
+      var invokeAnalysis = async function(payload) {
+        return await window.authApi.invokeFunction('ziwei-analysis', {
+          signature: aiSignature,
+          style: 'pro',
+          chart: payload
+        });
+      };
+      var getErrorDetail = async function(rawErr) {
+        var parsed = await _zwParseInvokeError(rawErr);
+        return String(parsed.detail || (rawErr && rawErr.message) || rawErr || '\u8bf7\u6c42\u5931\u8d25');
+      };
 
       ziweiAiLoading.value = true;
       ziweiAiError.value = '';
       ziweiAiLastDurationMs.value = 0;
       var startedAt = Date.now();
-      if (!silent) ziweiStatus.value = { type: 'info', text: '正在生成 AI 个性化解盘，请稍候...' };
+      if (!silent) ziweiStatus.value = { type: 'info', text: 'AI \u6b63\u5728\u601d\u8003\u4e2d\uff0c\u8bf7\u7a0d\u540e...' };
       try {
         _ziweiAiInFlightSignature = aiSignature;
-        _ziweiAiInFlightPromise = window.authApi.invokeFunction('ziwei-analysis', {
-          signature: aiSignature,
-          style: 'pro',
-          chart: _zwBuildAiPayloadCompact(ziweiChart.value)
-        });
-        var result = await _ziweiAiInFlightPromise;
-
-        if (result && result.error) {
-          var parsed = await _zwParseInvokeError(result.error);
-          var detail = String(parsed.detail || (result.error && result.error.message) || result.error || '请求失败');
-          throw new Error(detail || '请求失败');
+        var result = null;
+        try {
+          _ziweiAiInFlightPromise = invokeAnalysis(_zwBuildAiPayloadCompact(ziweiChart.value));
+          result = await _ziweiAiInFlightPromise;
+          if (result && result.error) throw result.error;
+        } catch (firstErr) {
+          var firstDetail = await getErrorDetail(firstErr);
+          if (!_zwIsComputeResourceErrorMessage(firstDetail)) throw new Error(firstDetail || '\u8bf7\u6c42\u5931\u8d25');
+          _ziweiAiInFlightPromise = invokeAnalysis(_zwBuildAiPayloadLite(ziweiChart.value));
+          result = await _ziweiAiInFlightPromise;
+          if (result && result.error) {
+            var secondDetail = await getErrorDetail(result.error);
+            throw new Error(secondDetail || '\u8bf7\u6c42\u5931\u8d25');
+          }
         }
 
         var data = result ? result.data : null;
         var analysis = data && data.analysis ? data.analysis : null;
         if (!analysis || typeof analysis.overview !== 'string' || !Array.isArray(analysis.sections)) {
-          throw new Error('AI 返回格式异常');
+          throw new Error('AI \u8fd4\u56de\u683c\u5f0f\u5f02\u5e38');
         }
 
         ziweiAiResult.value = analysis;
@@ -6044,13 +6172,13 @@ const app = createApp({
         }
         var elapsedMs = Date.now() - startedAt;
         ziweiAiLastDurationMs.value = elapsedMs;
-        if (!silent) ziweiStatus.value = { type: 'success', text: 'AI 个性化解盘已生成。' };
+        if (!silent) ziweiStatus.value = { type: 'success', text: 'AI \u4e2a\u6027\u5316\u89e3\u76d8\u5df2\u751f\u6210\uff08\u601d\u8003\u8017\u65f6 ' + formatZiweiDurationText(elapsedMs) + '\uff09\u3002' };
       } catch (err) {
-        var msg = String((err && err.message) || err || 'AI 请求失败');
+        var msg = String((err && err.message) || err || 'AI \u8bf7\u6c42\u5931\u8d25');
         ziweiAiDone.value = false;
         ziweiAiError.value = msg;
         ziweiAiLastDurationMs.value = Date.now() - startedAt;
-        if (!silent) ziweiStatus.value = { type: 'error', text: 'AI 深度解盘失败：' + msg };
+        if (!silent) ziweiStatus.value = { type: 'error', text: 'AI \u6df1\u5ea6\u89e3\u76d8\u5931\u8d25\uff1a' + msg };
       } finally {
         ziweiAiLoading.value = false;
         _ziweiAiInFlightPromise = null;
@@ -6808,87 +6936,150 @@ const app = createApp({
       link.click();
     }
 
+    async function _zwLegacyGenerateZiweiSharePoster() {
+      return generateZiweiSharePoster();
+    }
+
     async function generateZiweiSharePoster() {
       if (!ziweiChart.value) {
-        ziweiStatus.value = { type: 'info', text: '请先完成排盘。' };
-        return;
-      }
-      var target = document.getElementById('ziwei-image-export') || document.getElementById('ziwei-board-export');
-      if (!target) {
-        ziweiStatus.value = { type: 'error', text: '未找到命盘区域，无法生成分享海报。' };
+        ziweiStatus.value = { type: 'info', text: '\u8bf7\u5148\u5b8c\u6210\u6392\u76d8\u3002' };
         return;
       }
       ziweiSharing.value = true;
       try {
-        var html2canvas = await _zwEnsureHtml2Canvas();
-        var sourceCanvas = await html2canvas(target, {
-          backgroundColor: null,
-          scale: Math.min(window.devicePixelRatio || 1.5, 2),
-          useCORS: true,
-          logging: false
-        });
-        var posterW = 1080;
-        var posterH = 1680;
-        var poster = document.createElement('canvas');
-        poster.width = posterW;
-        poster.height = posterH;
-        var ctx = poster.getContext('2d');
-        if (!ctx) throw new Error('海报画布创建失败');
+        var posterW = 1200;
+        var posterH = 1880;
+        var shareLink = buildZiweiShareLink();
+        var canvas = document.createElement('canvas');
+        canvas.width = posterW;
+        canvas.height = posterH;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('\u6d77\u62a5\u753b\u5e03\u521b\u5efa\u5931\u8d25');
+        var drawRoundRect = function(x, y, w, h, r) {
+          var radius = Math.max(0, Number(r) || 0);
+          if (typeof ctx.roundRect === 'function') {
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, radius);
+            return;
+          }
+          ctx.beginPath();
+          ctx.moveTo(x + radius, y);
+          ctx.arcTo(x + w, y, x + w, y + h, radius);
+          ctx.arcTo(x + w, y + h, x, y + h, radius);
+          ctx.arcTo(x, y + h, x, y, radius);
+          ctx.arcTo(x, y, x + w, y, radius);
+          ctx.closePath();
+        };
 
-        var bgGradient = ctx.createLinearGradient(0, 0, posterW, posterH);
-        bgGradient.addColorStop(0, '#0b1126');
-        bgGradient.addColorStop(1, '#161f3d');
-        ctx.fillStyle = bgGradient;
+        var bg = ctx.createLinearGradient(0, 0, posterW, posterH);
+        bg.addColorStop(0, '#060d1f');
+        bg.addColorStop(0.52, '#0b1531');
+        bg.addColorStop(1, '#111f44');
+        ctx.fillStyle = bg;
         ctx.fillRect(0, 0, posterW, posterH);
 
-        ctx.fillStyle = '#d8e2ff';
-        ctx.font = '700 42px "Noto Sans SC", "PingFang SC", sans-serif';
-        ctx.fillText('紫微斗数命盘分享', 64, 98);
-        ctx.fillStyle = 'rgba(184,201,244,.9)';
-        ctx.font = '500 24px "Noto Sans SC", "PingFang SC", sans-serif';
-        ctx.fillText('通过下方链接仅进入紫微界面', 64, 138);
+        function drawGlow(x, y, r, color) {
+          var g = ctx.createRadialGradient(x, y, 0, x, y, r);
+          g.addColorStop(0, color);
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        drawGlow(190, 240, 320, 'rgba(79,125,249,.32)');
+        drawGlow(1020, 360, 360, 'rgba(95,180,255,.2)');
+        drawGlow(640, 1520, 420, 'rgba(139,92,246,.24)');
 
-        var cardX = 48;
-        var cardY = 176;
-        var cardW = posterW - 96;
-        var cardH = 1180;
-        ctx.fillStyle = 'rgba(11,20,44,.82)';
-        ctx.strokeStyle = 'rgba(120,146,232,.55)';
+        ctx.fillStyle = 'rgba(255,255,255,.08)';
+        for (var gx = 0; gx <= posterW; gx += 36) {
+          ctx.fillRect(gx, 0, 1, posterH);
+        }
+        for (var gy = 0; gy <= posterH; gy += 36) {
+          ctx.fillRect(0, gy, posterW, 1);
+        }
+
+        ctx.fillStyle = '#c8d8ff';
+        ctx.font = '600 24px "JetBrains Mono","Noto Sans SC",monospace';
+        ctx.fillText('Z I W E I  D O U  S H U', 84, 118);
+
+        ctx.fillStyle = '#edf2ff';
+        ctx.font = '700 78px "Noto Sans SC","PingFang SC",sans-serif';
+        ctx.fillText('\u7d2b\u5fae\u6597\u6570\u547d\u76d8', 84, 212);
+
+        ctx.fillStyle = 'rgba(214,226,255,.9)';
+        ctx.font = '500 34px "Noto Sans SC","PingFang SC",sans-serif';
+        ctx.fillText('\u4e13\u4e1a\u6392\u76d8 + AI \u6df1\u5ea6\u89e3\u8bfb + \u4e00\u952e\u5206\u4eab', 84, 266);
+
+        var featureCards = [
+          { title: '\u5b8c\u6574\u547d\u76d8\u5206\u6790', desc: '\u652f\u6301\u4e3b\u661f/\u8f85\u661f/\u6742\u66dc/\u56db\u5316\u3001\u5927\u9650/\u6d41\u5e74/\u5c0f\u9650', color: '#7aa8ff' },
+          { title: 'AI \u4e2a\u6027\u5316\u89e3\u76d8', desc: '\u4e00\u952e\u751f\u6210\u4e13\u4e1a\u7ed3\u6784\u5316\u89e3\u8bfb\uff0c\u5e76\u652f\u6301\u8ffd\u95ee', color: '#7ce7d8' },
+          { title: '\u4e91\u7aef\u914d\u7f6e\u6a21\u677f', desc: '\u89e3\u8bfb\u6a21\u677f\u3001\u95ee\u7b54\u5efa\u8bae\u7531\u670d\u52a1\u7aef\u7edf\u4e00\u63a7\u5236', color: '#fcbf74' },
+          { title: '\u5206\u4eab\u53cb\u597d\u4f53\u9a8c', desc: '\u751f\u6210\u4e13\u5c5e\u5206\u4eab\u5165\u53e3\uff0c\u8bbf\u5ba2\u53ef\u76f4\u8fbe\u547d\u76d8\u754c\u9762', color: '#c69cff' }
+        ];
+
+        var cardX = 78;
+        var cardY = 334;
+        var cardW = posterW - cardX * 2;
+        var cardH = 216;
+        for (var fi = 0; fi < featureCards.length; fi++) {
+          var item = featureCards[fi];
+          var y = cardY + fi * (cardH + 20);
+          ctx.fillStyle = 'rgba(10,20,45,.74)';
+          ctx.strokeStyle = 'rgba(129,140,248,.3)';
+          ctx.lineWidth = 2;
+          drawRoundRect(cardX, y, cardW, cardH, 18);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = item.color;
+          ctx.beginPath();
+          ctx.arc(cardX + 40, y + 44, 14, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#f2f6ff';
+          ctx.font = '700 40px "Noto Sans SC","PingFang SC",sans-serif';
+          ctx.fillText(item.title, cardX + 72, y + 58);
+          ctx.fillStyle = 'rgba(202,216,248,.95)';
+          ctx.font = '500 30px "Noto Sans SC","PingFang SC",sans-serif';
+          ctx.fillText(item.desc, cardX + 72, y + 116);
+        }
+
+        ctx.fillStyle = 'rgba(255,255,255,.86)';
+        ctx.font = '600 32px "Noto Sans SC","PingFang SC",sans-serif';
+        ctx.fillText('\u4f53\u9a8c\u5165\u53e3', 84, 1338);
+
+        ctx.fillStyle = 'rgba(15,24,52,.82)';
+        ctx.strokeStyle = 'rgba(129,140,248,.45)';
         ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.roundRect(cardX, cardY, cardW, cardH, 20);
+        drawRoundRect(84, 1368, posterW - 168, 184, 16);
         ctx.fill();
         ctx.stroke();
 
-        var imgMaxW = cardW - 36;
-        var imgMaxH = cardH - 36;
-        var ratio = Math.min(imgMaxW / sourceCanvas.width, imgMaxH / sourceCanvas.height);
-        var drawW = Math.floor(sourceCanvas.width * ratio);
-        var drawH = Math.floor(sourceCanvas.height * ratio);
-        var drawX = cardX + Math.floor((cardW - drawW) / 2);
-        var drawY = cardY + Math.floor((cardH - drawH) / 2);
-        ctx.drawImage(sourceCanvas, drawX, drawY, drawW, drawH);
+        ctx.fillStyle = '#d6e3ff';
+        ctx.font = '500 27px "JetBrains Mono","Noto Sans SC",monospace';
+        var linkText = shareLink.length > 74 ? (shareLink.slice(0, 74) + '...') : shareLink;
+        ctx.fillText(linkText, 116, 1452);
 
-        var shareLink = buildZiweiShareLink();
-        ctx.fillStyle = '#b9c7ef';
-        ctx.font = '600 22px "Noto Sans SC", "PingFang SC", sans-serif';
-        ctx.fillText('分享链接：', 64, 1410);
-        ctx.fillStyle = '#f0f5ff';
-        ctx.font = '500 20px "JetBrains Mono", "Noto Sans SC", monospace';
-        var linkText = shareLink.length > 78 ? (shareLink.slice(0, 78) + '...') : shareLink;
-        ctx.fillText(linkText, 64, 1450);
-        ctx.fillStyle = 'rgba(180,196,236,.9)';
-        ctx.font = '500 20px "Noto Sans SC", "PingFang SC", sans-serif';
-        ctx.fillText('打开该链接后将锁定到紫微命盘界面。', 64, 1500);
+        ctx.fillStyle = 'rgba(178,196,233,.95)';
+        ctx.font = '500 26px "Noto Sans SC","PingFang SC",sans-serif';
+        ctx.fillText('\u626b\u7801\u6216\u6253\u5f00\u94fe\u63a5\uff0c\u5373\u53ef\u8fdb\u5165\u547d\u76d8\u754c\u9762\u4f53\u9a8c\u5b8c\u6574\u529f\u80fd', 116, 1506);
 
-        ziweiSharePosterDataUrl.value = poster.toDataURL('image/png');
+        ctx.fillStyle = '#f8fbff';
+        ctx.font = '700 30px "Noto Sans SC","PingFang SC",sans-serif';
+        ctx.fillText('SQLDev \u00d7 \u7d2b\u5fae\u6597\u6570\u5de5\u5177', 84, 1718);
+        ctx.fillStyle = 'rgba(199,214,247,.88)';
+        ctx.font = '500 22px "JetBrains Mono","Noto Sans SC",monospace';
+        ctx.fillText('AI Powered Professional Charting Platform', 84, 1760);
+
+        ziweiSharePosterDataUrl.value = canvas.toDataURL('image/png');
         clipboardWrite(shareLink).then(function(ok) {
           ziweiStatus.value = ok
-            ? { type: 'success', text: '分享海报已生成，分享链接已复制。' }
-            : { type: 'success', text: '分享海报已生成。' };
+            ? { type: 'success', text: '\u5206\u4eab\u6d77\u62a5\u5df2\u751f\u6210\uff0c\u5206\u4eab\u94fe\u63a5\u5df2\u590d\u5236\u3002' }
+            : { type: 'success', text: '\u5206\u4eab\u6d77\u62a5\u5df2\u751f\u6210\u3002' };
         });
       } catch (err) {
-        ziweiStatus.value = { type: 'error', text: '生成分享海报失败：' + String((err && err.message) || err || '') };
+        ziweiStatus.value = { type: 'error', text: '\u751f\u6210\u5206\u4eab\u6d77\u62a5\u5931\u8d25\uff1a' + String((err && err.message) || err || '') };
       } finally {
         ziweiSharing.value = false;
       }
@@ -8190,7 +8381,8 @@ const app = createApp({
       ziweiXiaoXianRule, ziweiXiaoXianRuleOptions,
       ziweiLiuNianRule, ziweiLiuNianRuleOptions,
       ziweiProfileName, ziweiHistoryPickedId, ziweiProMode, ziweiSchool, ziweiSchoolLabel, ziweiFocusBranch, ziweiFocusCell,
-      ziweiSifangBranches, ziweiSifangCells, ziweiCenterTitle, ziweiJieqiPillarsText, ziweiNonJieqiPillarsText, ziweiCenterDaXianPreview,
+      ziweiSifangBranches, ziweiSifangCells, ziweiCenterTitle, ziweiJieqiPillarsText, ziweiNonJieqiPillarsText,
+      ziweiJieqiPillarStemText, ziweiJieqiPillarBranchText, ziweiNonJieqiPillarStemText, ziweiNonJieqiPillarBranchText, ziweiCenterDaXianPreview,
       ziweiYearOptions, ziweiMonthOptions, ziweiHourOptions, ziweiMinuteOptions,
       ziweiChart, ziweiAnalysis, ziweiHistory, ziweiHistoryCountText, ziweiHistoryNameOptions, ziweiFocusTracks, ziweiFocusTrackCount, ziweiStatus,
       ziweiActiveAnalysis, ziweiAnalysisActiveKey,

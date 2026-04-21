@@ -591,3 +591,30 @@ Last updated: 2026-04-15
   - `app.js`
   - `index.html`
   - `style.css`
+
+## 2026-04-21: ZiWei 1:1 Palace Rows + Center Layout + AI Resource Fallback + Premium Share Poster
+- 命盘宫位内容节奏对齐增强（向参考 HTML 靠拢）：
+  - active ZiWei V3 模板中，宫位卡片改为“流年/小限一行 + 主星/辅星/杂曜三行”的固定阅读节奏。
+  - 主星、辅星、杂曜三行都加入空状态占位（`--`），避免缺星时行高塌陷。
+  - 引入 `ziwei-star-tag` / `ziwei-star-placeholder` 样式，增强三行视觉一致性。
+- 命盘中央信息区布局优化：
+  - 保留核心字段顺序并增加顶部元信息行（当前年/年龄）。
+  - 四柱区改为“节气四柱 / 非节气四柱”双列，并拆分为“天干行 + 地支行”显示。
+  - 新增并导出计算属性：
+    - `ziweiJieqiPillarStemText`
+    - `ziweiJieqiPillarBranchText`
+    - `ziweiNonJieqiPillarStemText`
+    - `ziweiNonJieqiPillarBranchText`
+- AI 深度解盘稳定性修复（compute resources 报错）：
+  - 统一生效的 `requestZiweiAiAnalysis` 为单版本逻辑（通过后置重定义覆盖 legacy 版本）。
+  - 保持单飞请求（防重复点击并发）。
+  - 首次请求使用 compact payload；当出现 `compute resources / out of memory / resource exhausted` 类错误时自动降载为 lite payload 重试。
+  - 重试仍保持 `style: 'pro'`，并继续回写“思考耗时”。
+- 分享海报重做为“功能优势型”海报：
+  - 不再截取命盘图片。
+  - 生成高质感深色渐变海报（标题、卖点卡片、体验入口、品牌文案）。
+  - 仍保留分享链接复制与下载动作。
+- 亮色主题可读性补强：
+  - 宫内流年行、星曜文本、亮度文本、占位文本与四柱分行文本在 light 主题下提升对比度。
+- 代码结构修整：
+  - 避免历史逻辑继续覆盖：旧版 submit/request/share 函数标记为 legacy 名称，新逻辑使用原函数名输出到模板绑定。

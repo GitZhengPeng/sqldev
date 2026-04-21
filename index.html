@@ -2006,27 +2006,28 @@ $$;</pre>
                       </header>
                       <div class="ziwei-age-series">
                         <span class="ziwei-age-line">流年: {{ (cell.currentLiuNian || (cell.liuNianSeries && cell.liuNianSeries.length ? cell.liuNianSeries[0] : '--')) }} · 小限: {{ (cell.currentXiaoXian || (cell.xiaoXianSeries && cell.xiaoXianSeries.length ? cell.xiaoXianSeries[0] : '--')) }}</span>
-                        <span class="ziwei-age-line">大限: {{ cell.daXian || '--' }} · 长生: {{ cell.changSheng || '--' }}</span>
-                        <span class="ziwei-age-line">流年序列: {{ cell.liuNianSeriesText || '--' }}</span>
                       </div>
                       <div class="ziwei-star-row main">
-                        <span class="ziwei-star main" v-for="star in cell.mainStars" :key="'zw-main-'+cell.branch+'-'+star.name">
-                          <strong>★{{ star.name }}</strong>
+                        <span class="ziwei-star-tag" v-for="star in cell.mainStars" :key="'zw-main-'+cell.branch+'-'+star.name">
+                          <span class="ziwei-star main"><strong>★{{ star.name }}</strong></span>
                           <em class="ziwei-brightness" :class="star.brightnessClass" v-if="star.brightness">{{ star.brightness }}</em>
                           <span class="ziwei-hua-tag" v-for="tag in star.huaTags" :key="'zw-hua-main-'+cell.branch+'-'+star.name+'-'+tag" :data-hua="tag">{{ tag }}</span>
                         </span>
+                        <span class="ziwei-star-placeholder" v-if="!cell.mainStars || !cell.mainStars.length">--</span>
                       </div>
                       <div class="ziwei-star-row assist">
-                        <span class="ziwei-star" v-for="star in cell.assistStars" :key="'zw-assist-'+cell.branch+'-'+star.name">
-                          {{ star.name }}
+                        <span class="ziwei-star-tag" v-for="star in cell.assistStars" :key="'zw-assist-'+cell.branch+'-'+star.name">
+                          <span class="ziwei-star">{{ star.name }}</span>
                           <span class="ziwei-hua-tag" v-for="tag in star.huaTags" :key="'zw-hua-assist-'+cell.branch+'-'+star.name+'-'+tag" :data-hua="tag">{{ tag }}</span>
                         </span>
+                        <span class="ziwei-star-placeholder" v-if="!cell.assistStars || !cell.assistStars.length">--</span>
                       </div>
                       <div class="ziwei-star-row misc">
-                        <span class="ziwei-star" v-for="star in cell.miscStars" :key="'zw-misc-'+cell.branch+'-'+star.name">
-                          {{ star.name }}
+                        <span class="ziwei-star-tag" v-for="star in cell.miscStars" :key="'zw-misc-'+cell.branch+'-'+star.name">
+                          <span class="ziwei-star">{{ star.name }}</span>
                           <span class="ziwei-hua-tag" v-for="tag in star.huaTags" :key="'zw-hua-misc-'+cell.branch+'-'+star.name+'-'+tag" :data-hua="tag">{{ tag }}</span>
                         </span>
+                        <span class="ziwei-star-placeholder" v-if="!cell.miscStars || !cell.miscStars.length">--</span>
                       </div>
                       <footer class="ziwei-palace-foot">
                         <span>{{ cell.changSheng || '--' }}</span>
@@ -2040,6 +2041,7 @@ $$;</pre>
                     </section>
                     <section class="ziwei-center">
                       <h4>{{ ziweiCenterTitle }}</h4>
+                      <p class="ziwei-center-meta">{{ ziweiChart.center.currentYearLabel || '--' }} · {{ ziweiChart.center.currentAgeLabel || '--' }}</p>
                       <div class="ziwei-center-info">
                         <p><strong>姓名：</strong><span>{{ ziweiProfileName || '--' }}</span></p>
                         <p><strong>阴阳：</strong><span>{{ ziweiChart.center.yinYangGenderLabel || '--' }}</span></p>
@@ -2060,9 +2062,9 @@ $$;</pre>
                           <span class="ziwei-center-pillar-title">节气四柱</span>
                           <span class="ziwei-center-pillar-title">非节气四柱</span>
                         </div>
-                        <div class="ziwei-center-pillar-row">
-                          <span class="ziwei-center-pillar-cell">{{ ziweiJieqiPillarsText }}</span>
-                          <span class="ziwei-center-pillar-cell">{{ ziweiNonJieqiPillarsText }}</span>
+                        <div class="ziwei-center-pillar-row ziwei-center-pillar-data">
+                          <span class="ziwei-center-pillar-cell"><b>{{ ziweiJieqiPillarStemText }}</b><em>{{ ziweiJieqiPillarBranchText }}</em></span>
+                          <span class="ziwei-center-pillar-cell"><b>{{ ziweiNonJieqiPillarStemText }}</b><em>{{ ziweiNonJieqiPillarBranchText }}</em></span>
                         </div>
                       </div>
                       <p class="ziwei-center-qiyun">{{ ziweiChart.center.qiYunText || '--' }}</p>
