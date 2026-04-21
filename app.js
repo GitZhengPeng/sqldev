@@ -5453,6 +5453,7 @@ const app = createApp({
 
     function clearZiweiHistory() {
       ziweiHistory.value = [];
+      ziweiHistoryPickedId.value = '';
       _zwSaveHistory([]);
       ziweiStatus.value = { type: 'info', text: '历史命例已清空。' };
     }

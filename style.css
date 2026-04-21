@@ -5033,7 +5033,7 @@ body.feedback-open{overflow:hidden}
 }
 .ziwei-actions-top{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:1fr;
   gap:6px;
   padding:14px 16px;
   border-bottom:1px solid rgba(99,102,241,.18);
@@ -5444,6 +5444,11 @@ body.feedback-open{overflow:hidden}
   border-radius:12px;
   background:rgba(10,17,39,.82);
 }
+.ziwei-ai-card{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
 .ziwei-pro-card:first-child{
   margin-top:12px;
 }
@@ -5503,10 +5508,13 @@ body.feedback-open{overflow:hidden}
   font:500 11.5px/1.7 var(--font-body);
 }
 .ziwei-ai-body{
+  flex:1 1 auto;
+  min-height:0;
   max-height:calc(100vh - 300px);
   overflow-y:auto;
   overflow-x:hidden;
   padding-right:2px;
+  scrollbar-gutter:stable;
   scrollbar-width:thin;
   scrollbar-color:rgba(129,140,248,.55) rgba(9,14,28,.45);
 }
@@ -5894,6 +5902,9 @@ body.feedback-open{overflow:hidden}
   background:#fff;
   border-color:rgba(99,102,241,.14);
 }
+[data-theme="light"] .ziwei-ai-card{
+  background:#fff;
+}
 [data-theme="light"] .ziwei-ai-head{
   background:linear-gradient(135deg,rgba(99,102,241,.13),rgba(129,140,248,.08));
 }
@@ -5923,6 +5934,7 @@ body.feedback-open{overflow:hidden}
   color:#475569;
 }
 [data-theme="light"] .ziwei-ai-body{
+  scrollbar-gutter:stable;
   scrollbar-color:rgba(99,102,241,.5) rgba(99,102,241,.12);
 }
 [data-theme="light"] .ziwei-ai-body::-webkit-scrollbar-track{
@@ -5966,6 +5978,20 @@ body.feedback-open{overflow:hidden}
 }
 [data-theme="light"] .ziwei-ai-qa-answer p{
   color:#1f2937;
+}
+.ziwei-history-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.ziwei-history-actions select{
+  flex:1;
+  min-width:0;
+}
+.ziwei-history-actions .idtool-btn{
+  flex:0 0 auto;
+  min-width:90px;
+  padding:0 12px;
 }
 [data-theme="light"] .ziwei-palace-badge{
   color:#1f2937;
