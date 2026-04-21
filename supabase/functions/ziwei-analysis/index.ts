@@ -29,6 +29,10 @@ const AI_MODEL = (Deno.env.get('ZIWEI_AI_MODEL') || 'gpt-4.1-mini').trim() || 'g
 const AI_API_KEY = (Deno.env.get('ZIWEI_AI_API_KEY') || Deno.env.get('OPENAI_API_KEY') || '').trim()
 const AI_TIMEOUT_MS = parsePositiveInt(Deno.env.get('ZIWEI_AI_TIMEOUT_MS'), 20_000)
 const AI_MAX_CHART_CHARS = parsePositiveInt(Deno.env.get('ZIWEI_AI_MAX_CHART_CHARS'), 24_000)
+const AI_QA_MAX_QUESTION_CHARS = parsePositiveInt(Deno.env.get('ZIWEI_AI_QA_MAX_QUESTION_CHARS'), 220)
+const AI_ANALYSIS_TEMPLATE = (Deno.env.get('ZIWEI_AI_ANALYSIS_TEMPLATE') || '').trim()
+const AI_QA_TEMPLATE = (Deno.env.get('ZIWEI_AI_QA_TEMPLATE') || '').trim()
+const AI_QA_SUGGESTIONS_JSON = (Deno.env.get('ZIWEI_AI_QA_SUGGESTIONS') || '').trim()
 
 const RATE_LIMIT_WINDOW_MS = parsePositiveInt(Deno.env.get('ZIWEI_AI_RATE_LIMIT_WINDOW_MS'), 60_000)
 const RATE_LIMIT_MAX_REQUESTS = parsePositiveInt(Deno.env.get('ZIWEI_AI_RATE_LIMIT_MAX_REQUESTS'), 6)
@@ -186,6 +190,39 @@ function normalizeStringArray(input: unknown, maxItems: number, maxLen: number):
     if (v) out.push(v)
   }
   return out
+}
+
+function parseJsonArrayOfStrings(raw: string): string[] {
+  const text = String(raw || '').trim()
+  if (!text) return []
+  try {
+    const parsed = JSON.parse(text)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .map((item) => toSafeString(item, 160))
+      .filter(Boolean)
+      .slice(0, 12)
+  } catch (_err) {
+    return []
+  }
+}
+
+function buildQaConfig() {
+  const suggestions = parseJsonArrayOfStrings(AI_QA_SUGGESTIONS_JSON)
+  return { suggestions }
+  /*
+    '请解读我今年事业和收入变化重点',
+    '请解读我当前大限的机会与风险',
+    '请解读感情关系中最需要注意的点',
+    '请给我未来三个月可执行建议',
+    '请解读我这个命盘的长期优势和短板'
+  ]
+  const fallbackHintText = '问答模板由服务端 Secrets 控制；前端仅配置建议问题与提示语。'
+  const suggestions = parseJsonArrayOfStrings(AI_QA_SUGGESTIONS_JSON)
+  return {
+    suggestions
+  }
+  */
 }
 
 /*
@@ -374,16 +411,8 @@ async function requestAiAnalysis(chartPayload: string, style: 'simple' | 'pro'):
 }
 
 */
-async function requestAiAnalysis(chartPayload: string, style: 'simple' | 'pro'): Promise<Record<string, unknown>> {
-  if (!AI_ENDPOINT || !AI_API_KEY) {
-    throw new Error('AI backend not configured: missing ZIWEI_AI_API_KEY/OPENAI_API_KEY or endpoint')
-  }
-  const today = new Date()
-  const y = today.getFullYear()
-  const m = String(today.getMonth() + 1).padStart(2, '0')
-  const d = String(today.getDate()).padStart(2, '0')
-  const todayText = `${y}-${m}-${d}`
-  const systemPrompt = [
+function buildAnalysisSystemPrompt(style: 'simple' | 'pro'): string {
+  const baseLines = [
     'You are a professional Zi Wei Dou Shu analyst.',
     'Write all field contents in Simplified Chinese.',
     'Output strictly one JSON object. No markdown and no code fence.',
@@ -408,7 +437,27 @@ async function requestAiAnalysis(chartPayload: string, style: 'simple' | 'pro'):
     style === 'pro'
       ? '4) Pro mode: section summaries can be deeper.'
       : '4) Simple mode: section summaries should be concise.'
+  ]
+  if (!AI_ANALYSIS_TEMPLATE) return baseLines.join('\n')
+  const template = AI_ANALYSIS_TEMPLATE.replace(/\{\{style\}\}/g, style)
+  return [
+    ...baseLines,
+    '',
+    'Template requirements below are configured on server and MUST be followed:',
+    template
   ].join('\n')
+}
+
+async function requestAiAnalysis(chartPayload: string, style: 'simple' | 'pro'): Promise<Record<string, unknown>> {
+  if (!AI_ENDPOINT || !AI_API_KEY) {
+    throw new Error('AI backend not configured: missing ZIWEI_AI_API_KEY/OPENAI_API_KEY or endpoint')
+  }
+  const today = new Date()
+  const y = today.getFullYear()
+  const m = String(today.getMonth() + 1).padStart(2, '0')
+  const d = String(today.getDate()).padStart(2, '0')
+  const todayText = `${y}-${m}-${d}`
+  const systemPrompt = buildAnalysisSystemPrompt(style)
 
   const userPrompt = [
     `Current date: ${todayText}`,
@@ -463,6 +512,81 @@ async function requestAiAnalysis(chartPayload: string, style: 'simple' | 'pro'):
   }
 }
 
+function normalizeQaTemplate(): string {
+  if (AI_QA_TEMPLATE) return AI_QA_TEMPLATE
+  return [
+    '你是专业紫微斗数命盘顾问，请使用简体中文回答。',
+    '必须引用命盘中的具体证据（宫位/星曜/四化/大限/流年）。',
+    '输出结构：',
+    '【问题】{{question}}',
+    '【核心结论】',
+    '【命盘证据】',
+    '【行动建议】',
+    '【风险提示】'
+  ].join('\n')
+}
+
+async function requestAiQa(chartPayload: string, question: string): Promise<string> {
+  if (!AI_ENDPOINT || !AI_API_KEY) {
+    throw new Error('AI backend not configured: missing ZIWEI_AI_API_KEY/OPENAI_API_KEY or endpoint')
+  }
+  const template = normalizeQaTemplate()
+  const q = toSafeString(question, AI_QA_MAX_QUESTION_CHARS)
+  if (!q) throw new Error('invalid_question')
+  const templateWithQuestion = template.includes('{{question}}')
+    ? template.replace(/\{\{question\}\}/g, q)
+    : `${template}\n\n【问题】${q}`
+
+  const userPrompt = [
+    '以下是命盘结构化数据(JSON字符串)：',
+    chartPayload
+  ].join('\n\n')
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS)
+  try {
+    const res = await fetch(AI_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${AI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        temperature: 0.5,
+        messages: [
+          { role: 'system', content: templateWithQuestion },
+          { role: 'user', content: userPrompt }
+        ]
+      }),
+      signal: controller.signal
+    })
+    if (!res.ok) {
+      const reason = await res.text().catch(() => '')
+      throw new Error(`AI upstream error ${res.status}: ${reason.slice(0, 280)}`)
+    }
+    const body = await res.json().catch(() => null)
+    const content = body?.choices?.[0]?.message?.content
+    const text = typeof content === 'string'
+      ? content
+      : (Array.isArray(content) ? content.map((item: unknown) => {
+          if (typeof item === 'string') return item
+          if (isPlainObject(item)) return String(item.text || '')
+          return ''
+        }).join('') : '')
+    const answer = toSafeString(text, 8_000)
+    if (!answer) throw new Error('AI response empty')
+    return answer
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('AI request timeout')
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req)
   if (!corsHeaders) return new Response('Forbidden', { status: 403, headers: defaultCorsHeaders() })
@@ -492,13 +616,39 @@ Deno.serve(async (req) => {
 
   const styleRaw = toSafeString(payload.style, 16)
   const style: 'simple' | 'pro' = styleRaw === 'simple' ? 'simple' : 'pro'
+  const modeRaw = toSafeString(payload.mode, 16)
+  const mode: 'analysis' | 'qa' | 'config' = modeRaw === 'qa'
+    ? 'qa'
+    : (modeRaw === 'config' ? 'config' : 'analysis')
   const signature = toSafeString(payload.signature, 160) || null
+
+  if (mode === 'config') {
+    const cfg = buildQaConfig()
+    return json(200, {
+      ok: true,
+      signature,
+      config: cfg
+    }, corsHeaders)
+  }
+
   const chartPayload = normalizeChartPayload(payload.chart)
   if (!chartPayload || chartPayload.length < 120) {
     return json(400, { ok: false, error: 'chart_payload_too_small' }, corsHeaders)
   }
 
   try {
+    if (mode === 'qa') {
+      const question = toSafeString(payload.question, AI_QA_MAX_QUESTION_CHARS)
+      if (!question) return json(400, { ok: false, error: 'invalid_question' }, corsHeaders)
+      const answer = await requestAiQa(chartPayload, question)
+      return json(200, {
+        ok: true,
+        signature,
+        model: AI_MODEL,
+        answer
+      }, corsHeaders)
+    }
+
     const analysis = await requestAiAnalysis(chartPayload, style)
     return json(200, {
       ok: true,

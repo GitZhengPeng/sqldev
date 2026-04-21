@@ -3052,6 +3052,41 @@ const app = createApp({
     const ziweiLastAiSignature = ref('');
     const _ziweiAiCache = new Map();
     const _ZIWEI_AI_CACHE_MAX = 12;
+    /*
+    const LEGACY_UNUSED_QA_LIST = [
+      '请解读我今年事业和收入变化重点',
+      '请解读我当前大限的机会与风险',
+      '请解读感情关系中最需要注意的点',
+      '请给我未来三个月可执行建议',
+      '请解读我这个命盘的长期优势和短板'
+    ];
+    const LEGACY_UNUSED_QA_TEMPLATE = [
+      '你是专业紫微斗数命盘顾问，回答必须使用简体中文。',
+      '请严格按照以下结构输出：',
+      '【问题】{{question}}',
+      '【核心结论】用1-2句给出明确判断。',
+      '【命盘证据】至少2条，必须引用宫位/星曜/四化/大限/流年中的具体信息。',
+      '【行动建议】给出3条可执行建议，按优先级排序。',
+      '【风险提示】给出1-2条需规避事项。',
+      '不要输出markdown标题，不要输出代码块。'
+    ].join('\n');
+    */
+    const ziweiAiQaSuggestions = ref([]);
+    /* legacy qa hint config removed
+      if (typeof window === 'undefined') return '问答模板由服务端 Secrets 控制；前端仅配置建议问题与提示语。';
+      var raw = null;
+      var text = typeof raw === 'string' ? raw.trim() : '';
+      return text || '问答模板由服务端 Secrets 控制；前端仅配置建议问题与提示语。';
+    })()); */
+    /* legacy qa suggestion hint config removed
+      if (typeof window === 'undefined') return {};
+      var raw = null;
+      return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+    })()); */
+    const ziweiAiQuestionInput = ref('');
+    const ziweiAiQuestionAnswer = ref('');
+    const ziweiAiQuestionLoading = ref(false);
+    const ziweiAiSuggestionOpen = ref(false);
     const ziweiExporting = ref(false);
     const ziweiGenerating = ref(false);
     const ziweiGenerateDone = ref(false);
@@ -3416,7 +3451,44 @@ const app = createApp({
     const ziweiAiUpdatedAtText = computed(function() {
       return ziweiAiUpdatedAt.value ? formatZiweiHistoryTime(ziweiAiUpdatedAt.value) : '';
     });
+    const ziweiAiSuggestionsFiltered = computed(function() {
+      var source = Array.isArray(ziweiAiQaSuggestions.value) ? ziweiAiQaSuggestions.value : [];
+      if (!source.length) return [];
+      var q = String(ziweiAiQuestionInput.value || '').trim().toLowerCase();
+      if (!q) return source.slice(0, 8);
+      return source
+        .filter(function(item) { return String(item || '').toLowerCase().indexOf(q) >= 0; })
+        .slice(0, 8);
+    });
+    /*
+    const legacyUnusedHintText = computed(function() {
+      return '问答模板由服务端 Secrets 控制；前端仅配置建议问题与提示语。';
+    });
 
+    const ziweiAiSuggestionsView = computed(function() {
+      var source = Array.isArray(ziweiAiQaSuggestions.value) ? ziweiAiQaSuggestions.value : [];
+      if (!source.length) return [];
+      var hintMap = {};
+      var mapped = source.map(function(item) {
+        var text = String(item || '').trim();
+        var hint = String((hintMap && hintMap[text]) || '').trim();
+        return { text: text, hint: hint };
+      }).filter(function(item) { return !!item.text; });
+      if (!mapped.length) return [];
+      var q = String(ziweiAiQuestionInput.value || '').trim().toLowerCase();
+      if (!q) return mapped.slice(0, 8);
+      return mapped.filter(function(item) {
+        return String(item.text || '').toLowerCase().indexOf(q) >= 0 ||
+          String(item.hint || '').toLowerCase().indexOf(q) >= 0;
+      }).slice(0, 8);
+    });
+    const legacyUnusedHintView = computed(function() {
+      var text = '';
+      if (text) return text;
+      return '问答模板由服务端 Secrets 控制；前端仅配置建议问题与提示语。';
+    });
+
+    */
     function _sortRegionByCode(list) {
       return (list || []).slice().sort(function(a, b) {
         return String(a.code || '').localeCompare(String(b.code || ''));
@@ -3682,6 +3754,8 @@ const app = createApp({
       ziweiAiResult.value = null;
       ziweiAiUpdatedAt.value = 0;
       ziweiLastAiSignature.value = '';
+      ziweiAiQuestionAnswer.value = '';
+      ziweiAiSuggestionOpen.value = false;
     });
     watch(ziweiSchool, function() {
       if (ziweiChart.value) {
@@ -3698,6 +3772,7 @@ const app = createApp({
         ziweiAiResult.value = null;
         ziweiAiUpdatedAt.value = 0;
         ziweiLastAiSignature.value = '';
+        ziweiAiQuestionAnswer.value = '';
         return;
       }
       var prevKey = String(ziweiAnalysisActiveKey.value || '');
@@ -5401,6 +5476,105 @@ const app = createApp({
       ziweiFocusBranch.value = b;
     }
 
+    function openZiweiAiSuggestions() {
+      ziweiAiSuggestionOpen.value = true;
+    }
+
+    function pickZiweiAiSuggestion(value) {
+      var text = '';
+      if (value && typeof value === 'object') {
+        text = String(value.text || value.label || '').trim();
+      } else {
+        text = String(value || '').trim();
+      }
+      if (!text) return;
+      ziweiAiQuestionInput.value = text;
+      ziweiAiSuggestionOpen.value = false;
+    }
+
+    async function loadZiweiAiServerConfig() {
+      if (!window.authApi || typeof window.authApi.invokeFunction !== 'function') return;
+      if (typeof window.authApi.getUserSync === 'function' && !window.authApi.getUserSync()) return;
+      try {
+        var result = await window.authApi.invokeFunction('ziwei-analysis', {
+          mode: 'config'
+        });
+        if (result && result.error) return;
+        var data = result ? result.data : null;
+        var cfg = data && data.config && typeof data.config === 'object' ? data.config : null;
+        if (!cfg) return;
+
+        if (Array.isArray(cfg.suggestions)) {
+          var suggestions = cfg.suggestions
+            .map(function(item) { return String(item || '').trim(); })
+            .filter(Boolean)
+            .slice(0, 12);
+          ziweiAiQaSuggestions.value = suggestions;
+        }
+
+      } catch (_err) {
+        // keep empty server config when fetch fails
+      }
+    }
+
+    async function submitZiweiAiQuestion() {
+      if (!ziweiChart.value) {
+        ziweiStatus.value = { type: 'info', text: '请先完成排盘。' };
+        return;
+      }
+      if (ziweiAiQuestionLoading.value) return;
+      if (!window.authApi || typeof window.authApi.invokeFunction !== 'function') {
+        ziweiStatus.value = { type: 'error', text: '认证模块未初始化，无法发送 AI 问答。' };
+        return;
+      }
+      if (typeof window.authApi.getUserSync === 'function' && !window.authApi.getUserSync()) {
+        if (typeof window.authApi.openAuthModal === 'function') {
+          window.authApi.openAuthModal('请先登录后再使用 AI 问答');
+        }
+        ziweiStatus.value = { type: 'error', text: '未登录，无法使用 AI 问答。' };
+        return;
+      }
+      var question = String(ziweiAiQuestionInput.value || '').trim();
+      if (!question) {
+        ziweiStatus.value = { type: 'info', text: '请输入问题后再发送。' };
+        ziweiAiSuggestionOpen.value = true;
+        return;
+      }
+
+      ziweiAiQuestionLoading.value = true;
+      ziweiAiSuggestionOpen.value = false;
+      ziweiStatus.value = { type: 'info', text: 'AI 正在思考中，请稍后...' };
+      try {
+        var signature = _zwBuildAiSignature(ziweiChart.value) + '|qa|' + question.slice(0, 64);
+        var result = await window.authApi.invokeFunction('ziwei-analysis', {
+          signature: signature,
+          style: ziweiProMode.value ? 'pro' : 'simple',
+          mode: 'qa',
+          question: question,
+          chart: _zwBuildAiPayload(ziweiChart.value)
+        });
+        if (result && result.error) {
+          var parsed = await _zwParseInvokeError(result.error);
+          var detail = String(parsed.detail || (result.error && result.error.message) || result.error || '请求失败');
+          throw new Error(detail || '请求失败');
+        }
+        var data = result ? result.data : null;
+        var answer = '';
+        if (data && typeof data.answer === 'string') answer = String(data.answer || '').trim();
+        if (!answer && data && data.analysis && typeof data.analysis.overview === 'string') {
+          answer = String(data.analysis.overview || '').trim();
+        }
+        if (!answer) throw new Error('AI 未返回可用问答内容');
+        ziweiAiQuestionAnswer.value = answer;
+        ziweiStatus.value = { type: 'success', text: 'AI 问答已生成。' };
+      } catch (err) {
+        var msg = String((err && err.message) || err || 'AI 问答失败');
+        ziweiStatus.value = { type: 'error', text: 'AI 问答失败：' + msg };
+      } finally {
+        ziweiAiQuestionLoading.value = false;
+      }
+    }
+
     function toggleZiweiAnalysis(key) {
       var k = String(key || '');
       if (!k) return;
@@ -5929,13 +6103,30 @@ const app = createApp({
 
       // 四化
       var huaRule = ZW_HUA_BY_STEM[yearStem] || null;
-      if (huaRule) {
+      if (currentSchool === 'flying') {
+        ZW_RING.forEach(function(branch) {
+          var stemForBranch = (branchStemMap && branchStemMap[branch]) || '';
+          var flyRule = ZW_HUA_BY_STEM[stemForBranch];
+          if (!flyRule) return;
+          ZW_HUA_TAG_ITEMS.forEach(function(item) {
+            var starName = flyRule[item.key];
+            var targetBranch = starBranchMap[starName];
+            if (!targetBranch || !palaceStars[targetBranch]) return;
+            if (!palaceStars[targetBranch].huaByStar[starName]) palaceStars[targetBranch].huaByStar[starName] = [];
+            if (palaceStars[targetBranch].huaByStar[starName].indexOf(item.tag) < 0) {
+              palaceStars[targetBranch].huaByStar[starName].push(item.tag);
+            }
+          });
+        });
+      } else if (huaRule) {
         ZW_HUA_TAG_ITEMS.forEach(function(item) {
           var starName = huaRule[item.key];
           var branch = starBranchMap[starName];
           if (!branch || !palaceStars[branch]) return;
           if (!palaceStars[branch].huaByStar[starName]) palaceStars[branch].huaByStar[starName] = [];
-          palaceStars[branch].huaByStar[starName].push(item.tag);
+          if (palaceStars[branch].huaByStar[starName].indexOf(item.tag) < 0) {
+            palaceStars[branch].huaByStar[starName].push(item.tag);
+          }
         });
       }
 
@@ -5960,6 +6151,24 @@ const app = createApp({
         ];
       }
       var huaTracks = _zwBuildHuaTracks(currentSchool, yearStem, yearBranch, branchStemMap, starBranchMap, palaceNameByBranch);
+      if (currentSchool === 'flying') {
+        var flySummary = [];
+        var seenHua = {};
+        for (var hi = 0; hi < huaTracks.length; hi++) {
+          var track = huaTracks[hi];
+          if (!track) continue;
+          var key = String(track.tag || '') + '|' + String(track.star || '');
+          if (!track.tag || !track.star || seenHua[key]) continue;
+          seenHua[key] = true;
+          flySummary.push({
+            tag: track.tag,
+            star: track.star,
+            label: String(track.tag || '') + String(track.star || '')
+          });
+          if (flySummary.length >= 12) break;
+        }
+        huaSummary = flySummary;
+      }
 
       var boardCells = ZW_BOARD_ORDER.map(function(branch) {
         var pack = palaceStars[branch] || { main: [], assist: [], misc: [], huaByStar: {} };
@@ -7495,20 +7704,26 @@ const app = createApp({
         if (showRulesMenu.value && !e.target.closest('.settings-dropdown')) {
           showRulesMenu.value = false;
         }
+        if (ziweiAiSuggestionOpen.value && !e.target.closest('.ziwei-ai-qa-input-wrap')) {
+          ziweiAiSuggestionOpen.value = false;
+        }
       };
       document.addEventListener('click', outsideClickHandler);
       // Drag event listeners for modals
       window.addEventListener('mousemove', _onDragMove);
       window.addEventListener('mouseup', _onDragEnd);
       scheduleRegionWarmup();
+      loadZiweiAiServerConfig().catch(function() {});
       authStateChangeHandler = function(e) {
         var detail = e && e.detail ? e.detail : {};
         var authUser = detail.user || null;
         if (authUser && authUser.email) {
           currentUserEmail.value = normalizeEmail(authUser.email);
+          loadZiweiAiServerConfig().catch(function() {});
           return;
         }
         currentUserEmail.value = readCurrentAuthEmail();
+        loadZiweiAiServerConfig().catch(function() {});
       };
       window.addEventListener('auth:state-changed', authStateChangeHandler);
       routeChangeHandler = function() {
@@ -7599,8 +7814,11 @@ const app = createApp({
       ziweiChart, ziweiAnalysis, ziweiHistory, ziweiHistoryCountText, ziweiHistoryNameOptions, ziweiFocusTracks, ziweiFocusTrackCount, ziweiStatus,
       ziweiActiveAnalysis, ziweiAnalysisActiveKey,
       ziweiExporting, ziweiGenerating, ziweiAiLoading, ziweiAiDone, ziweiAiError, ziweiAiResult, ziweiAiUpdatedAtText,
+      ziweiAiQuestionInput, ziweiAiQuestionAnswer, ziweiAiQuestionLoading, ziweiAiSuggestionOpen,
+      ziweiAiSuggestionsFiltered,
       ziweiGenerateButtonLabel, ziweiCopyButtonLabel, ziweiAiCopyButtonLabel, ziweiExportButtonLabel, ziweiAiButtonLabel,
       generateZiweiChart, copyZiweiChartText, copyZiweiAnalysisText, exportZiweiChartImage, requestZiweiAiAnalysis,
+      openZiweiAiSuggestions, pickZiweiAiSuggestion, submitZiweiAiQuestion,
       focusZiweiBranch, toggleZiweiAnalysis, applyZiweiHistoryFromInput, applyZiweiHistoryFromSelect, loadZiweiHistory, removeZiweiHistory, clearZiweiHistory, formatZiweiHistoryTime,
       // Shared
       statusText, fileInput, fileEncoding, ENCODING_OPTIONS, uploadFile, handleFileUpload,

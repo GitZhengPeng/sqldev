@@ -1993,15 +1993,20 @@ $$;</pre>
                       v-for="cell in ziweiChart.boardCells"
                       :key="'zw-cell-'+cell.branch"
                       class="ziwei-palace"
-                      :class="[cell.area, {ming: cell.isMing, shen: cell.isShen, active: ziweiFocusBranch===cell.branch, linked: ziweiSifangBranches.includes(cell.branch)}]"
+                      :class="[cell.area, {ming: cell.isMing, shen: cell.isShen, active: ziweiFocusBranch===cell.branch}]"
                       @click="focusZiweiBranch(cell.branch)"
                     >
                       <header class="ziwei-palace-head">
                         <span class="ziwei-palace-name">{{ cell.palaceName || '--' }}</span>
                         <span class="ziwei-palace-gz">{{ cell.stemBranch }}</span>
                       </header>
+                      <div class="ziwei-palace-badges">
+                        <span class="ziwei-palace-badge ming" v-if="cell.isMing">命宫</span>
+                        <span class="ziwei-palace-badge shen" v-if="cell.isShen">身宫</span>
+                      </div>
                       <div class="ziwei-age-series">
                         <span class="ziwei-age-line">流年: {{ (cell.currentLiuNian || (cell.liuNianSeries && cell.liuNianSeries.length ? cell.liuNianSeries[0] : '--')) }} · 小限: {{ (cell.currentXiaoXian || (cell.xiaoXianSeries && cell.xiaoXianSeries.length ? cell.xiaoXianSeries[0] : '--')) }}</span>
+                        <span class="ziwei-age-line">大限: {{ cell.daXian || '--' }} · 长生: {{ cell.changSheng || '--' }}</span>
                       </div>
                       <div class="ziwei-star-row main">
                         <span class="ziwei-star main" v-for="star in cell.mainStars" :key="'zw-main-'+cell.branch+'-'+star.name">
@@ -2027,10 +2032,14 @@ $$;</pre>
                         <span>{{ cell.daXian }}</span>
                         <span>{{ cell.branch }}</span>
                       </footer>
+                      <div class="ziwei-track-chip" v-if="ziweiSchool==='flying'">
+                        <span>飞出 {{ cell.outgoingHuaCount }}</span>
+                        <span>飞入 {{ cell.incomingHuaCount }}</span>
+                      </div>
                     </section>
                     <section class="ziwei-center">
                       <h4>{{ ziweiCenterTitle }}</h4>
-                      <p class="ziwei-center-meta">{{ ziweiChart.center.yinYangGenderLabel || '--' }} · {{ ziweiChart.center.bureauLabel || '--' }} · {{ ziweiChart.center.schoolLabel || '--' }}</p>
+                      <p class="ziwei-center-meta" v-if="false">{{ ziweiChart.center.yinYangGenderLabel || '--' }} · {{ ziweiChart.center.bureauLabel || '--' }} · {{ ziweiChart.center.schoolLabel || '--' }}</p>
                       <div class="ziwei-center-info">
                         <p><strong>姓名：</strong><span>{{ ziweiProfileName || '--' }}</span></p>
                         <p><strong>阴阳：</strong><span>{{ ziweiChart.center.yinYangGenderLabel || '--' }}</span></p>
@@ -2068,7 +2077,7 @@ $$;</pre>
                         </span>
                       </div>
                       <p class="ziwei-center-meta">{{ ziweiChart.center.yinYangGenderLabel || '--' }} · {{ ziweiChart.center.bureauLabel || '--' }} · {{ ziweiChart.center.schoolLabel || '--' }}</p>
-                      <div class="ziwei-center-grid" v-if="false">
+                      <div class="ziwei-center-grid" v-if="true">
                         <div class="ziwei-center-item"><strong>姓名</strong><span>{{ ziweiProfileName || '--' }}</span></div>
                         <div class="ziwei-center-item"><strong>性别</strong><span>{{ ziweiChart.center.genderLabel || '--' }}</span></div>
                         <div class="ziwei-center-item"><strong>公历</strong><span>{{ ziweiChart.center.solarText || '--' }}</span></div>
@@ -2126,8 +2135,12 @@ $$;</pre>
                   </div>
                 </header>
                 <div class="ziwei-ai-top-actions">
-                  <button class="idtool-btn ghost ziwei-ai-btn" type="button" :disabled="!ziweiChart || ziweiAiLoading" @click="requestZiweiAiAnalysis({force:true})">{{ ziweiAiButtonLabel }}</button>
+                  <button class="idtool-btn ghost ziwei-ai-btn" type="button" :disabled="!ziweiChart || ziweiAiLoading" @click="requestZiweiAiAnalysis({force:true})">
+                    <span class="ziwei-loading-dot" v-if="ziweiAiLoading"></span>
+                    <span>{{ ziweiAiButtonLabel }}</span>
+                  </button>
                 </div>
+                <p class="ziwei-ai-thinking" v-if="ziweiAiLoading">AI 正在思考中，请稍后...</p>
                 <p class="ziwei-ai-disclaimer-top">本分析仅供参考娱乐，不替代专业建议，重大决策请结合实际审慎判断。</p>
                 <div class="ziwei-pro-body ziwei-ai-body">
                   <p class="ziwei-ai-overview" v-if="ziweiAiResult && ziweiAiResult.overview">{{ ziweiAiResult.overview }}</p>
@@ -2145,6 +2158,40 @@ $$;</pre>
                     <p>{{ ziweiAiResult.yearFocus.summary }}</p>
                     <p v-if="ziweiAiResult.yearFocus.opportunities && ziweiAiResult.yearFocus.opportunities.length"><strong>机会：</strong>{{ ziweiAiResult.yearFocus.opportunities.join('；') }}</p>
                     <p v-if="ziweiAiResult.yearFocus.risks && ziweiAiResult.yearFocus.risks.length"><strong>风险：</strong>{{ ziweiAiResult.yearFocus.risks.join('；') }}</p>
+                  </div>
+                  <div class="ziwei-ai-qa">
+                    <label class="ziwei-ai-qa-label">问 AI 命盘问题</label>
+                    <div class="ziwei-ai-qa-row">
+                      <div class="ziwei-ai-qa-input-wrap">
+                        <input
+                          class="ziwei-ai-qa-input"
+                          type="text"
+                          v-model.trim="ziweiAiQuestionInput"
+                          maxlength="220"
+                          placeholder="可直接输入问题，或点击查看推荐问题"
+                          @focus="openZiweiAiSuggestions"
+                        />
+                        <div class="ziwei-ai-qa-suggest" v-if="ziweiAiSuggestionOpen && ziweiAiSuggestionsFiltered.length">
+                          <button
+                            class="ziwei-ai-qa-suggest-item"
+                            type="button"
+                            v-for="item in ziweiAiSuggestionsFiltered"
+                            :key="'zw-qa-suggest-'+item"
+                            @mousedown.prevent="pickZiweiAiSuggestion(item)"
+                          >
+                            <span class="ziwei-ai-qa-suggest-text">{{ item }}</span>
+                          </button>
+                        </div>
+                      </div>
+                      <button class="idtool-btn ghost ziwei-ai-qa-send" type="button" :disabled="ziweiAiQuestionLoading || !ziweiChart" @click="submitZiweiAiQuestion">
+                        <span class="ziwei-loading-dot" v-if="ziweiAiQuestionLoading"></span>
+                        <span>{{ ziweiAiQuestionLoading ? '发送中...' : '发送' }}</span>
+                      </button>
+                    </div>
+                    <div class="ziwei-ai-qa-answer" v-if="ziweiAiQuestionAnswer">
+                      <h6>AI 问答</h6>
+                      <p>{{ ziweiAiQuestionAnswer }}</p>
+                    </div>
                   </div>
                 </div>
               </section>
